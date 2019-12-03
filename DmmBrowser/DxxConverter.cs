@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
-namespace DmmBrowser {
+namespace DxxBrowser {
     public class BoolVisibilityConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             return ((bool)value) ? Visibility.Visible : Visibility.Hidden;

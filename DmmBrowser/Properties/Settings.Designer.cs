@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DmmBrowser.Properties {
+namespace DxxBrowser.Properties {
 
 
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
