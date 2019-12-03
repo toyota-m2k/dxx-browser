@@ -1,0 +1,31 @@
+﻿<Window x:Class="DxxBrowser.driver.dmm.DmmSettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DxxBrowser.driver.dmm"
+        mc:Ignorable="d"
+        Background="#FFF2F3F3"
+        Title="DMM Settings" Height="150" Width="400">
+    <Window.Resources>
+        <ResourceDictionary Source="../../DxxResource.xaml"/>
+    </Window.Resources>
+    <Grid VerticalAlignment="Center" Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Column="0" Grid.Row="0" Text="DL Folder"/>
+        <TextBox Grid.Column="0" Grid.Row="1" Text="{Binding Path.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="4,0"/>
+        <Button Grid.Column="1" Grid.Row="1" Click="OnSelectFolder" Content="{StaticResource PathFolder}" Style="{StaticResource PushButtonStyle}"/>
+        <StackPanel Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button Content="OK" Click="OnOK" Width="100" Margin="0,0,8,0"/>
+            <Button Content="Cancel" Click="OnCancel" Width="100"/>
+        </StackPanel>
+    </Grid>
+</Window>

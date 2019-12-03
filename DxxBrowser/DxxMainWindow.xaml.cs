@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
 using Reactive.Bindings;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -12,32 +13,7 @@ namespace DxxBrowser {
         Listing,
     }
 
-    public class DxxMainViewModel : INotifyPropertyChanged, IDisposable {
-        #region INotifyPropertyChanged i/f
-        //-----------------------------------------------------------------------------------------
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        private void notify(string propName) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
-        }
-        private string callerName([CallerMemberName] string memberName = "") {
-            return memberName;
-        }
-
-        private bool setProp<T>(string name, ref T field, T value, params string[] familyProperties) {
-            if (field != null ? !field.Equals(value) : value != null) {
-                field = value;
-                notify(name);
-                foreach (var p in familyProperties) {
-                    notify(p);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        #endregion
-
+    public class DxxMainViewModel : DxxViewModelBase, IDisposable {
         public ReactiveProperty<DxxNaviMode> NaviMode { get; } = new ReactiveProperty<DxxNaviMode>(DxxNaviMode.Self);
         public ReactiveProperty<string> TargetUrl { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
@@ -74,9 +50,13 @@ namespace DxxBrowser {
             private set { DataContext = value; }
         }
 
-        public bool mLoadingMain = false;
+        private bool mLoadingMain = false;
+
+        private List<IDxxDriver> mDrivers;
+
 
         public DxxMainWindow() {
+            InitializeDrivers();
             InitializeComponent();
         }
 

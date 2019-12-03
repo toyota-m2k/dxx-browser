@@ -55,6 +55,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DxxDriverManager.cs" />
+    <Compile Include="Utils.cs" />
+    <Page Include="driver\dmm\DmmSettingsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="DxxResource.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -68,6 +74,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="CheckButton.cs" />
+    <Compile Include="driver\dmm\DmmDriver.cs" />
+    <Compile Include="driver\dmm\DmmSettingsDialog.xaml.cs">
+      <DependentUpon>DmmSettingsDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="DxxConverter.cs" />
     <Compile Include="DxxMainWindow.xaml.cs">
       <DependentUpon>DxxMainWindow.xaml</DependentUpon>
@@ -75,6 +85,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DxxViewModelBase.cs" />
+    <Compile Include="IDxxDriver.cs" />
+    <Compile Include="IDxxLinkExtractor.cs" />
+    <Compile Include="IDxxStorageManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -112,6 +126,9 @@
     </PackageReference>
     <PackageReference Include="ReactiveProperty">
       <Version>6.1.4</Version>
+    </PackageReference>
+    <PackageReference Include="WindowsAPICodePack-Shell">
+      <Version>1.1.1</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
