@@ -56,6 +56,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DxxDriverManager.cs" />
+    <Compile Include="DxxUrl.cs" />
     <Compile Include="Utils.cs" />
     <Page Include="driver\dmm\DmmSettingsDialog.xaml">
       <SubType>Designer</SubType>

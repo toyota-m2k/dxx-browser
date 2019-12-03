@@ -52,11 +52,11 @@ namespace DxxBrowser {
 
         private bool mLoadingMain = false;
 
-        private List<IDxxDriver> mDrivers;
+        private DxxDriverManager mDriverManager;
 
 
         public DxxMainWindow() {
-            InitializeDrivers();
+            mDriverManager = new DxxDriverManager();
             InitializeComponent();
         }
 

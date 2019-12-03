@@ -8,10 +8,10 @@ namespace DxxBrowser
 {
     public interface IDxxStorageManager
     {
-        bool IsDownloaded(string url);
+        bool IsDownloaded(Uri url);
 
-        Task<bool> Download(string url);
+        Task<bool> Download(Uri url);
 
-        Task<string> GetSavedFile(string url);
+        Task<string> GetSavedFile(Uri url);
     }
 }
