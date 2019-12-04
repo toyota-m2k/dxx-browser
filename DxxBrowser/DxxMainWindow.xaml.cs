@@ -38,7 +38,7 @@ namespace DxxBrowser {
 
         public ReactiveProperty<bool> IsDownloading { get; } = DxxDownloader.Instance.Busy.ToReactiveProperty();
 
-        public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; } = new ReactiveProperty<ObservableCollection<DxxTargetInfo>>();
+        public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; } = new ReactiveProperty<ObservableCollection<DxxTargetInfo>>(new ObservableCollection<DxxTargetInfo>());
         public ReactiveProperty<bool> ShowTargetList { get; } = new ReactiveProperty<bool>(false);
 
         public ReactiveProperty<ObservableCollection<DxxDownloadingItem>> DownloadingList { get; } = new ReactiveProperty<ObservableCollection<DxxDownloadingItem>>(DxxDownloader.Instance.DownloadingStateList);
@@ -123,9 +123,14 @@ namespace DxxBrowser {
         }
 
         private void NavigateTo(string url) {
-            if (mainBrowser.Source.ToString() != url) {
+            var uri = DxxUrl.FixUpUrl(url);
+            if (mainBrowser.Source.ToString() != url.ToString()) {
                 mLoadingMain = true;
-                mainBrowser.Navigate(url);
+                try {
+                    mainBrowser.Navigate(uri.ToString());
+                } catch (Exception) {
+                    mLoadingMain = false;
+                }
             }
         }
 

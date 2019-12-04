@@ -25,9 +25,8 @@ namespace DxxBrowser.driver {
         private DownloadStatus mStatus;
 
         public string Url { get; }
-
-
         public string Description { get; }
+        public string Name => DxxUrl.GetFileName(Url);
 
         public DownloadStatus Status {
             get => mStatus;

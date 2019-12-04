@@ -8,6 +8,9 @@ namespace DxxBrowser {
     public class DxxTargetInfo {
         public string Url { get; }
         public string Description { get; }
+
+        public string Name => DxxUrl.GetFileName(Url);
+
         public DxxTargetInfo(string url, string description) {
             Url = url;
             Description = description;

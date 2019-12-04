@@ -95,5 +95,27 @@ namespace DxxBrowser {
         public static string GetFileName(Uri uri) {
             return uri.Segments.Last();
         }
+
+        public static string GetFileName(string url) {
+            var uri = new Uri(url);
+            return GetFileName(uri);
+        }
+
+        public static Uri FixUpUrl(string url) {
+            if (string.IsNullOrEmpty(url)) {
+                return null;
+            }
+            try {
+                return new Uri(url);
+            } catch(Exception) {
+                if(url.StartsWith("//")) {
+                    return FixUpUrl("http:" + url);
+                } else if(!url.StartsWith("http")) {
+                    return FixUpUrl("http://" + url);
+                } else {
+                    return null;
+                }
+            }
+        }
     }
 }

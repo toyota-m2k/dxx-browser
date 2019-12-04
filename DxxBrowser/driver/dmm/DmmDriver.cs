@@ -124,8 +124,9 @@ namespace DxxBrowser.driver.dmm
                 }
                 var list = para.Select((p) => {
                     var href = p.SelectSingleNode("a")?.GetAttributeValue("href", null);
-                    var desc = p.SelectSingleNode("img")?.GetAttributeValue("href", null);
+                    var desc = p.SelectSingleNode("img")?.GetAttributeValue("alt", null);
                     if(desc==null) {
+                        var tx = p.SelectSingleNode("span[@class='txt']");
                         desc = p.SelectSingleNode("span[@class='txt']")?.InnerText;
                     }
                     if (string.IsNullOrEmpty(href)) {
