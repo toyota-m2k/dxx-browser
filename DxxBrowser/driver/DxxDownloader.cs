@@ -77,7 +77,7 @@ namespace DxxBrowser.driver {
                     return null;
                 }
                 var url = uri.ToString();
-                if (!mDownloading.Contains(url)) {
+                if (mDownloading.Contains(url)) {
                     return null;
                 }
                 DownloadingStateList.Add(new DxxDownloadingItem(url, description));

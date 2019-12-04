@@ -174,13 +174,13 @@ namespace DxxBrowser {
                                 du.Download();
                             }
                             e.Cancel = true;
-                            break;
+                            return;
                             
                         case DxxNaviMode.SubView:
                             e.Cancel = true;
                             subBrowser.Navigate(e.Uri);
                             ViewModel.SubUrl.Value = e.Uri.ToString();
-                            break;
+                            return;
                         default:
                             break;
                     }
