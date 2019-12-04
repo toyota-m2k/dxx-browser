@@ -10,8 +10,8 @@ namespace DxxBrowser
     {
         bool IsDownloaded(Uri url);
 
-        Task<bool> Download(Uri url);
+        Task<bool> Download(Uri url, string description);
 
-        Task<string> GetSavedFile(Uri url);
+        string GetSavedFile(Uri url);
     }
 }

@@ -14,14 +14,14 @@ namespace DxxBrowser
         //-----------------------------------------------------------------------------------------
 
         public event PropertyChangedEventHandler PropertyChanged;
-        private void notify(string propName) {
+        protected void notify(string propName) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
-        private string callerName([CallerMemberName] string memberName = "") {
+        protected string callerName([CallerMemberName] string memberName = "") {
             return memberName;
         }
 
-        private bool setProp<T>(string name, ref T field, T value, params string[] familyProperties) {
+        protected bool setProp<T>(string name, ref T field, T value, params string[] familyProperties) {
             if (field != null ? !field.Equals(value) : value != null) {
                 field = value;
                 notify(name);

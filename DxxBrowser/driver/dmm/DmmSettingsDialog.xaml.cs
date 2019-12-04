@@ -21,8 +21,8 @@ namespace DxxBrowser.driver.dmm
     /// </summary>
     public partial class DmmSettingsDialog : Window
     {
-        class DmmSettingsViewModel : DxxViewModelBase {
-            public ReactiveProperty<string> Path;
+        public class DmmSettingsViewModel : DxxViewModelBase {
+            public ReactiveProperty<string> Path { get; }
             public DmmSettingsViewModel(string initialPath) {
                 Path = new ReactiveProperty<string>(initialPath);
             }

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace DxxBrowser.driver.dmm
 {
@@ -22,6 +23,8 @@ namespace DxxBrowser.driver.dmm
         public IDxxLinkExtractor LinkExtractor { get; private set; }
 
         public IDxxStorageManager StorageManager { get; private set; }
+
+        public bool HasSettings => true;
 
         private const string KEY_STORAGE_PATH = "StoragePath";
 
@@ -50,7 +53,6 @@ namespace DxxBrowser.driver.dmm
                 return true;
             }
             return false;
-            
         }
 
         public DmmDriver() {
@@ -66,16 +68,30 @@ namespace DxxBrowser.driver.dmm
                 mDriver = new WeakReference<DmmDriver>(driver);
             }
 
-            public Task<bool> Download(string url) {
-                throw new NotImplementedException();
+            public async Task<bool> Download(Uri uri, string description) {
+                if(!Driver.LinkExtractor.IsTarget(uri)) {
+                    return false;
+                }
+                var path = GetPath(uri);
+                if(File.Exists(path)) {
+                    return false;
+                }
+                return await DxxDownloader.Instance.DownloadAsync(uri, path, description);
             }
 
-            public Task<string> GetSavedFile(string url) {
-                throw new NotImplementedException();
+            private string GetPath(Uri uri) {
+                var filename = DxxUrl.GetFileName(uri);
+                return Path.Combine(Driver.StoragePath, filename);
             }
 
-            public bool IsDownloaded(string url) {
+            public string GetSavedFile(Uri uri) {
+                var path = GetPath(uri);
+                return File.Exists(path) ? path : null;
+            }
 
+            public bool IsDownloaded(Uri uri) {
+                var path = GetPath(uri);
+                return File.Exists(path);
             }
         }
 
@@ -87,7 +103,38 @@ namespace DxxBrowser.driver.dmm
                 mDriver = new WeakReference<DmmDriver>(driver);
             }
 
-            public async Task<IList<string>> ExtractTargetContainers(Uri uri) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(Uri uri) {
+                if(!IsContainerList(uri)) {
+                    return null;
+                }
+                // <div>
+                //< p class="tmb"><a href = "https://www.dmm.co.jp/litevideo/-/detail/=/cid=bf00392/" >
+                // < span class="img"><img src = "https://pics.dmm.co.jp/digital/video/bf00392/bf00392pt.jpg" alt="美尻にぴったり密着タイトスカートSEX8時間"></span> 
+                //<span class="txt">美尻にぴったり密着タイト...</span> 
+                //<!--/tmb--></a></p>
+
+                var web = new HtmlWeb();
+                var html = await web.LoadFromWebAsync(uri.ToString());
+                if(null==html) {
+                    return null;
+                }
+                var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
+                if(para==null||para.Count==0) {
+                    return null;
+                }
+                var list = para.Select((p) => {
+                    var href = p.SelectSingleNode("a")?.GetAttributeValue("href", null);
+                    var desc = p.SelectSingleNode("img")?.GetAttributeValue("href", null);
+                    if(desc==null) {
+                        desc = p.SelectSingleNode("span[@class='txt']")?.InnerText;
+                    }
+                    if (string.IsNullOrEmpty(href)) {
+                        return null;
+                    } else {
+                        return new DxxTargetInfo(href, desc);
+                    }
+                }).Where((v) => v != null);
+                return list.ToList();
             }
 
             private string ensureUrl(string url) {
@@ -98,7 +145,10 @@ namespace DxxBrowser.driver.dmm
                 }
             }
 
-            public async Task<IList<string>> ExtractTargets(Uri uri) {
+            public async Task<IList<DxxTargetInfo>> ExtractTargets(Uri uri) {
+                if(!IsContainer(uri)) {
+                    return null;
+                }
                 var web = new HtmlWeb();
                 var outer = await web.LoadFromWebAsync(uri.ToString());
 
@@ -106,7 +156,7 @@ namespace DxxBrowser.driver.dmm
                     return f.GetAttributeValue("src", null);
                 });
 
-                var list = new List<string>();
+                var list = new List<DxxTargetInfo>();
                 foreach (var frame in frames) {
                     var innerUrl = ensureUrl(frame);
                     var inner = await web.LoadFromWebAsync(innerUrl);
@@ -143,7 +193,7 @@ namespace DxxBrowser.driver.dmm
                                 }
                             }
                             if(src!=null) {
-                                list.Add(src);
+                                list.Add(new DxxTargetInfo(src, js["title"].Value<string>()));
                             }
                         }
                     }
@@ -151,25 +201,23 @@ namespace DxxBrowser.driver.dmm
                 return list;
             }
 
-            public bool HasTargetContainers(Uri uri) {
-                // <div>
-                //< p class="tmb"><a href = "https://www.dmm.co.jp/litevideo/-/detail/=/cid=bf00392/" >
-                // < span class="img"><img src = "https://pics.dmm.co.jp/digital/video/bf00392/bf00392pt.jpg" alt="美尻にぴったり密着タイトスカートSEX8時間"></span> 
-                //<span class="txt">美尻にぴったり密着タイト...</span> 
-                //<!--/tmb--></a></p>
-
-                if (!uri.Host.Equals("dmm.co.jp")) {
+            public bool IsContainerList(Uri uri) {
+                if (!uri.Host.Contains("dmm.co.jp")) {
                     return false;
                 }
                 return uri.ToString().Contains("/list/");
             }
 
-            public bool HasTargets(Uri uri) {
-                if (!uri.Host.Equals("dmm.co.jp")) {
+            public bool IsContainer(Uri uri) {
+                if (!uri.Host.Contains("dmm.co.jp")) {
                     return false;
                 }
                 var s = uri.ToString();
                 return s.Contains("/list/") && s.Contains("/cid=");
+            }
+
+            public bool IsTarget(Uri uri) {
+                return DxxUrl.GetFileName(uri).EndsWith(".mp4");
             }
         }
     }

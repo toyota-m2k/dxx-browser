@@ -11,6 +11,7 @@ namespace DxxBrowser
     {
         string Name { get; }
         string ID { get; }
+        bool HasSettings { get; }
         bool Setup(XmlElement settings);
         bool LoadSettins(XmlElement settings);
         bool SaveSettings(XmlElement settings);

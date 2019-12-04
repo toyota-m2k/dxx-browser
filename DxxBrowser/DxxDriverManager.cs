@@ -1,4 +1,5 @@
-﻿using DxxBrowser.driver.dmm;
+﻿using DxxBrowser.driver;
+using DxxBrowser.driver.dmm;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,9 +12,14 @@ namespace DxxBrowser
 {
     public class DxxDriverManager
     {
+        public static DxxDriverManager Instance { get; } = new DxxDriverManager();
+
         List<IDxxDriver> mList;
 
-        public DxxDriverManager() {
+        public static IDxxDriver DEFAULT = new NopDriver();
+
+
+        private DxxDriverManager() {
             mList = new List<IDxxDriver>();
             mList.Add(new DmmDriver());
             LoadSettings();
@@ -21,6 +27,9 @@ namespace DxxBrowser
 
         public IDxxDriver FindDriver(string url) {
             try {
+                if(string.IsNullOrEmpty(url)) {
+                    return null;
+                }
                 return mList.Where((v) => v.IsSupported(url))
                             .First();
             } catch(Exception) {
@@ -28,16 +37,14 @@ namespace DxxBrowser
             }
         }
 
-        public DxxUrl FromUrl(string url) {
-            var driver = FindDriver(url);
-            if(null!=driver) {
-                var uri = new Uri(url);
-                if(driver.LinkExtractor.HasTargets(uri)) {
-                    return new DxxUrl(uri, DxxUrl.TargetType.Target, driver);
-                } else if(driver.Link)
-
-            }
-        }
+        //public DxxUrl FromUrl(string url) {
+        //    var driver = FindDriver(url);
+        //    if(null!=driver) {
+        //        return new DxxUrl(new Uri(url), driver);
+        //    } else {
+        //        return null;
+        //    }
+        //}
 
         //public IDxxDriver CurrentDriver { get; private set; }
 
@@ -53,6 +60,7 @@ namespace DxxBrowser
         //}
 
         private const string SETTINGS_PATH = "DxxDriverSettings.xml";
+        private const string ROOT_NAME = "DxxSettings";
 
         private XmlDocument getSettings() {
             try {
@@ -60,12 +68,16 @@ namespace DxxBrowser
                 doc.Load(SETTINGS_PATH);
                 return doc;
             } catch(Exception) {
-                return new XmlDocument();
+                var doc = new XmlDocument();
+                doc.AppendChild(doc.CreateProcessingInstruction("xml", "version=\"1.0\" encoding=\"utf-8\""));
+                doc.AppendChild(doc.CreateElement(ROOT_NAME));
+                return doc;
             }
         }
 
         public void LoadSettings() {
             var doc = getSettings();
+            var root = doc.GetElementsByTagName(ROOT_NAME)[0];
             bool update = false;
             foreach(var d in mList) {
                 var elems = doc.GetElementsByTagName(d.ID);
@@ -74,9 +86,10 @@ namespace DxxBrowser
                     d.LoadSettins(el as XmlElement);
                 } else {
                     var el = doc.CreateElement(d.ID);
-                    d.Setup(el);
-                    doc.AppendChild(el);
-                    update = true;
+                    if (d.Setup(el)) {
+                        root.AppendChild(el);
+                        update = true;
+                    }
                 }
             }
             if(update) {
@@ -84,5 +97,20 @@ namespace DxxBrowser
             }
         }
 
+        public void Setup(IDxxDriver targetDriver) {
+            if(!targetDriver.HasSettings) {
+                return;
+            }
+            var doc = getSettings();
+            var root = doc.GetElementsByTagName(ROOT_NAME)[0];
+            var el = root.SelectSingleNode(targetDriver.ID);
+            if(el==null) {
+                el = doc.CreateElement(targetDriver.ID);
+                root.AppendChild(el);
+            }
+            if(targetDriver.Setup(el as XmlElement)) {
+                doc.Save(SETTINGS_PATH);
+            }
+        }
     }
 }
