@@ -1,10 +1,12 @@
 ﻿using DxxBrowser.driver;
 using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
 using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
@@ -16,17 +18,19 @@ namespace DxxBrowser {
     }
 
     public class DxxMainViewModel : DxxViewModelBase, IDisposable {
+        #region Properties
+        private CompositeDisposable Disposables = new CompositeDisposable();
+
         public ReactiveProperty<DxxNaviMode> NaviMode { get; } = new ReactiveProperty<DxxNaviMode>(DxxNaviMode.Self);
         public ReactiveProperty<string> MainUrl { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> SubUrl { get; } = new ReactiveProperty<string>();
-        public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
 
         public ReactiveProperty<bool> Loaded { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
 
         public delegate void NavigateToProc(string url);
-        public event NavigateToProc NavigateTo;
+        public NavigateToProc NavigateTo;
 
         public ReactiveProperty<string> DriverName { get; } = new ReactiveProperty<string>(DxxDriverManager.DEFAULT.Name);
         public ReactiveProperty<bool> SettingEnabled { get; } = new ReactiveProperty<bool>(false);
@@ -36,15 +40,114 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> IsContainerList { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> SubViewDownloadable { get; } = new ReactiveProperty<bool>(false);
 
+
         public ReactiveProperty<bool> IsDownloading { get; } = DxxDownloader.Instance.Busy.ToReactiveProperty();
 
         public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; } = new ReactiveProperty<ObservableCollection<DxxTargetInfo>>(new ObservableCollection<DxxTargetInfo>());
-        public ReactiveProperty<bool> ShowTargetList { get; } = new ReactiveProperty<bool>(false);
-
         public ReactiveProperty<ObservableCollection<DxxDownloadingItem>> DownloadingList { get; } = new ReactiveProperty<ObservableCollection<DxxDownloadingItem>>(DxxDownloader.Instance.DownloadingStateList);
+        public ReactiveProperty<ObservableCollection<string>> StatusList { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
+
+        public ReactiveProperty<bool> ShowTargetList { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> ShowDownloadingList { get; } = new ReactiveProperty<bool>(true);
+        public ReactiveProperty<bool> ShowStatusList { get; } = new ReactiveProperty<bool>(true);
+
+        private void InitializeProperties() {
+
+        MainUrl.Subscribe((v) => {
+                var driver = DxxDriverManager.Instance.FindDriver(v);
+                if (driver != null) {
+                    mDxxMainUrl = new DxxUrl(new Uri(v), driver, "");
+                    Driver = driver;
+                } else {
+                    mDxxMainUrl = null;
+                    Driver = DxxDriverManager.DEFAULT;
+                }
+                UpdateContent();
+            });
+            SubUrl.Subscribe((v) => {
+                if (Driver.IsSupported(v)) {
+                    mDxxSubUrl = new DxxUrl(new Uri(v), Driver, "");
+                    SubViewDownloadable.Value = mDxxSubUrl.IsContainer || mDxxSubUrl.IsTarget;
+                } else {
+                    mDxxSubUrl = null;
+                    SubViewDownloadable.Value = false;
+                }
+            });
+        }
+
+        #endregion
+
+
+        #region Commands
+
+        public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
+        public ReactiveCommand SetupDriverCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand ExtractTargetListCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand DownloadCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand DownloadSubCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand DownloadByTargetList { get; } = new ReactiveCommand();
+        public ReactiveCommand CancellAllCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand ClearStatusCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClearDownloadingListCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClearTargetListCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClearURLCommand { get; } = new ReactiveCommand();
+
+        private void InitializeCommands() {
+            NavigateCommand.Subscribe((v) => {
+                NavigateTo?.Invoke(v);
+            });
+            ClearStatusCommand.Subscribe(() => {
+                StatusList.Value.Clear();
+            });
+            SetupDriverCommand.Subscribe(() => {
+                DxxDriverManager.Instance.Setup(Driver);
+            });
+            // カレントURLからターゲットをダウンロード
+            DownloadCommand.Subscribe(() => {
+                DxxMainUrl.Download();
+            });
+            DownloadSubCommand.Subscribe(() => {
+                DxxSubUrl?.Download();
+            });
+
+            /**
+             * ターゲットリスト内のアイテムをすべてDL開始
+             */
+            DownloadByTargetList.Subscribe(() => {
+                DxxUrl.DownloadTargets(Driver, TargetList.Value);
+            });
+
+            // TargetListを抽出してリストに出力
+            ExtractTargetListCommand.Subscribe(async () => {
+                var targets = await DxxMainUrl.TryGetTargetContainers();
+                if (targets.Count > 0) {
+                    TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
+                    ShowTargetList.Value = true;
+                } else {
+                    TargetList.Value?.Clear();
+                }
+            });
+            CancellAllCommand.Subscribe(() => {
+                DxxDownloader.Instance.CancelAllAsync();
+            });
+            ClearDownloadingListCommand.Subscribe(() => {
+                DownloadingList.Value.Clear();
+            });
+            ClearTargetListCommand.Subscribe(() => {
+                TargetList.Value.Clear();
+            });
+            ClearURLCommand.Subscribe(() => {
+                MainUrl.Value = "";
+            });
+        }
+
+        #endregion
 
         private DxxUrl mDxxSubUrl = null;
-        private DxxUrl mDxxUrl = null;
+        private DxxUrl mDxxMainUrl = null;
         private IDxxDriver mDriver = DxxDriverManager.DEFAULT;
 
         public IDxxDriver Driver {
@@ -58,50 +161,26 @@ namespace DxxBrowser {
             }
         }
 
-        public DxxUrl DxxUrl => mDxxUrl;
+        public DxxUrl DxxMainUrl => mDxxMainUrl;
         public DxxUrl DxxSubUrl => mDxxSubUrl;
 
         public DxxMainViewModel() {
-            NavigateCommand.Subscribe((v) => {
-                NavigateTo?.Invoke(v);
-            });
-            MainUrl.Subscribe((v) => {
-                var driver = DxxDriverManager.Instance.FindDriver(v);
-                if(driver!=null) {
-                    mDxxUrl = new DxxUrl(new Uri(v), driver, "");
-                    Driver = driver;
-                } else {
-                    mDxxUrl = null;
-                    Driver = DxxDriverManager.DEFAULT;
-                }
-                UpdateContent();
-            });
-            SubUrl.Subscribe((v) => {
-                if (Driver.IsSupported(v)) { 
-                    mDxxSubUrl = new DxxUrl(new Uri(v), Driver, "");
-                    SubViewDownloadable.Value = mDxxSubUrl.IsContainer || mDxxSubUrl.IsTarget;
-                } else {
-                    mDxxSubUrl = null;
-                    SubViewDownloadable.Value = false;
-                }
-            });
+            InitializeCommands();
+            InitializeProperties();
         }
 
         private void UpdateContent() {
-            if(mDxxUrl==null) {
+            if(mDxxMainUrl==null) {
                 IsTarget.Value = false;
                 IsContainer.Value = false;
                 IsContainerList.Value = false;
             } else {
-                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxUrl.Uri);
-                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxUrl.Uri);
-                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxUrl.Uri);
+                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxMainUrl.Uri);
+                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxMainUrl.Uri);
+                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl.Uri);
             }
         }
         public void Dispose() {
-            NaviMode.Dispose();
-            MainUrl.Dispose();
-            NavigateCommand.Dispose();
             NavigateTo = null;
         }
     }
@@ -119,6 +198,8 @@ namespace DxxBrowser {
         private bool mLoadingMain = false;
 
         public DxxMainWindow() {
+            ViewModel = new DxxMainViewModel();
+            ViewModel.NavigateTo = NavigateTo;
             InitializeComponent();
         }
 
@@ -151,8 +232,6 @@ namespace DxxBrowser {
 
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel = new DxxMainViewModel();
-            ViewModel.NavigateTo += NavigateTo;
             mainBrowser.NavigationStarting += WebView_NavigationStarting;
             mainBrowser.NavigationCompleted += WebView_NavigationCompleted;
         }
@@ -196,49 +275,6 @@ namespace DxxBrowser {
             ViewModel.Loaded.Value = true;
             ViewModel.HasPrev.Value = mainBrowser.CanGoBack;
             ViewModel.HasNext.Value = mainBrowser.CanGoForward;
-        }
-
-        private void DownloadTarget(object sender, RoutedEventArgs e) {
-            ViewModel.DxxUrl.Download();
-        }
-
-        private async void DownloadAllTarget(object sender, RoutedEventArgs e) {
-            var targets = await ViewModel.DxxUrl.TryGetTargetContainers();
-            if (targets.Count > 0) {
-                ViewModel.DxxUrl.DownloadTargets(targets);
-            }
-        }
-
-        private async void ShowTargetList(object sender, RoutedEventArgs e) {
-            var targets = await ViewModel.DxxUrl.TryGetTargetContainers();
-            if (targets.Count > 0) {
-                ViewModel.TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
-                ViewModel.ShowTargetList.Value = true;
-            } else {
-                ViewModel.TargetList.Value?.Clear();
-                ViewModel.ShowTargetList.Value = false;
-            }
-        }
-
-        private void DownloadFromSubView(object sender, RoutedEventArgs e) {
-            ViewModel.DxxSubUrl?.Download();
-        }
-
-        private void ClearDownloadingList(object sender, RoutedEventArgs e) {
-            ViewModel.DownloadingList.Value.Clear();
-        }
-
-        private void StopDownloading(object sender, RoutedEventArgs e) {
-            DxxDownloader.Instance.CancelAllAsync();
-        }
-
-        private void CloseTargetList(object sender, RoutedEventArgs e) {
-            ViewModel.TargetList.Value?.Clear();
-            ViewModel.ShowTargetList.Value = false;
-        }
-
-        private void SetupDriver(object sender, RoutedEventArgs e) {
-            DxxDriverManager.Instance.Setup(ViewModel.Driver);
         }
     }
 }

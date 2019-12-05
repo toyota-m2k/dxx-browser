@@ -27,6 +27,22 @@ namespace DxxBrowser {
         }
     }
 
+    /**
+     * Bool --> GridLength
+     * Collapsed になったとき、幅/高さをゼロにして、アコーディオンビュー的に動作させる。
+     * true (Visible) -->  "*"
+     * false (Collapsed) --> "0"
+     */
+    public class BoolGridLengthConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            return ((bool)value) ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
+
     public class NegBoolConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
             return !(value is bool) || !(bool)value;
@@ -34,6 +50,16 @@ namespace DxxBrowser {
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
             return !(value is bool) || !(bool)value;
+        }
+    }
+
+    public class IntBoolConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            return ((int)value) != 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            return ((bool)value) ? 1 : 0;
         }
     }
 

@@ -59,8 +59,15 @@
     <Compile Include="driver\NopDriver.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="DxxUrl.cs" />
+    <Compile Include="FoldButton.xaml.cs">
+      <DependentUpon>FoldButton.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils.cs" />
     <Page Include="driver\dmm\DmmSettingsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxFoldingButton.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -86,6 +93,14 @@
       <DependentUpon>DxxMainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="DxxSvgPath.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="FoldButton.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DxxViewModelBase.cs" />

@@ -1,0 +1,57 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:DxxBrowser">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="DxxResource.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+    
+    <!--
+    DxxResource.xaml 内に記述していたが、PathをResourceDictionaryに定義すると、１つのリソース空間の中で、
+    １つしかPathインスタンスが作られないらしく、複数のビューにセットしても、最後にセットしたビューにのみ表示され、
+    他のビューには、パスが描画されない現象が発生。いろいろ書き方を変えてみたがうまくいかず、単発のボタン程度なら、
+    同じPathリソースを名前を変えて複数定義すれば、どうにか回避できたが、このボタンのように、on/offでイメージが
+    切り替わるようなやつで、且つ、中にPathリソースを含んでいるものは、結局ボタン毎に、すべてを再定義する必要が出てくる。
+    うまい方法が見つからなかったので、リソースファイルを分離して、このボタンを使う最小スコープ内（１つ上のコンテナ）で、
+    リソースをインポートするように記述することで、複数のボタンを作成できた。
+    -->
+    
+    <Path x:Key="PathUnFolded" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+    <Path x:Key="PathFolded" Data="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+    <!-- Folding Button -->
+    <Style x:Key="FoldingButtonStyle" TargetType="ToggleButton">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Background" Value="#00000000"/>
+        <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+        <Setter Property="Padding" Value="10"/>
+        <Setter Property="Template" Value="{StaticResource IconToggleButtonTemplate}"/>
+        <Setter Property="Content">
+            <Setter.Value>
+                <Path Data="{Binding Source={StaticResource PathUnFolded}, Path=Data}" Stretch="Uniform" Fill="{StaticResource NormalBtnFG}"/>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource MouseOverBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource PressedBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter Property="Foreground" Value="{StaticResource NormalBtnFG}"/>
+                <Setter Property="Content">
+                    <Setter.Value>
+                        <Border BorderThickness="0"  >
+                            <Path Data="{Binding Source={StaticResource PathFolded}, Path=Data}" Stretch="Uniform" Fill="{StaticResource NormalBtnFG}"/>
+                        </Border>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

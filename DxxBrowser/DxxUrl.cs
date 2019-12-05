@@ -56,25 +56,25 @@ namespace DxxBrowser {
             return r;
         }
 
-        public async void DownloadTargets(IList<DxxTargetInfo> targets) {
+        public static async void DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
             if(targets==null||targets.Count==0) {
                 return;
             }
             foreach(var t in targets) {
                 var uri = new Uri(t.Url);
-                if (Driver.LinkExtractor.IsTarget(uri)) {
-                    if (!Driver.StorageManager.IsDownloaded(uri) && !DxxDownloader.Instance.IsDownloading(t.Url)) {
-                        _ = Driver.StorageManager.Download(uri, t.Description);
+                if (driver.LinkExtractor.IsTarget(uri)) {
+                    if (!driver.StorageManager.IsDownloaded(uri) && !DxxDownloader.Instance.IsDownloading(t.Url)) {
+                        _ = driver.StorageManager.Download(uri, t.Description);
                     }
                 } else { 
-                    var du = new DxxUrl(t, Driver);
+                    var du = new DxxUrl(t, driver);
                     var cnt = await du.TryGetTargetContainers();
                     if(cnt!=null && cnt.Count>0) {
-                        DownloadTargets(cnt);
+                        DownloadTargets(driver, cnt);
                     }
                     var tgt = await du.TryGetTargets();
                     if(tgt!=null && tgt.Count>0) {
-                        DownloadTargets(tgt);
+                        DownloadTargets(driver, tgt);
                     }
                 }
             }
@@ -84,8 +84,8 @@ namespace DxxBrowser {
             if(Driver.LinkExtractor.IsTarget(Uri)) {
                 _ = Driver.StorageManager.Download(Uri, Description);
             }
-            DownloadTargets(await TryGetTargetContainers());
-            DownloadTargets(await TryGetTargets());
+            DownloadTargets(Driver, await TryGetTargetContainers());
+            DownloadTargets(Driver, await TryGetTargets());
         }
 
         public string Host => Uri.Host;
