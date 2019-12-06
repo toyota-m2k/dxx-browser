@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -19,7 +20,6 @@ namespace DxxBrowser {
 
     public class DxxMainViewModel : DxxViewModelBase, IDisposable {
         #region Properties
-        private CompositeDisposable Disposables = new CompositeDisposable();
 
         public ReactiveProperty<DxxNaviMode> NaviMode { get; } = new ReactiveProperty<DxxNaviMode>(DxxNaviMode.Self);
         public ReactiveProperty<string> MainUrl { get; } = new ReactiveProperty<string>();
@@ -180,7 +180,8 @@ namespace DxxBrowser {
                 IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl.Uri);
             }
         }
-        public void Dispose() {
+        public override void Dispose() {
+            base.Dispose();
             NavigateTo = null;
         }
     }
@@ -214,7 +215,6 @@ namespace DxxBrowser {
                 }
             }
         }
-
         private void OnHistoryPrev(object sender, RoutedEventArgs e) {
             mLoadingMain = true;
             mainBrowser.GoBack();

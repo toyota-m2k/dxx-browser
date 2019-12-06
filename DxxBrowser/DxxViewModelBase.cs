@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DxxBrowser
 {
-    public class DxxViewModelBase
+    public class DxxViewModelBase : IDisposable
     {
         #region INotifyPropertyChanged i/f
         //-----------------------------------------------------------------------------------------
@@ -34,5 +34,24 @@ namespace DxxBrowser
         }
 
         #endregion
+
+        /**
+         * Disposable な プロパティをすべてDisposeする。
+         * ここでDisposeしては困るプロパティには、[Disposal(false)] を指定すること。
+         */
+        public virtual void Dispose() {
+            var type = this.GetType();
+            var props = type.GetProperties();
+            foreach (var prop in props) {
+                var obj = prop.GetValue(this);
+                if (obj is IDisposable) {
+                    var attrs = prop.GetCustomAttributes(false).Where((v) => v is Disposal);
+                    if (((Disposal)attrs.FirstOrDefault())?.ToBeDisposed ?? true) {
+                        ((IDisposable)obj).Dispose();
+                    }
+                }
+            }
+        }
+
     }
 }

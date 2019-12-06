@@ -55,6 +55,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Disposal.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
     <Compile Include="driver\NopDriver.cs" />
     <Compile Include="DxxDriverManager.cs" />
