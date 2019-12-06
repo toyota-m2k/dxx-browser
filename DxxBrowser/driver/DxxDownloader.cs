@@ -59,7 +59,7 @@ namespace DxxBrowser.driver {
         HashSet<string> mDownloading = new HashSet<string>();
         Dictionary<string, CancellationTokenSource> mCancellationTokens = new Dictionary<string, CancellationTokenSource>();
         bool mTerminated = false;
-        public ObservableCollection<DxxDownloadingItem> DownloadingStateList = new ObservableCollection<DxxDownloadingItem>();
+        public ObservableCollection<DxxDownloadingItem> DownloadingStateList { get; } = new ObservableCollection<DxxDownloadingItem>();
 
 
         public Subject<bool> Busy = new Subject<bool>();
@@ -105,9 +105,11 @@ namespace DxxBrowser.driver {
             }
         }
 
-        public bool IsBusy() {
-            lock (mDownloading) {
-                return mDownloading.Count > 0;
+        public bool IsBusy {
+            get {
+                lock (mDownloading) {
+                    return mDownloading.Count > 0;
+                }
             }
         }
 
@@ -122,44 +124,46 @@ namespace DxxBrowser.driver {
          * @param forceShutdown trueで呼ぶと、通信中のタスクをすべてキャンセルする。
          *                      false なら、通信中のタスクが完了するまで待つ。
          */
-        public Task TerminateAsync(bool forceShutdown) {
+        public async Task TerminateAsync(bool forceShutdown) {
             var tc = new TaskCompletionSource<object>();
             Action completed = () => {
-                AllDownloadCompleted = null;
                 tc.TrySetResult(null);
             };
 
             lock (mDownloading) {
                 mTerminated = true;
                 if (mDownloading.Count == 0 || AllDownloadCompleted != null) {
-                    return Task.CompletedTask;
+                    return;
                 }
                 AllDownloadCompleted += completed;
                 if (forceShutdown) {
                     foreach (var cts in mCancellationTokens) {
+                        DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                         cts.Value.Cancel();
                     }
                 }
             }
-            return tc.Task;
+            await tc.Task;
+            AllDownloadCompleted -= completed;
         }
 
-        public Task CancelAllAsync() {
+        public async Task CancelAllAsync() {
             var tc = new TaskCompletionSource<object>();
             Action completed = () => {
-                AllDownloadCompleted = null;
                 tc.TrySetResult(null);
             };
             lock (mDownloading) {
                 if (mDownloading.Count == 0 || AllDownloadCompleted != null) {
-                    return Task.CompletedTask;
+                    return;
                 }
                 AllDownloadCompleted += completed;
                 foreach (var cts in mCancellationTokens) {
+                    DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                     cts.Value.Cancel();
                 }
             }
-            return tc.Task;
+            await tc.Task;
+            AllDownloadCompleted -= completed;
         }
 
         public void Cancel(string url) {
@@ -169,6 +173,7 @@ namespace DxxBrowser.driver {
             lock (mDownloading) {
                 if (mCancellationTokens.TryGetValue(url, out var cts)) {
                     if (null != cts) {
+                        DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(url)}");
                         cts.Cancel();
                     }
                 }
@@ -190,18 +195,21 @@ namespace DxxBrowser.driver {
                         using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None)) {
                             await stream.CopyToAsync(fileStream);
                             result = true;
+                            DxxLogger.Instance.Info($"Completed: {DxxUrl.GetFileName(uri)}");
                         }
                     }
                 }
             } catch (Exception) {
             } finally {
-                if(!result && File.Exists(filePath)) {
-                    File.Delete(filePath);
+                if(!result) {
+                    DxxLogger.Instance.Error($"Error: {DxxUrl.GetFileName(uri)}");
+                    if (File.Exists(filePath)) {
+                        File.Delete(filePath);
+                    }
                 }
                 UnlockUrl(uri, result);
             }
             return result;
         }
-        
     }
 }

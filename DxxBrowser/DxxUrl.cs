@@ -63,17 +63,24 @@ namespace DxxBrowser {
             foreach(var t in targets) {
                 var uri = new Uri(t.Url);
                 if (driver.LinkExtractor.IsTarget(uri)) {
-                    if (!driver.StorageManager.IsDownloaded(uri) && !DxxDownloader.Instance.IsDownloading(t.Url)) {
+                    if(driver.StorageManager.IsDownloaded(uri)) {
+                        DxxLogger.Instance.Info($"Skip (already downloaded): {GetFileName(uri)}");
+                    } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
+                        DxxLogger.Instance.Info($"Skip (already downloading): {GetFileName(uri)}");
+                    } else {
+                        DxxLogger.Instance.Info($"Start: {GetFileName(uri)}");
                         _ = driver.StorageManager.Download(uri, t.Description);
                     }
                 } else { 
                     var du = new DxxUrl(t, driver);
                     var cnt = await du.TryGetTargetContainers();
                     if(cnt!=null && cnt.Count>0) {
+                        DxxLogger.Instance.Info($"{cnt.Count} containers in {du.FileName}");
                         DownloadTargets(driver, cnt);
                     }
                     var tgt = await du.TryGetTargets();
                     if(tgt!=null && tgt.Count>0) {
+                        DxxLogger.Instance.Info($"{tgt.Count} targets in {du.FileName}");
                         DownloadTargets(driver, tgt);
                     }
                 }

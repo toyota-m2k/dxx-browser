@@ -10,5 +10,9 @@ namespace DxxBrowser
         public static T GetValue<T>(this WeakReference<T> w) where T : class {
             return w.TryGetTarget(out T o) ? o : null;
         }
+
+        public static bool IsNullOrEmpty<T>(IEnumerable<T> v) {
+            return !(v?.Any() ?? false);
+        }
     }
 }

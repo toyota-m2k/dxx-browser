@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         Loaded="OnLoaded"
         Unloaded="OnUnloaded"
+        Closing="OnClosing"
         Title="Dxx Browser" Height="450" Width="800">
     <Window.Resources>
         <ResourceDictionary Source="DxxResource.xaml"/>
@@ -221,7 +222,9 @@
                           Visibility="{Binding ShowStatusList.Value, Converter={StaticResource BoolVisibilityConverter}}">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Status" Width="300" DisplayMemberBinding="{Binding}" />
+                            <GridViewColumn Header="Level" Width="80" DisplayMemberBinding="{Binding Type}"/>
+                            <GridViewColumn Header="Message" Width="250" DisplayMemberBinding="{Binding Message}"/>
+                            <GridViewColumn Header="Date" Width="100" DisplayMemberBinding="{Binding Date, Converter={StaticResource DateStringConverter}}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -243,7 +246,7 @@
                 </Grid.Resources>
 
                 <TextBox Grid.Row="0" Grid.Column="0" Text="{Binding SubUrl.Value}" FontSize="14" VerticalContentAlignment="Center" IsReadOnly="True"/>
-                <Button Grid.Row="0" Grid.Column="1" Command="{Binding DownloadSubCommand}" IsEnabled="{Binding SubViewDownloadable}" Content="{StaticResource PathDownload}" Style="{StaticResource PushButtonStyle}">
+                <Button Grid.Row="0" Grid.Column="1" Command="{Binding DownloadSubCommand}" IsEnabled="{Binding SubViewDownloadable.Value}" Content="{StaticResource PathDownload}" Style="{StaticResource PushButtonStyle}">
                     <ToolTipService.ToolTip>
                         <ToolTip Content="ダウンロードする"/>
                     </ToolTipService.ToolTip>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,10 +25,22 @@ namespace DxxBrowser.driver {
     }
 
     public class DxxLogger {
-        public 
+        public ObservableCollection<DxxLogInfo> LogList { get; } = new ObservableCollection<DxxLogInfo>();
+
+        public static DxxLogger Instance { get; } = new DxxLogger();
 
         private DxxLogger() {
 
+        }
+
+        public void Error(string msg) {
+            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.ERROR, msg));
+        }
+        public void Info(string msg) {
+            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.INFO, msg));
+        }
+        public void Warn(string msg) {
+            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.WARN, msg));
         }
     }
 }

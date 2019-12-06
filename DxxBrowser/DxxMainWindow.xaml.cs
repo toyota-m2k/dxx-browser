@@ -45,7 +45,7 @@ namespace DxxBrowser {
 
         public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; } = new ReactiveProperty<ObservableCollection<DxxTargetInfo>>(new ObservableCollection<DxxTargetInfo>());
         public ReactiveProperty<ObservableCollection<DxxDownloadingItem>> DownloadingList { get; } = new ReactiveProperty<ObservableCollection<DxxDownloadingItem>>(DxxDownloader.Instance.DownloadingStateList);
-        public ReactiveProperty<ObservableCollection<string>> StatusList { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
+        public ReactiveProperty<ObservableCollection<DxxLogInfo>> StatusList { get; } = new ReactiveProperty<ObservableCollection<DxxLogInfo>>(DxxLogger.Instance.LogList);
 
         public ReactiveProperty<bool> ShowTargetList { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> ShowDownloadingList { get; } = new ReactiveProperty<bool>(true);
@@ -275,6 +275,28 @@ namespace DxxBrowser {
             ViewModel.Loaded.Value = true;
             ViewModel.HasPrev.Value = mainBrowser.CanGoBack;
             ViewModel.HasNext.Value = mainBrowser.CanGoForward;
+        }
+
+        private bool WillShutdown = false;
+        private void OnClosing(object sender, CancelEventArgs e) {
+            if(WillShutdown) {
+                return;
+            }
+
+            e.Cancel = true;
+            if (DxxDownloader.Instance.IsBusy||DxxActivityWatcher.Instance.IsBusy) {
+                var r = MessageBox.Show("終了しますか？", "DXX Browser", MessageBoxButton.YesNo);
+                if(r== MessageBoxResult.Cancel) {
+                    return;
+                }
+            }
+            CloseAnyway();
+        }
+        private async void CloseAnyway() {
+            WillShutdown = true;
+            await DxxActivityWatcher.Instance.TerminateAsync();
+            await DxxDownloader.Instance.TerminateAsync(true);
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }
