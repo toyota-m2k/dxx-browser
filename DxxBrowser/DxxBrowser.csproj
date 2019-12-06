@@ -59,6 +59,7 @@
     <Compile Include="driver\DxxDownloader.cs" />
     <Compile Include="driver\NopDriver.cs" />
     <Compile Include="DxxDriverManager.cs" />
+    <Compile Include="driver\DxxLogger.cs" />
     <Compile Include="DxxUrl.cs" />
     <Compile Include="FoldButton.xaml.cs">
       <DependentUpon>FoldButton.xaml</DependentUpon>
