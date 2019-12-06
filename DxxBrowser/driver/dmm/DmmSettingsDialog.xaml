@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:DxxBrowser.driver.dmm"
         mc:Ignorable="d"
         Background="#FF0F0151"
+        Unloaded="OnUnloaded"
         Title="DMM Settings" Height="150" Width="400">
     <Window.Resources>
         <ResourceDictionary Source="../../DxxResource.xaml"/>

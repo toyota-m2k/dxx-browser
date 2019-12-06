@@ -62,5 +62,9 @@ namespace DxxBrowser.driver.dmm
             this.DialogResult = false;
             this.Close();
         }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            ViewModel.Dispose();
+        }
     }
 }
