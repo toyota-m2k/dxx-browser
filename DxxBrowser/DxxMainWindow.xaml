@@ -133,12 +133,12 @@
                         <StackPanel.Resources>
                             <Path x:Key="PathTrash" Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ButtonBase}}"/>
                         </StackPanel.Resources>
-                        <Button Command="{Binding CancellAllCommand}" Content="{StaticResource PathCancel}" Style="{StaticResource PushButtonStyle}">
+                        <Button Command="{Binding CancellAllCommand}" Content="{StaticResource PathCancel}" Style="{StaticResource PushButtonStyle}" IsEnabled="{Binding IsDownloading.Value}">
                             <ToolTipService.ToolTip>
                                 <ToolTip Content="すべてのダウンロードをキャンセル"/>
                             </ToolTipService.ToolTip>
                         </Button>
-                        <Button Command="{Binding ClearDownloadingListCommand}" Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}">
+                        <Button Command="{Binding ClearDownloadingListCommand}" Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}" IsEnabled="{Binding DownloadingList.Value.Count, Converter={StaticResource IntBoolConverter}}">
                             <ToolTipService.ToolTip>
                                 <ToolTip Content="リストをクリア"/>
                             </ToolTipService.ToolTip>
@@ -211,7 +211,7 @@
                         <StackPanel.Resources>
                             <ResourceDictionary Source="DxxSvgPath.xaml"/>
                         </StackPanel.Resources>
-                        <Button Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}" Command="{Binding ClearStatusCommand}">
+                        <Button Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}" Command="{Binding ClearStatusCommand}" IsEnabled="{Binding StatusList.Value.Count, Converter={StaticResource IntBoolConverter}}">
                             <ToolTipService.ToolTip>
                                 <ToolTip Content="ログをクリア"/>
                             </ToolTipService.ToolTip>
@@ -224,7 +224,7 @@
                         <GridView>
                             <GridViewColumn Header="Level" Width="80" DisplayMemberBinding="{Binding Type}"/>
                             <GridViewColumn Header="Message" Width="250" DisplayMemberBinding="{Binding Message}"/>
-                            <GridViewColumn Header="Date" Width="100" DisplayMemberBinding="{Binding Date, Converter={StaticResource DateStringConverter}}"/>
+                            <GridViewColumn Header="Time" Width="100" DisplayMemberBinding="{Binding Time, Converter={StaticResource DateStringConverter}}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>

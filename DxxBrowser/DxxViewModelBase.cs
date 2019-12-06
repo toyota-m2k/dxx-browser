@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace DxxBrowser
 {
-    public class DxxViewModelBase : IDisposable
-    {
+    public class DxxViewModelBase : INotifyPropertyChanged, IDisposable {
         #region INotifyPropertyChanged i/f
         //-----------------------------------------------------------------------------------------
 

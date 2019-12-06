@@ -5,7 +5,9 @@ using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
@@ -53,7 +55,7 @@ namespace DxxBrowser {
 
         private void InitializeProperties() {
 
-        MainUrl.Subscribe((v) => {
+            MainUrl.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
                     mDxxMainUrl = new DxxUrl(new Uri(v), driver, "");
@@ -73,6 +75,10 @@ namespace DxxBrowser {
                     SubViewDownloadable.Value = false;
                 }
             });
+            IsDownloading.Subscribe((v) => {
+                Debug.WriteLine($"IsDownloading={v}");
+            });
+
         }
 
         #endregion
@@ -107,10 +113,10 @@ namespace DxxBrowser {
             });
             // カレントURLからターゲットをダウンロード
             DownloadCommand.Subscribe(() => {
-                DxxMainUrl.Download();
+                _ = DxxMainUrl.Download();
             });
             DownloadSubCommand.Subscribe(() => {
-                DxxSubUrl?.Download();
+                _ = DxxSubUrl?.Download();
             });
 
             /**
@@ -131,7 +137,7 @@ namespace DxxBrowser {
                 }
             });
             CancellAllCommand.Subscribe(() => {
-                DxxDownloader.Instance.CancelAllAsync();
+                _ = DxxDownloader.Instance.CancelAllAsync();
             });
             ClearDownloadingListCommand.Subscribe(() => {
                 DownloadingList.Value.Clear();
@@ -234,12 +240,27 @@ namespace DxxBrowser {
         private void OnLoaded(object sender, RoutedEventArgs e) {
             mainBrowser.NavigationStarting += WebView_NavigationStarting;
             mainBrowser.NavigationCompleted += WebView_NavigationCompleted;
+
+            ViewModel.TargetList.Value.CollectionChanged += OnListChanged<DxxTargetInfo>;
+            ViewModel.StatusList.Value.CollectionChanged += OnListChanged< DxxLogInfo>;
+
+        }
+
+        private void OnListChanged<T>(object sender, NotifyCollectionChangedEventArgs e) {
+            if (e.Action == NotifyCollectionChangedAction.Add) {
+                var list = sender as ObservableCollection<T>;
+                if (list.Count > 0) {
+                    statusList.ScrollIntoView(list.Last());
+                }
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             ViewModel.Dispose();
             mainBrowser.NavigationStarting -= WebView_NavigationStarting;
             mainBrowser.NavigationCompleted -= WebView_NavigationCompleted;
+            ViewModel.TargetList.Value.CollectionChanged -= OnListChanged<DxxTargetInfo>;
+            ViewModel.StatusList.Value.CollectionChanged -= OnListChanged<DxxLogInfo>;
         }
 
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
@@ -250,7 +271,7 @@ namespace DxxBrowser {
                             var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
                             if(driver!=null) {
                                 var du = new DxxUrl(e.Uri, driver, "");
-                                du.Download();
+                                _ = du.Download();
                             }
                             e.Cancel = true;
                             return;

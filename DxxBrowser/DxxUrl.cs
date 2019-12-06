@@ -56,7 +56,7 @@ namespace DxxBrowser {
             return r;
         }
 
-        public static async void DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
+        public static async Task DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
             if(targets==null||targets.Count==0) {
                 return;
             }
@@ -69,30 +69,30 @@ namespace DxxBrowser {
                         DxxLogger.Instance.Info($"Skip (already downloading): {GetFileName(uri)}");
                     } else {
                         DxxLogger.Instance.Info($"Start: {GetFileName(uri)}");
-                        _ = driver.StorageManager.Download(uri, t.Description);
+                        await driver.StorageManager.Download(uri, t.Description);
                     }
                 } else { 
                     var du = new DxxUrl(t, driver);
                     var cnt = await du.TryGetTargetContainers();
                     if(cnt!=null && cnt.Count>0) {
                         DxxLogger.Instance.Info($"{cnt.Count} containers in {du.FileName}");
-                        DownloadTargets(driver, cnt);
+                        await DownloadTargets(driver, cnt);
                     }
                     var tgt = await du.TryGetTargets();
                     if(tgt!=null && tgt.Count>0) {
                         DxxLogger.Instance.Info($"{tgt.Count} targets in {du.FileName}");
-                        DownloadTargets(driver, tgt);
+                        await DownloadTargets(driver, tgt);
                     }
                 }
             }
         }
 
-        public async void Download() {
+        public async Task Download() {
             if(Driver.LinkExtractor.IsTarget(Uri)) {
                 _ = Driver.StorageManager.Download(Uri, Description);
             }
-            DownloadTargets(Driver, await TryGetTargetContainers());
-            DownloadTargets(Driver, await TryGetTargets());
+            await DownloadTargets(Driver, await TryGetTargetContainers());
+            await DownloadTargets(Driver, await TryGetTargets());
         }
 
         public string Host => Uri.Host;

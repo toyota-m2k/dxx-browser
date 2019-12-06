@@ -69,6 +69,7 @@ namespace DxxBrowser.driver {
         public static DxxDownloader Instance { get; } = new DxxDownloader();
 
         private DxxDownloader() {
+            Busy.OnNext(false);
         }
 
         private CancellationTokenSource LockUrl(Uri uri, string description) {
@@ -94,10 +95,10 @@ namespace DxxBrowser.driver {
                 var url = uri.ToString();
                 mDownloading.Remove(url);
                 mCancellationTokens.Remove(url);
-                var t = DownloadingStateList.Where((v) => v.Url == url).Select((v) => {
-                    v.Status = completed ? DxxDownloadingItem.DownloadStatus.Completed : DxxDownloadingItem.DownloadStatus.Error;
-                    return v;
-                });
+                var ts = DownloadingStateList.Where((v) => v.Url == url);
+                foreach(var t in ts) {
+                    t.Status = completed ? DxxDownloadingItem.DownloadStatus.Completed : DxxDownloadingItem.DownloadStatus.Error;
+                }
                 if (mDownloading.Count==0) {
                     AllDownloadCompleted?.Invoke();
                     Busy.OnNext(false);

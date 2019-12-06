@@ -113,6 +113,7 @@ namespace DxxBrowser.driver.dmm
                 //<span class="txt">美尻にぴったり密着タイト...</span> 
                 //<!--/tmb--></a></p>
                 return await DxxActivityWatcher.Instance.Execute(async () => {
+                    DxxLogger.Instance.Info($"Analyzing: {DxxUrl.GetFileName(uri)}");
                     var web = new HtmlWeb();
                     var html = await web.LoadFromWebAsync(uri.ToString());
                     if (null == html) {
@@ -152,6 +153,7 @@ namespace DxxBrowser.driver.dmm
                     return null;
                 }
                 return await DxxActivityWatcher.Instance.Execute(async () => {
+                    DxxLogger.Instance.Info($"Analyzing: {DxxUrl.GetFileName(uri)}");
                     var web = new HtmlWeb();
                     var outer = await web.LoadFromWebAsync(uri.ToString());
                     if (null == outer) {
