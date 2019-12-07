@@ -23,7 +23,6 @@ namespace DxxBrowser {
 
     public class DxxMainViewModel : DxxViewModelBase, IDisposable {
         #region Properties
-
         public ReactiveProperty<DxxNaviMode> NaviMode { get; } = new ReactiveProperty<DxxNaviMode>(DxxNaviMode.Self);
         public ReactiveProperty<string> MainUrl { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> SubUrl { get; } = new ReactiveProperty<string>();
@@ -87,7 +86,6 @@ namespace DxxBrowser {
         }
 
         #endregion
-
 
         #region Commands
 
@@ -159,6 +157,33 @@ namespace DxxBrowser {
 
         #endregion
 
+        #region Initialize/Terminate
+
+        public DxxMainViewModel(DxxMainWindow owner) {
+            mView = new WeakReference<DxxMainWindow>(owner);
+            InitializeCommands();
+            InitializeProperties();
+        }
+        private void UpdateContent() {
+            if (mDxxMainUrl == null) {
+                IsTarget.Value = false;
+                IsContainer.Value = false;
+                IsContainerList.Value = false;
+            } else {
+                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxMainUrl.Uri);
+                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxMainUrl.Uri);
+                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl.Uri);
+            }
+        }
+
+        public override void Dispose() {
+            base.Dispose();
+            NavigateTo = null;
+        }
+        #endregion
+
+        #region Other Props/Fields
+
         private DxxUrl mDxxSubUrl = null;
         private DxxUrl mDxxMainUrl = null;
         private IDxxDriver mDriver = DxxDriverManager.DEFAULT;
@@ -180,28 +205,7 @@ namespace DxxBrowser {
         private WeakReference<DxxMainWindow> mView;
         private DxxMainWindow View => mView?.GetValue();
 
-
-        public DxxMainViewModel(DxxMainWindow owner) {
-            mView = new WeakReference<DxxMainWindow>(owner);
-            InitializeCommands();
-            InitializeProperties();
-        }
-
-        private void UpdateContent() {
-            if(mDxxMainUrl==null) {
-                IsTarget.Value = false;
-                IsContainer.Value = false;
-                IsContainerList.Value = false;
-            } else {
-                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxMainUrl.Uri);
-                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxMainUrl.Uri);
-                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl.Uri);
-            }
-        }
-        public override void Dispose() {
-            base.Dispose();
-            NavigateTo = null;
-        }
+        #endregion
     }
 
 
@@ -222,6 +226,31 @@ namespace DxxBrowser {
             ViewModel = new DxxMainViewModel(this);
             ViewModel.NavigateTo = NavigateTo;
             InitializeComponent();
+        }
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            mainBrowser.NavigationStarting += WebView_NavigationStarting;
+            mainBrowser.NavigationCompleted += WebView_NavigationCompleted;
+
+            ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
+            ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
+
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            ViewModel.Dispose();
+            mainBrowser.NavigationStarting -= WebView_NavigationStarting;
+            mainBrowser.NavigationCompleted -= WebView_NavigationCompleted;
+            ViewModel.DownloadingList.Value.CollectionChanged -= OnListChanged<DxxDownloadingItem>;
+            ViewModel.StatusList.Value.CollectionChanged -= OnListChanged<DxxLogInfo>;
+        }
+
+        private void OnListChanged<T>(object sender, NotifyCollectionChangedEventArgs e) {
+            if (e.Action == NotifyCollectionChangedAction.Add) {
+                var list = sender as ObservableCollection<T>;
+                if (list.Count > 0) {
+                    statusList.ScrollIntoView(list.Last());
+                }
+            }
         }
 
         private void NavigateTo(string url) {
@@ -251,31 +280,6 @@ namespace DxxBrowser {
         }
 
 
-        private void OnLoaded(object sender, RoutedEventArgs e) {
-            mainBrowser.NavigationStarting += WebView_NavigationStarting;
-            mainBrowser.NavigationCompleted += WebView_NavigationCompleted;
-
-            ViewModel.TargetList.Value.CollectionChanged += OnListChanged<DxxTargetInfo>;
-            ViewModel.StatusList.Value.CollectionChanged += OnListChanged< DxxLogInfo>;
-
-        }
-
-        private void OnListChanged<T>(object sender, NotifyCollectionChangedEventArgs e) {
-            if (e.Action == NotifyCollectionChangedAction.Add) {
-                var list = sender as ObservableCollection<T>;
-                if (list.Count > 0) {
-                    statusList.ScrollIntoView(list.Last());
-                }
-            }
-        }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e) {
-            ViewModel.Dispose();
-            mainBrowser.NavigationStarting -= WebView_NavigationStarting;
-            mainBrowser.NavigationCompleted -= WebView_NavigationCompleted;
-            ViewModel.TargetList.Value.CollectionChanged -= OnListChanged<DxxTargetInfo>;
-            ViewModel.StatusList.Value.CollectionChanged -= OnListChanged<DxxLogInfo>;
-        }
 
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             if (!mLoadingMain) {
@@ -285,10 +289,13 @@ namespace DxxBrowser {
                             var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
                             if(driver!=null) {
                                 var du = new DxxUrl(e.Uri, driver, "");
-                                _ = du.Download();
+                                if (du.IsContainer || du.IsTarget) {
+                                    _ = du.Download();
+                                    e.Cancel = true;
+                                    return;
+                                }
                             }
-                            e.Cancel = true;
-                            return;
+                            break;
                             
                         case DxxNaviMode.SubView:
                             e.Cancel = true;
