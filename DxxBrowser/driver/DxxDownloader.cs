@@ -9,16 +9,19 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
     public class DxxDownloadingItem : DxxViewModelBase {
-        const string STATUS_BEGIN = "Downloading ...";
-        const string STATUS_ERROR = "NG: error.";
-        const string STATUS_COMPLETED = "OK: downloaded.";
+        const string STATUS_BEGIN = "...";
+        const string STATUS_ERROR = "Error.";
+        const string STATUS_CANCELLED = "Cancelled.";
+        const string STATUS_COMPLETED = "OK.";
 
         public enum DownloadStatus {
             Downloading,
             Completed,
+            Cancelled,
             Error,
         }
 
@@ -27,6 +30,12 @@ namespace DxxBrowser.driver {
         public string Url { get; }
         public string Description { get; }
         public string Name => DxxUrl.GetFileName(Url);
+
+        private int mPercent = -1;
+        public int Percent {
+            get => mPercent;
+            set => setProp(callerName(), ref mPercent, value, "PercentString");
+        }
 
         public DownloadStatus Status {
             get => mStatus;
@@ -43,7 +52,18 @@ namespace DxxBrowser.driver {
                         return STATUS_COMPLETED;
                     case DownloadStatus.Error:
                         return STATUS_ERROR;
+                    case DownloadStatus.Cancelled:
+                        return STATUS_CANCELLED;
                 }
+            }
+        }
+
+        public string PercentString {
+            get {
+                if(Percent<0) {
+                    return "-";
+                }
+                return $"{Math.Min(Percent,100)}%";
             }
         }
 
@@ -68,56 +88,88 @@ namespace DxxBrowser.driver {
 
         public static DxxDownloader Instance { get; } = new DxxDownloader();
 
+        private WeakReference<DispatcherObject> mDispatherSource;
+        private Dispatcher Dispatcher => mDispatherSource?.GetValue()?.Dispatcher;
+
+        public void Initialize(DispatcherObject dispatcherSource) {
+            mDispatherSource = new WeakReference<DispatcherObject>(dispatcherSource);
+        }
+
         private DxxDownloader() {
             Busy.OnNext(false);
         }
 
         private CancellationTokenSource LockUrl(Uri uri, string description) {
-            lock (mDownloading) {
-                if(mTerminated) {
+            return Dispatcher.Invoke(() => {
+                if (mTerminated) {
                     return null;
                 }
                 var url = uri.ToString();
                 if (mDownloading.Contains(url)) {
                     return null;
                 }
-                DownloadingStateList.Add(new DxxDownloadingItem(url, description));
+
+                var ts = DownloadingStateList.Where((v) => v.Url == url);
+                if(Utils.IsNullOrEmpty(ts)) {
+                    DownloadingStateList.Add(new DxxDownloadingItem(url, description));
+                } else {
+                    foreach (var t in ts) {
+                        t.Status = DxxDownloadingItem.DownloadStatus.Downloading;
+                    }
+                }
+
                 mDownloading.Add(url);
                 var cts = new CancellationTokenSource();
                 mCancellationTokens.Add(url, cts);
                 Busy.OnNext(true);
                 return cts;
-            }
+            });
         }
 
-        private void UnlockUrl(Uri uri, bool completed) {
-            lock (mDownloading) {
+        private void UnlockUrl(Uri uri, DxxDownloadingItem.DownloadStatus result) {
+            Dispatcher.Invoke(() => {
                 var url = uri.ToString();
                 mDownloading.Remove(url);
                 mCancellationTokens.Remove(url);
                 var ts = DownloadingStateList.Where((v) => v.Url == url);
-                foreach(var t in ts) {
-                    t.Status = completed ? DxxDownloadingItem.DownloadStatus.Completed : DxxDownloadingItem.DownloadStatus.Error;
+                foreach (var t in ts) {
+                    t.Status = result;
                 }
-                if (mDownloading.Count==0) {
+                if (mDownloading.Count == 0) {
                     AllDownloadCompleted?.Invoke();
                     Busy.OnNext(false);
                 }
+            });
+        }
+
+        private void UpdateDownloadingProgress(string url, long received, long total) {
+            int percent = -1;
+            if(total>0) {
+                percent = (int)Math.Round(100*(double)received / (double)total);
             }
+
+            Dispatcher.Invoke(() => {
+                var ts = DownloadingStateList.Where((v) => v.Url == url);
+                if (!Utils.IsNullOrEmpty(ts)) {
+                    foreach (var t in ts) {
+                        t.Percent = percent;
+                    }
+                }
+            });
         }
 
         public bool IsBusy {
             get {
-                lock (mDownloading) {
+                return Dispatcher.Invoke(() => {
                     return mDownloading.Count > 0;
-                }
+                });
             }
         }
 
         public bool IsDownloading(string url) {
-            lock (mDownloading) {
+            return Dispatcher.Invoke(() => {
                 return mDownloading.Contains(url);
-            }
+            });
         }
 
         /**
@@ -131,10 +183,10 @@ namespace DxxBrowser.driver {
                 tc.TrySetResult(null);
             };
 
-            lock (mDownloading) {
+            if(!Dispatcher.Invoke<bool>(() => {
                 mTerminated = true;
                 if (mDownloading.Count == 0 || AllDownloadCompleted != null) {
-                    return;
+                    return false;
                 }
                 AllDownloadCompleted += completed;
                 if (forceShutdown) {
@@ -143,7 +195,12 @@ namespace DxxBrowser.driver {
                         cts.Value.Cancel();
                     }
                 }
+                return true;
+            })) {
+                // すべて終了済み
+                return;
             }
+
             await tc.Task;
             AllDownloadCompleted -= completed;
         }
@@ -153,7 +210,7 @@ namespace DxxBrowser.driver {
             Action completed = () => {
                 tc.TrySetResult(null);
             };
-            lock (mDownloading) {
+            Dispatcher.Invoke(() => {
                 if (mDownloading.Count == 0 || AllDownloadCompleted != null) {
                     return;
                 }
@@ -162,7 +219,7 @@ namespace DxxBrowser.driver {
                     DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                     cts.Value.Cancel();
                 }
-            }
+            });
             await tc.Task;
             AllDownloadCompleted -= completed;
         }
@@ -171,46 +228,77 @@ namespace DxxBrowser.driver {
             if(string.IsNullOrEmpty(url)) {
                 return;
             }
-            lock (mDownloading) {
+            Dispatcher.Invoke(() => {
                 if (mCancellationTokens.TryGetValue(url, out var cts)) {
                     if (null != cts) {
                         DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(url)}");
                         cts.Cancel();
                     }
                 }
-            }
+            });
         }
 
-        public async Task<bool> DownloadAsync(Uri uri, string filePath, string description) {
+        const int BUFF_SIZE = 1024;
+
+        public void Download(Uri uri, string filePath, string description, Action<bool> onCompleted=null) {
             var cts = LockUrl(uri, description);
             if(null==cts) {
-                return false;
+                onCompleted?.Invoke(false);
+                return;
             }
-            bool result = false;
-            try {
-                using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
-                using (var response = await mHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token)) {
-                    if (response.StatusCode == HttpStatusCode.OK) {
-                        using (var content = response.Content)
-                        using (var stream = await content.ReadAsStreamAsync())
-                        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None)) {
-                            await stream.CopyToAsync(fileStream);
-                            result = true;
-                            DxxLogger.Instance.Info($"Completed: {DxxUrl.GetFileName(uri)}");
+            Task.Run(async () => {
+                DxxDownloadingItem.DownloadStatus result = DxxDownloadingItem.DownloadStatus.Error;
+                try {
+                    var ct = cts.Token;
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+                    using (var response = await mHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)) {
+                        if (response.StatusCode == HttpStatusCode.OK) {
+                            using (var content = response.Content)
+                            using (var stream = await content.ReadAsStreamAsync())
+                            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None)) {
+                                long total = content.Headers.ContentLength ?? 0;
+                                long recv = 0;
+                                var buff = new byte[1024];
+                                while(true) {
+                                    try {
+                                        ct.ThrowIfCancellationRequested();
+                                        int len = await stream.ReadAsync(buff, 0, 1024, ct);
+                                        if(len==0) {
+                                            await fileStream.FlushAsync();
+                                            break;
+                                        }
+                                        recv += len;
+                                        if (total > 0) {
+                                            UpdateDownloadingProgress(uri.ToString(), recv, total);
+                                        }
+                                        await fileStream.WriteAsync(buff, 0, len);
+                                        ct.ThrowIfCancellationRequested();
+                                    } catch (Exception e) {
+                                        if(e is OperationCanceledException) {
+                                            DxxLogger.Instance.Warn($"Cancelled: {DxxUrl.GetFileName(uri)}");
+                                        }
+                                        result = DxxDownloadingItem.DownloadStatus.Cancelled;
+                                        throw e;
+                                    }
+                                }
+                                //await stream.CopyToAsync(fileStream);
+                                result = DxxDownloadingItem.DownloadStatus.Completed;
+                                DxxLogger.Instance.Info($"Completed: {DxxUrl.GetFileName(uri)}");
+                            }
                         }
                     }
-                }
-            } catch (Exception) {
-            } finally {
-                if(!result) {
-                    DxxLogger.Instance.Error($"Error: {DxxUrl.GetFileName(uri)}");
-                    if (File.Exists(filePath)) {
-                        File.Delete(filePath);
+                } catch (Exception) {
+                } finally {
+                    if (result!=DxxDownloadingItem.DownloadStatus.Completed) {
+                        DxxLogger.Instance.Error($"{result}: {DxxUrl.GetFileName(uri)}");
+                        if (File.Exists(filePath)) {
+                            File.Delete(filePath);
+                        }
                     }
+                    UnlockUrl(uri, result);
                 }
-                UnlockUrl(uri, result);
-            }
-            return result;
+                onCompleted?.Invoke(result==DxxDownloadingItem.DownloadStatus.Completed);
+            });
         }
     }
 }

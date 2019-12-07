@@ -137,6 +137,7 @@ namespace DxxBrowser {
                 }
             });
             CancellAllCommand.Subscribe(() => {
+                DxxActivityWatcher.Instance.CancelAll();
                 _ = DxxDownloader.Instance.CancelAllAsync();
             });
             ClearDownloadingListCommand.Subscribe(() => {
@@ -205,6 +206,8 @@ namespace DxxBrowser {
         private bool mLoadingMain = false;
 
         public DxxMainWindow() {
+            DxxDownloader.Instance.Initialize(this);
+            DxxLogger.Instance.Initialize(this);
             ViewModel = new DxxMainViewModel();
             ViewModel.NavigateTo = NavigateTo;
             InitializeComponent();
@@ -315,9 +318,10 @@ namespace DxxBrowser {
         }
         private async void CloseAnyway() {
             WillShutdown = true;
-            await DxxActivityWatcher.Instance.TerminateAsync();
+            await DxxActivityWatcher.Instance.TerminateAsync(true);
             await DxxDownloader.Instance.TerminateAsync(true);
-            System.Windows.Application.Current.Shutdown();
+            //System.Windows.Application.Current.Shutdown();
+            Environment.Exit(0);
         }
     }
 }

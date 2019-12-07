@@ -56,43 +56,56 @@ namespace DxxBrowser {
             return r;
         }
 
-        public static async Task DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
+        public static async void DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
             if(targets==null||targets.Count==0) {
                 return;
             }
-            foreach(var t in targets) {
-                var uri = new Uri(t.Url);
-                if (driver.LinkExtractor.IsTarget(uri)) {
-                    if(driver.StorageManager.IsDownloaded(uri)) {
-                        DxxLogger.Instance.Info($"Skip (already downloaded): {GetFileName(uri)}");
-                    } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
-                        DxxLogger.Instance.Info($"Skip (already downloading): {GetFileName(uri)}");
+            await DxxActivityWatcher.Instance.Execute<object>(async (cancellationToken) => {
+                try {
+                    foreach (var t in targets) {
+                        var uri = new Uri(t.Url);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (driver.LinkExtractor.IsTarget(uri)) {
+                            if (driver.StorageManager.IsDownloaded(uri)) {
+                                DxxLogger.Instance.Info($"Skip (already downloaded): {GetFileName(uri)}");
+                            } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
+                                DxxLogger.Instance.Info($"Skip (already downloading): {GetFileName(uri)}");
+                            } else {
+                                DxxLogger.Instance.Info($"Start: {GetFileName(uri)}");
+                                driver.StorageManager.Download(uri, t.Description);
+                            }
+                        } else {
+                            var du = new DxxUrl(t, driver);
+                            var cnt = await du.TryGetTargetContainers();
+                            if (cnt != null && cnt.Count > 0) {
+                                DxxLogger.Instance.Info($"{cnt.Count} containers in {du.FileName}");
+                                DownloadTargets(driver, cnt);
+                            }
+                            var tgt = await du.TryGetTargets();
+                            if (tgt != null && tgt.Count > 0) {
+                                DxxLogger.Instance.Info($"{tgt.Count} targets in {du.FileName}");
+                                DownloadTargets(driver, tgt);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    if (e is OperationCanceledException) {
+                        DxxLogger.Instance.Warn("Download Cancelled.");
                     } else {
-                        DxxLogger.Instance.Info($"Start: {GetFileName(uri)}");
-                        await driver.StorageManager.Download(uri, t.Description);
-                    }
-                } else { 
-                    var du = new DxxUrl(t, driver);
-                    var cnt = await du.TryGetTargetContainers();
-                    if(cnt!=null && cnt.Count>0) {
-                        DxxLogger.Instance.Info($"{cnt.Count} containers in {du.FileName}");
-                        await DownloadTargets(driver, cnt);
-                    }
-                    var tgt = await du.TryGetTargets();
-                    if(tgt!=null && tgt.Count>0) {
-                        DxxLogger.Instance.Info($"{tgt.Count} targets in {du.FileName}");
-                        await DownloadTargets(driver, tgt);
+                        DxxLogger.Instance.Error("Download Error.");
                     }
                 }
-            }
+                return null;
+            }, null);
+            
         }
 
         public async Task Download() {
             if(Driver.LinkExtractor.IsTarget(Uri)) {
-                _ = Driver.StorageManager.Download(Uri, Description);
+                Driver.StorageManager.Download(Uri, Description);
             }
-            await DownloadTargets(Driver, await TryGetTargetContainers());
-            await DownloadTargets(Driver, await TryGetTargets());
+            DownloadTargets(Driver, await TryGetTargetContainers());
+            DownloadTargets(Driver, await TryGetTargets());
         }
 
         public string Host => Uri.Host;

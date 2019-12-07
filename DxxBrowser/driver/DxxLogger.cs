@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
     public class DxxLogInfo : DxxViewModelBase {
@@ -26,6 +27,12 @@ namespace DxxBrowser.driver {
 
     public class DxxLogger {
         public ObservableCollection<DxxLogInfo> LogList { get; } = new ObservableCollection<DxxLogInfo>();
+        private WeakReference<DispatcherObject> mDispatherSource;
+        private Dispatcher Dispatcher => mDispatherSource?.GetValue()?.Dispatcher;
+
+        public void Initialize(DispatcherObject dispatcherSource) {
+            mDispatherSource = new WeakReference<DispatcherObject>(dispatcherSource);
+        }
 
         public static DxxLogger Instance { get; } = new DxxLogger();
 
@@ -34,13 +41,19 @@ namespace DxxBrowser.driver {
         }
 
         public void Error(string msg) {
-            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.ERROR, msg));
+            Dispatcher.Invoke(() => {
+                LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.ERROR, msg));
+            });
         }
         public void Info(string msg) {
-            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.INFO, msg));
+            Dispatcher.Invoke(() => {
+                LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.INFO, msg));
+            });
         }
         public void Warn(string msg) {
-            LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.WARN, msg));
+            Dispatcher.Invoke(() => {
+                LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.WARN, msg));
+            });
         }
     }
 }

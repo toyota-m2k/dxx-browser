@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DxxBrowser.driver {
     public class DxxActivityWatcher {
-        private int BusyCount = 0;
         private bool Closing = false;
         private TaskCompletionSource<object> ClosingTask = null;
+        private HashSet<CancellationTokenSource> CancellationTokenSources = new HashSet<CancellationTokenSource>();
 
         public static DxxActivityWatcher Instance { get; } = new DxxActivityWatcher();
         private DxxActivityWatcher() {
@@ -18,21 +19,21 @@ namespace DxxBrowser.driver {
         public bool IsBusy {
             get {
                 lock(this) {
-                    return BusyCount > 0;
+                    return CancellationTokenSources.Count > 0;
                 }
             }
         }
 
-        void Add() {
+        void Add(CancellationTokenSource cancellationTokenSource) {
             lock(this) {
-                BusyCount++;
+                CancellationTokenSources.Add(cancellationTokenSource);
             }
         }
 
-        void Release() {
+        void Release(CancellationTokenSource cancellationTokenSource) {
             lock(this) {
-                BusyCount--;
-                if(0==BusyCount) {
+                CancellationTokenSources.Remove(cancellationTokenSource);
+                if(0== CancellationTokenSources.Count) {
                     if(ClosingTask != null) {
                         ClosingTask.TrySetResult(null);
                     }
@@ -40,26 +41,31 @@ namespace DxxBrowser.driver {
             }
         }
 
-        public delegate Task<T> WatchingProc<T>();
+        public delegate Task<T> WatchingProc<T>(CancellationToken cancellationToken);
 
         public async Task<T> Execute<T>(WatchingProc<T> proc, T defValue=null) where T :class {
-            lock(this) {
+            CancellationTokenSource cts;
+            lock (this) {
                 if(Closing) {
                     return defValue;
                 }
-                BusyCount++;
+                cts = new CancellationTokenSource();
+                CancellationTokenSources.Add(cts);
             }
             try {
-                return await proc();
+                return await proc(cts.Token);
             } finally {
-                Release();
+                Release(cts);
             }
         }
 
-        public Task TerminateAsync() {
+        public Task TerminateAsync(bool cancelAll) {
+            if(cancelAll) {
+                CancelAll();
+            }
             lock(this) {
                 Closing = true;
-                if(BusyCount==0) {
+                if(CancellationTokenSources.Count==0) {
                     return Task.CompletedTask;
                 }
                 if(ClosingTask==null) {
@@ -69,7 +75,12 @@ namespace DxxBrowser.driver {
             }
         }
 
-
-
+        public void CancelAll() {
+            lock(this) {
+                foreach(var c in CancellationTokenSources) {
+                    c.Cancel();
+                }
+            }
+        }
     }
 }

@@ -34,8 +34,8 @@ namespace DxxBrowser.driver {
         }
 
         class Storage : IDxxStorageManager {
-            public Task<bool> Download(Uri url, string description) {
-                return Task.FromResult(false);
+            public void Download(Uri url, string description, Action<bool> onCompleted) {
+                onCompleted?.Invoke(false);
             }
 
             public string GetSavedFile(Uri url) {
