@@ -9,14 +9,15 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
     public class DxxDownloadingItem : DxxViewModelBase {
-        const string STATUS_BEGIN = "...";
-        const string STATUS_ERROR = "Error.";
-        const string STATUS_CANCELLED = "Cancelled.";
-        const string STATUS_COMPLETED = "OK.";
+        const string STATUS_BEGIN = "Downloading...";
+        const string STATUS_ERROR = "Error";
+        const string STATUS_CANCELLED = "Cancelled";
+        const string STATUS_COMPLETED = "Completed";
 
         public enum DownloadStatus {
             Downloading,
@@ -24,6 +25,12 @@ namespace DxxBrowser.driver {
             Cancelled,
             Error,
         }
+
+        private static Brush RunningColor = new SolidColorBrush(Color.FromRgb(0, 0, 255));
+        private static Brush ErrorColor = new SolidColorBrush(Color.FromRgb(216, 0, 0));
+        private static Brush CancelColor = new SolidColorBrush(Color.FromRgb(255, 128, 0));
+        private static Brush CompletedColor = new SolidColorBrush(Color.FromRgb(0, 192, 0));
+
 
         private DownloadStatus mStatus;
 
@@ -39,7 +46,7 @@ namespace DxxBrowser.driver {
 
         public DownloadStatus Status {
             get => mStatus;
-            set => setProp(callerName(), ref mStatus, value, "StatusString");
+            set => setProp(callerName(), ref mStatus, value, "StatusString", "StatusColor");
         }
 
         public string StatusString {
@@ -54,6 +61,22 @@ namespace DxxBrowser.driver {
                         return STATUS_ERROR;
                     case DownloadStatus.Cancelled:
                         return STATUS_CANCELLED;
+                }
+            }
+        }
+
+        public Brush StatusColor{
+            get {
+                switch (Status) {
+                    default:
+                    case DownloadStatus.Downloading:
+                        return RunningColor;
+                    case DownloadStatus.Completed:
+                        return CompletedColor;
+                    case DownloadStatus.Error:
+                        return ErrorColor;
+                    case DownloadStatus.Cancelled:
+                        return CancelColor;
                 }
             }
         }
@@ -191,7 +214,7 @@ namespace DxxBrowser.driver {
                 AllDownloadCompleted += completed;
                 if (forceShutdown) {
                     foreach (var cts in mCancellationTokens) {
-                        DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
+                        DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                         cts.Value.Cancel();
                     }
                 }
@@ -216,7 +239,7 @@ namespace DxxBrowser.driver {
                 }
                 AllDownloadCompleted += completed;
                 foreach (var cts in mCancellationTokens) {
-                    DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
+                    DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                     cts.Value.Cancel();
                 }
             });
@@ -231,7 +254,7 @@ namespace DxxBrowser.driver {
             Dispatcher.Invoke(() => {
                 if (mCancellationTokens.TryGetValue(url, out var cts)) {
                     if (null != cts) {
-                        DxxLogger.Instance.Warn($"Cancelling: {DxxUrl.GetFileName(url)}");
+                        DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelling: {DxxUrl.GetFileName(url)}");
                         cts.Cancel();
                     }
                 }
@@ -239,6 +262,8 @@ namespace DxxBrowser.driver {
         }
 
         const int BUFF_SIZE = 1024;
+
+        const string LOG_CAT = "DL";
 
         public void Download(Uri uri, string filePath, string description, Action<bool> onCompleted=null) {
             var cts = LockUrl(uri, description);
@@ -275,22 +300,25 @@ namespace DxxBrowser.driver {
                                         ct.ThrowIfCancellationRequested();
                                     } catch (Exception e) {
                                         if(e is OperationCanceledException) {
-                                            DxxLogger.Instance.Warn($"Cancelled: {DxxUrl.GetFileName(uri)}");
+                                            result = DxxDownloadingItem.DownloadStatus.Cancelled;
                                         }
-                                        result = DxxDownloadingItem.DownloadStatus.Cancelled;
                                         throw e;
                                     }
                                 }
                                 //await stream.CopyToAsync(fileStream);
                                 result = DxxDownloadingItem.DownloadStatus.Completed;
-                                DxxLogger.Instance.Info($"Completed: {DxxUrl.GetFileName(uri)}");
+                                DxxLogger.Instance.Success(LOG_CAT, $"Completed: {DxxUrl.GetFileName(uri)}");
                             }
                         }
                     }
                 } catch (Exception) {
                 } finally {
                     if (result!=DxxDownloadingItem.DownloadStatus.Completed) {
-                        DxxLogger.Instance.Error($"{result}: {DxxUrl.GetFileName(uri)}");
+                        if (result == DxxDownloadingItem.DownloadStatus.Cancelled) {
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"{result}: {DxxUrl.GetFileName(uri)}");
+                        } else {
+                            DxxLogger.Instance.Error(LOG_CAT, $"{result}: {DxxUrl.GetFileName(uri)}");
+                        }
                         if (File.Exists(filePath)) {
                             File.Delete(filePath);
                         }

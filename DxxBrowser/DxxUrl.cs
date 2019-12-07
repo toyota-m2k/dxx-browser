@@ -56,6 +56,8 @@ namespace DxxBrowser {
             return r;
         }
 
+        private const string LOG_CAT = "URL";
+
         public static async void DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
             if(targets==null||targets.Count==0) {
                 return;
@@ -67,32 +69,32 @@ namespace DxxBrowser {
                         cancellationToken.ThrowIfCancellationRequested();
                         if (driver.LinkExtractor.IsTarget(uri)) {
                             if (driver.StorageManager.IsDownloaded(uri)) {
-                                DxxLogger.Instance.Info($"Skip (already downloaded): {GetFileName(uri)}");
+                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {GetFileName(uri)}");
                             } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
-                                DxxLogger.Instance.Info($"Skip (already downloading): {GetFileName(uri)}");
+                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {GetFileName(uri)}");
                             } else {
-                                DxxLogger.Instance.Info($"Start: {GetFileName(uri)}");
+                                DxxLogger.Instance.Comment(LOG_CAT, $"Start: {GetFileName(uri)}");
                                 driver.StorageManager.Download(uri, t.Description);
                             }
                         } else {
                             var du = new DxxUrl(t, driver);
                             var cnt = await du.TryGetTargetContainers();
                             if (cnt != null && cnt.Count > 0) {
-                                DxxLogger.Instance.Info($"{cnt.Count} containers in {du.FileName}");
+                                DxxLogger.Instance.Comment(LOG_CAT, $"{cnt.Count} containers in {du.FileName}");
                                 DownloadTargets(driver, cnt);
                             }
                             var tgt = await du.TryGetTargets();
                             if (tgt != null && tgt.Count > 0) {
-                                DxxLogger.Instance.Info($"{tgt.Count} targets in {du.FileName}");
+                                DxxLogger.Instance.Comment(LOG_CAT, $"{tgt.Count} targets in {du.FileName}");
                                 DownloadTargets(driver, tgt);
                             }
                         }
                     }
                 } catch (Exception e) {
                     if (e is OperationCanceledException) {
-                        DxxLogger.Instance.Warn("Download Cancelled.");
+                        DxxLogger.Instance.Cancel(LOG_CAT, "Download Cancelled.");
                     } else {
-                        DxxLogger.Instance.Error("Download Error.");
+                        DxxLogger.Instance.Error(LOG_CAT, $"Download Error: {e.Message}");
                     }
                 }
                 return null;

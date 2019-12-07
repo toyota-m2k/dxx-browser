@@ -102,6 +102,8 @@ namespace DxxBrowser.driver.dmm
             WeakReference<DmmDriver> mDriver;
             DmmDriver Driver => mDriver?.GetValue();
 
+            private const string LOG_CAT = "DMM";
+
             public Extractor(DmmDriver driver) {
                 mDriver = new WeakReference<DmmDriver>(driver);
             }
@@ -117,16 +119,16 @@ namespace DxxBrowser.driver.dmm
                 //<!--/tmb--></a></p>
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
-                        DxxLogger.Instance.Info($"Analyzing: {DxxUrl.GetFileName(uri)}");
+                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(uri)}");
                         var web = new HtmlWeb();
                         var html = await web.LoadFromWebAsync(uri.ToString(), cancellationToken);
                         if (null == html) {
-                            DxxLogger.Instance.Error($"Load Error (list):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{uri.ToString()}");
                             return null;
                         }
                         var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
                         if (para == null || para.Count == 0) {
-                            DxxLogger.Instance.Error($"No Targets:{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"No Targets:{uri.ToString()}");
                             return null;
                         }
                         var list = para.Select((p) => {
@@ -144,9 +146,9 @@ namespace DxxBrowser.driver.dmm
                         return list.ToList();
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Warn($"Cancelled (list):{uri.ToString()}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list):{uri.ToString()}");
                         } else {
-                            DxxLogger.Instance.Error($"Error (list):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list):{uri.ToString()}");
                         }
                         return null;
                     }
@@ -167,11 +169,11 @@ namespace DxxBrowser.driver.dmm
                 }
                 return await DxxActivityWatcher.Instance.Execute(async(cancellationToken) => {
                     try {
-                        DxxLogger.Instance.Info($"Analyzing: {DxxUrl.GetFileName(uri)}");
+                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(uri)}");
                         var web = new HtmlWeb();
                         var outer = await web.LoadFromWebAsync(uri.ToString(), cancellationToken);
                         if (null == outer) {
-                            DxxLogger.Instance.Error($"Load Error (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Target):{uri.ToString()}");
                             return null;
                         }
 
@@ -179,7 +181,7 @@ namespace DxxBrowser.driver.dmm
                             return f.GetAttributeValue("src", null);
                         });
                         if (Utils.IsNullOrEmpty(frames)) {
-                            DxxLogger.Instance.Error($"No Target: {uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"No Target: {uri.ToString()}");
                         }
 
                         var list = new List<DxxTargetInfo>();
@@ -234,9 +236,9 @@ namespace DxxBrowser.driver.dmm
                         return list;
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Error($"Cancelled (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (Target):{uri.ToString()}");
                         } else {
-                            DxxLogger.Instance.Error($"Error (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (Target):{uri.ToString()}");
                         }
                         return null;
                     }
