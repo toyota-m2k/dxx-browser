@@ -15,8 +15,8 @@
     リソースをインポートするように記述することで、複数のボタンを作成できた。
     -->
     
-    <Path x:Key="PathUnFolded" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
-    <Path x:Key="PathFolded" Data="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+    <Path x:Key="PathFolded" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+    <Path x:Key="PathUnFolded" Data="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
     <!-- Folding Button -->
     <Style x:Key="FoldingButtonStyle" TargetType="ToggleButton">
         <Setter Property="OverridesDefaultStyle" Value="True" />

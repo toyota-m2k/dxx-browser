@@ -16,6 +16,7 @@
     <local:DateStringConverter x:Key="DateStringConverter"/>
     <local:DecimalStringConverter x:Key="DecimalStringConverter"/>
     <local:BoolGridLengthConverter x:Key="BoolGridLengthConverter"/>
+    <local:BoolGridLengthAutoConverter x:Key="BoolGridLengthAutoConverter"/>
     <local:IntBoolConverter x:Key="IntBoolConverter"/>
 
     <!-- Colors -->

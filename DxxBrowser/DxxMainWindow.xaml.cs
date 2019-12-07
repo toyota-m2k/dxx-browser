@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace DxxBrowser {
     public enum DxxNaviMode {
@@ -53,6 +54,9 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> ShowDownloadingList { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<bool> ShowStatusList { get; } = new ReactiveProperty<bool>(true);
 
+        public ReactiveProperty<bool> ShowSubBrowser { get; } = new ReactiveProperty<bool>(true);
+        
+
         private void InitializeProperties() {
 
             MainUrl.Subscribe((v) => {
@@ -70,6 +74,7 @@ namespace DxxBrowser {
                 if (Driver.IsSupported(v)) {
                     mDxxSubUrl = new DxxUrl(new Uri(v), Driver, "");
                     SubViewDownloadable.Value = mDxxSubUrl.IsContainer || mDxxSubUrl.IsTarget;
+                    ShowSubBrowser.Value = true;
                 } else {
                     mDxxSubUrl = null;
                     SubViewDownloadable.Value = false;
@@ -148,6 +153,7 @@ namespace DxxBrowser {
             });
             ClearURLCommand.Subscribe(() => {
                 MainUrl.Value = "";
+                View.urlInput.Focus();
             });
         }
 
@@ -171,7 +177,12 @@ namespace DxxBrowser {
         public DxxUrl DxxMainUrl => mDxxMainUrl;
         public DxxUrl DxxSubUrl => mDxxSubUrl;
 
-        public DxxMainViewModel() {
+        private WeakReference<DxxMainWindow> mView;
+        private DxxMainWindow View => mView?.GetValue();
+
+
+        public DxxMainViewModel(DxxMainWindow owner) {
+            mView = new WeakReference<DxxMainWindow>(owner);
             InitializeCommands();
             InitializeProperties();
         }
@@ -208,7 +219,7 @@ namespace DxxBrowser {
         public DxxMainWindow() {
             DxxDownloader.Instance.Initialize(this);
             DxxLogger.Instance.Initialize(this);
-            ViewModel = new DxxMainViewModel();
+            ViewModel = new DxxMainViewModel(this);
             ViewModel.NavigateTo = NavigateTo;
             InitializeComponent();
         }
@@ -322,6 +333,27 @@ namespace DxxBrowser {
             await DxxDownloader.Instance.TerminateAsync(true);
             //System.Windows.Application.Current.Shutdown();
             Environment.Exit(0);
+        }
+
+        private void OnDownloadedItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+            var di = (sender as ListViewItem)?.Content as DxxDownloadingItem;
+            if(di!=null && di.Status==DxxDownloadingItem.DownloadStatus.Completed) {
+                var file = ViewModel.Driver?.StorageManager?.GetSavedFile(new Uri(di.Url));
+                if (file != null) {
+                    var proc = new System.Diagnostics.Process();
+                    proc.StartInfo.FileName = file;
+                    proc.StartInfo.UseShellExecute = true;
+                    proc.Start();
+                }
+            }
+        }
+
+        private async void OnTargetItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+            var ti = (sender as ListViewItem)?.Content as DxxTargetInfo;
+            if (ti != null) {
+                var dxxUrl = new DxxUrl(ti, ViewModel.Driver);
+                await dxxUrl.Download();
+            }
         }
     }
 }
