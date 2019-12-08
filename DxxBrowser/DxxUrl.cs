@@ -6,37 +6,33 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace DxxBrowser {
-    public class DxxUrl {
-        public Uri Uri { get; }
+    public class DxxUrl : DxxTargetInfo {
         public IDxxDriver Driver { get; }
-        public string Description { get; }
 
-        public DxxUrl(Uri uri, IDxxDriver driver, string description) {
-            Uri = uri;
+        //public DxxUrl(string url, IDxxDriver driver, string name, string description) : base(url, name, description) {
+        //    Driver = driver;
+        //}
+        public DxxUrl(Uri uri, IDxxDriver driver, string name, string description) : base(uri, name, description) {
             Driver = driver;
-            Description = description;
         }
 
-        public DxxUrl(DxxTargetInfo info, IDxxDriver driver) {
-            Uri = new Uri(info.Url);
+        public DxxUrl(DxxTargetInfo info, IDxxDriver driver) : base(info.Url, info.Name, info.Description) {
             Driver = driver;
-            Description = info.Description;
         }
 
         private bool mActualHasTargets = true;
         private bool mActualHasTargetContainers = true;
 
-        public bool IsContainer => mActualHasTargets && Driver.LinkExtractor.IsContainer(Uri);
+        public bool IsContainer => mActualHasTargets && Driver.LinkExtractor.IsContainer(this);
 
-        public bool IsContainerList => mActualHasTargetContainers && Driver.LinkExtractor.IsContainerList(Uri);
-
-        public bool IsTarget => Driver.LinkExtractor.IsTarget(Uri);
+        public bool IsContainerList => mActualHasTargetContainers && Driver.LinkExtractor.IsContainerList(this);
+        public bool IsTarget => Driver.LinkExtractor.IsTarget(this);
 
         public async Task<IList<DxxTargetInfo>> TryGetTargetContainers() {
             if(!IsContainerList) { 
                 return null;
             }
-            var r = await Driver.LinkExtractor.ExtractContainerList(Uri);
+            var r = await Driver.LinkExtractor.ExtractContainerList(this);
             if(r==null||r.Count==0) {
                 mActualHasTargetContainers = false;
                 return null;
@@ -48,7 +44,7 @@ namespace DxxBrowser {
             if(!IsContainer) {
                 return null;
             }
-            var r = await Driver.LinkExtractor.ExtractTargets(Uri);
+            var r = await Driver.LinkExtractor.ExtractTargets(this);
             if (r == null || r.Count == 0) {
                 mActualHasTargets = false;
                 return null;
@@ -65,16 +61,15 @@ namespace DxxBrowser {
             await DxxActivityWatcher.Instance.Execute<object>(async (cancellationToken) => {
                 try {
                     foreach (var t in targets) {
-                        var uri = new Uri(t.Url);
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (driver.LinkExtractor.IsTarget(uri)) {
-                            if (driver.StorageManager.IsDownloaded(uri)) {
-                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {GetFileName(uri)}");
+                        if (driver.LinkExtractor.IsTarget(t)) {
+                            if (driver.StorageManager.IsDownloaded(t.Uri)) {
+                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {t.Name}");
                             } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
-                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {GetFileName(uri)}");
+                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {t.Name}");
                             } else {
-                                DxxLogger.Instance.Comment(LOG_CAT, $"Start: {GetFileName(uri)}");
-                                driver.StorageManager.Download(uri, t.Description);
+                                DxxLogger.Instance.Comment(LOG_CAT, $"Start: {t.Name}");
+                                driver.StorageManager.Download(t);
                             }
                         } else {
                             var du = new DxxUrl(t, driver);
@@ -103,8 +98,8 @@ namespace DxxBrowser {
         }
 
         public async Task Download() {
-            if(Driver.LinkExtractor.IsTarget(Uri)) {
-                Driver.StorageManager.Download(Uri, Description);
+            if(Driver.LinkExtractor.IsTarget(this)) {
+                Driver.StorageManager.Download(new DxxTargetInfo(Url, Name, Description));
             }
             DownloadTargets(Driver, await TryGetTargetContainers());
             DownloadTargets(Driver, await TryGetTargets());

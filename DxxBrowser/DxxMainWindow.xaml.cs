@@ -61,7 +61,8 @@ namespace DxxBrowser {
             MainUrl.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
-                    mDxxMainUrl = new DxxUrl(new Uri(v), driver, "");
+                    var uri = new Uri(v);
+                    mDxxMainUrl = new DxxUrl(uri, driver, Driver.GetNameFromUri(uri, "main"), "");
                     Driver = driver;
                 } else {
                     mDxxMainUrl = null;
@@ -71,7 +72,8 @@ namespace DxxBrowser {
             });
             SubUrl.Subscribe((v) => {
                 if (Driver.IsSupported(v)) {
-                    mDxxSubUrl = new DxxUrl(new Uri(v), Driver, "");
+                    var uri = new Uri(v);
+                    mDxxSubUrl = new DxxUrl(uri, Driver, Driver.GetNameFromUri(uri, "sub"), "");
                     SubViewDownloadable.Value = mDxxSubUrl.IsContainer || mDxxSubUrl.IsTarget;
                     ShowSubBrowser.Value = true;
                 } else {
@@ -132,7 +134,7 @@ namespace DxxBrowser {
             // TargetListを抽出してリストに出力
             ExtractTargetListCommand.Subscribe(async () => {
                 var targets = await DxxMainUrl.TryGetTargetContainers();
-                if (targets.Count > 0) {
+                if (targets!=null && targets.Count > 0) {
                     TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
                     ShowTargetList.Value = true;
                 } else {
@@ -170,9 +172,9 @@ namespace DxxBrowser {
                 IsContainer.Value = false;
                 IsContainerList.Value = false;
             } else {
-                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxMainUrl.Uri);
-                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxMainUrl.Uri);
-                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl.Uri);
+                IsTarget.Value = Driver.LinkExtractor.IsTarget(mDxxMainUrl);
+                IsContainer.Value = Driver.LinkExtractor.IsContainer(mDxxMainUrl);
+                IsContainerList.Value = Driver.LinkExtractor.IsContainerList(mDxxMainUrl);
             }
         }
 
@@ -288,7 +290,7 @@ namespace DxxBrowser {
                         case DxxNaviMode.DirectDL:
                             var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
                             if(driver!=null) {
-                                var du = new DxxUrl(e.Uri, driver, "");
+                                var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
                                 if (du.IsContainer || du.IsTarget) {
                                     _ = du.Download();
                                     e.Cancel = true;

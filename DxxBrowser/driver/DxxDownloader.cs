@@ -36,7 +36,7 @@ namespace DxxBrowser.driver {
 
         public string Url { get; }
         public string Description { get; }
-        public string Name => DxxUrl.GetFileName(Url);
+        public string Name { get; }
 
         private int mPercent = -1;
         public int Percent {
@@ -90,9 +90,10 @@ namespace DxxBrowser.driver {
             }
         }
 
-        public DxxDownloadingItem(string url, string description) {
-            Url = url;
-            Description = description;
+        public DxxDownloadingItem(DxxTargetInfo target) {
+            Url = target.Url;
+            Name = target.Name;
+            Description = target.Description;
             Status = DownloadStatus.Downloading;
         }
     }
@@ -122,36 +123,34 @@ namespace DxxBrowser.driver {
             Busy.OnNext(false);
         }
 
-        private CancellationTokenSource LockUrl(Uri uri, string description) {
+        private CancellationTokenSource LockUrl(DxxTargetInfo target) {
             return Dispatcher.Invoke(() => {
                 if (mTerminated) {
                     return null;
                 }
-                var url = uri.ToString();
-                if (mDownloading.Contains(url)) {
+                if (mDownloading.Contains(target.Url)) {
                     return null;
                 }
 
-                var ts = DownloadingStateList.Where((v) => v.Url == url);
+                var ts = DownloadingStateList.Where((v) => v.Url == target.Url);
                 if(Utils.IsNullOrEmpty(ts)) {
-                    DownloadingStateList.Add(new DxxDownloadingItem(url, description));
+                    DownloadingStateList.Add(new DxxDownloadingItem(target));
                 } else {
                     foreach (var t in ts) {
                         t.Status = DxxDownloadingItem.DownloadStatus.Downloading;
                     }
                 }
 
-                mDownloading.Add(url);
+                mDownloading.Add(target.Url);
                 var cts = new CancellationTokenSource();
-                mCancellationTokens.Add(url, cts);
+                mCancellationTokens.Add(target.Url, cts);
                 Busy.OnNext(true);
                 return cts;
             });
         }
 
-        private void UnlockUrl(Uri uri, DxxDownloadingItem.DownloadStatus result) {
+        private void UnlockUrl(string url, DxxDownloadingItem.DownloadStatus result) {
             Dispatcher.Invoke(() => {
-                var url = uri.ToString();
                 mDownloading.Remove(url);
                 mCancellationTokens.Remove(url);
                 var ts = DownloadingStateList.Where((v) => v.Url == url);
@@ -265,8 +264,8 @@ namespace DxxBrowser.driver {
 
         const string LOG_CAT = "DL";
 
-        public void Download(Uri uri, string filePath, string description, Action<bool> onCompleted=null) {
-            var cts = LockUrl(uri, description);
+        public void Download(DxxTargetInfo target, string filePath, Action<bool> onCompleted=null) {
+            var cts = LockUrl(target);
             if(null==cts) {
                 onCompleted?.Invoke(false);
                 return;
@@ -275,7 +274,7 @@ namespace DxxBrowser.driver {
                 DxxDownloadingItem.DownloadStatus result = DxxDownloadingItem.DownloadStatus.Error;
                 try {
                     var ct = cts.Token;
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, target.Url))
                     using (var response = await mHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)) {
                         if (response.StatusCode == HttpStatusCode.OK) {
                             using (var content = response.Content)
@@ -294,7 +293,7 @@ namespace DxxBrowser.driver {
                                         }
                                         recv += len;
                                         if (total > 0) {
-                                            UpdateDownloadingProgress(uri.ToString(), recv, total);
+                                            UpdateDownloadingProgress(target.Url, recv, total);
                                         }
                                         await fileStream.WriteAsync(buff, 0, len);
                                         ct.ThrowIfCancellationRequested();
@@ -307,7 +306,7 @@ namespace DxxBrowser.driver {
                                 }
                                 //await stream.CopyToAsync(fileStream);
                                 result = DxxDownloadingItem.DownloadStatus.Completed;
-                                DxxLogger.Instance.Success(LOG_CAT, $"Completed: {DxxUrl.GetFileName(uri)}");
+                                DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
                             }
                         }
                     }
@@ -315,15 +314,15 @@ namespace DxxBrowser.driver {
                 } finally {
                     if (result!=DxxDownloadingItem.DownloadStatus.Completed) {
                         if (result == DxxDownloadingItem.DownloadStatus.Cancelled) {
-                            DxxLogger.Instance.Cancel(LOG_CAT, $"{result}: {DxxUrl.GetFileName(uri)}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"{result}: {target.Name}");
                         } else {
-                            DxxLogger.Instance.Error(LOG_CAT, $"{result}: {DxxUrl.GetFileName(uri)}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"{result}: {target.Name}");
                         }
                         if (File.Exists(filePath)) {
                             File.Delete(filePath);
                         }
                     }
-                    UnlockUrl(uri, result);
+                    UnlockUrl(target.Url, result);
                 }
                 onCompleted?.Invoke(result==DxxDownloadingItem.DownloadStatus.Completed);
             });

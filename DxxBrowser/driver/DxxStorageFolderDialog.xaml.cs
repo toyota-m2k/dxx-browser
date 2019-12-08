@@ -14,31 +14,29 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace DxxBrowser.driver.dmm
-{
+namespace DxxBrowser.driver {
     /// <summary>
-    /// DmmSettingsDialog.xaml の相互作用ロジック
+    /// DxxStorageFolderDialog.xaml の相互作用ロジック
     /// </summary>
-    public partial class DmmSettingsDialog : Window
-    {
-        public class DmmSettingsViewModel : DxxViewModelBase {
+    public partial class DxxStorageFolderDialog : Window {
+        public class DxxSettingsViewModel : DxxViewModelBase {
             public ReactiveProperty<string> Path { get; }
-            public DmmSettingsViewModel(string initialPath) {
+            public string DriverName { get; }
+            public DxxSettingsViewModel(string driverName, string initialPath) {
+                DriverName = driverName;
                 Path = new ReactiveProperty<string>(initialPath);
             }
         }
 
         public string Path => ViewModel.Path.Value;
 
-        DmmSettingsViewModel ViewModel {
-            get => DataContext as DmmSettingsViewModel;
+        DxxSettingsViewModel ViewModel {
+            get => DataContext as DxxSettingsViewModel;
             set { DataContext = value; }
         }
 
-
-        public DmmSettingsDialog(string initialPath)
-        {
-            ViewModel = new DmmSettingsViewModel(initialPath);
+        public DxxStorageFolderDialog(string driverName, string initialPath) {
+            ViewModel = new DxxSettingsViewModel(driverName, initialPath);
             InitializeComponent();
         }
 

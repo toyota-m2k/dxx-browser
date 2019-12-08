@@ -13,19 +13,18 @@ using System.Threading;
 
 namespace DxxBrowser.driver.dmm
 {
-    public class DmmDriver : IDxxDriver
-    {
-        private string StoragePath { get; set; }
+    public class DmmDriver : IDxxFileBasedDriver {
+        public string StoragePath { get; set; }
 
         public string Name => "DMM";
 
         public string ID => "dmmFileBasedDriver";
 
+        public bool HasSettings => true;
+
         public IDxxLinkExtractor LinkExtractor { get; private set; }
 
         public IDxxStorageManager StorageManager { get; private set; }
-
-        public bool HasSettings => true;
 
         private const string KEY_STORAGE_PATH = "StoragePath";
 
@@ -44,8 +43,12 @@ namespace DxxBrowser.driver.dmm
             return uri.Host.Contains("dmm.co.jp");
         }
 
+        public string GetNameFromUri(Uri uri, string defName) {
+            return DxxUrl.GetFileName(uri);
+        }
+
         public bool Setup(XmlElement settings) {
-            var dlg = new DmmSettingsDialog(StoragePath);
+            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
             if(dlg.ShowDialog() ?? false) {
                 StoragePath = dlg.Path;
                 if (null!=settings) {
@@ -58,45 +61,45 @@ namespace DxxBrowser.driver.dmm
 
         public DmmDriver() {
             LinkExtractor = new Extractor(this);
-            StorageManager = new Storage(this);
+            StorageManager = new DxxFileBasedStorage(this);
         }
 
-        class Storage : IDxxStorageManager {
-            WeakReference<DmmDriver> mDriver;
-            DmmDriver Driver => mDriver?.GetValue();
+        //class Storage : IDxxStorageManager {
+        //    WeakReference<DmmDriver> mDriver;
+        //    DmmDriver Driver => mDriver?.GetValue();
 
-            public Storage(DmmDriver driver) {
-                mDriver = new WeakReference<DmmDriver>(driver);
-            }
+        //    public Storage(DmmDriver driver) {
+        //        mDriver = new WeakReference<DmmDriver>(driver);
+        //    }
 
-            public void Download(Uri uri, string description, Action<bool> onCompleted) {
-                if(!Driver.LinkExtractor.IsTarget(uri)) {
-                    onCompleted?.Invoke(false);
-                    return;
-                }
-                var path = GetPath(uri);
-                if(File.Exists(path)) {
-                    onCompleted?.Invoke(false);
-                    return;
-                }
-                DxxDownloader.Instance.Download(uri, path, description, onCompleted);
-            }
+        //    public void Download(Uri uri, string description, Action<bool> onCompleted) {
+        //        if(!Driver.LinkExtractor.IsTarget(uri)) {
+        //            onCompleted?.Invoke(false);
+        //            return;
+        //        }
+        //        var path = GetPath(uri);
+        //        if(File.Exists(path)) {
+        //            onCompleted?.Invoke(false);
+        //            return;
+        //        }
+        //        DxxDownloader.Instance.Download(uri, path, description, onCompleted);
+        //    }
 
-            private string GetPath(Uri uri) {
-                var filename = DxxUrl.GetFileName(uri);
-                return Path.Combine(Driver.StoragePath, filename);
-            }
+        //    private string GetPath(Uri uri) {
+        //        var filename = DxxUrl.GetFileName(uri);
+        //        return Path.Combine(Driver.StoragePath, filename);
+        //    }
 
-            public string GetSavedFile(Uri uri) {
-                var path = GetPath(uri);
-                return File.Exists(path) ? path : null;
-            }
+        //    public string GetSavedFile(Uri uri) {
+        //        var path = GetPath(uri);
+        //        return File.Exists(path) ? path : null;
+        //    }
 
-            public bool IsDownloaded(Uri uri) {
-                var path = GetPath(uri);
-                return File.Exists(path);
-            }
-        }
+        //    public bool IsDownloaded(Uri uri) {
+        //        var path = GetPath(uri);
+        //        return File.Exists(path);
+        //    }
+        //}
 
         class Extractor : IDxxLinkExtractor {
             WeakReference<DmmDriver> mDriver;
@@ -108,8 +111,8 @@ namespace DxxBrowser.driver.dmm
                 mDriver = new WeakReference<DmmDriver>(driver);
             }
 
-            public async Task<IList<DxxTargetInfo>> ExtractContainerList(Uri uri) {
-                if(!IsContainerList(uri)) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+                if(!IsContainerList(urx)) {
                     return null;
                 }
                 // <div>
@@ -119,16 +122,17 @@ namespace DxxBrowser.driver.dmm
                 //<!--/tmb--></a></p>
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
-                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(uri)}");
+                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
-                        var html = await web.LoadFromWebAsync(uri.ToString(), cancellationToken);
+                        var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
                         if (null == html) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{urx.Url}");
                             return null;
                         }
+                        cancellationToken.ThrowIfCancellationRequested();
                         var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
                         if (para == null || para.Count == 0) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"No Targets:{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"No Targets:{urx.Url}");
                             return null;
                         }
                         var list = para.Select((p) => {
@@ -140,15 +144,15 @@ namespace DxxBrowser.driver.dmm
                             if (desc == null) {
                                 desc = p.SelectSingleNode("a/span[@class='txt']")?.InnerText;
                             }
-                            return new DxxTargetInfo(href, desc);
+                            return new DxxTargetInfo(href, DxxUrl.GetFileName(href), desc);
                         }).Where((v) => v != null);
                         cancellationToken.ThrowIfCancellationRequested();
                         return list.ToList();
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list):{uri.ToString()}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list):{urx.Url}");
                         } else {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list):{urx.Url}");
                         }
                         return null;
                     }
@@ -163,17 +167,17 @@ namespace DxxBrowser.driver.dmm
                 }
             }
 
-            public async Task<IList<DxxTargetInfo>> ExtractTargets(Uri uri) {
-                if(!IsContainer(uri)) {
+            public async Task<IList<DxxTargetInfo>> ExtractTargets(DxxUriEx urx) {
+                if(!IsContainer(urx)) {
                     return null;
                 }
                 return await DxxActivityWatcher.Instance.Execute(async(cancellationToken) => {
                     try {
-                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(uri)}");
+                        DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
-                        var outer = await web.LoadFromWebAsync(uri.ToString(), cancellationToken);
+                        var outer = await web.LoadFromWebAsync(urx.Url, cancellationToken);
                         if (null == outer) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Target):{urx.Url}");
                             return null;
                         }
 
@@ -181,7 +185,7 @@ namespace DxxBrowser.driver.dmm
                             return f.GetAttributeValue("src", null);
                         });
                         if (Utils.IsNullOrEmpty(frames)) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"No Target: {uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"No Target: {urx.Url}");
                         }
 
                         var list = new List<DxxTargetInfo>();
@@ -226,7 +230,8 @@ namespace DxxBrowser.driver.dmm
                                             }
                                         }
                                         if (src != null) {
-                                            list.Add(new DxxTargetInfo(ensureUrl(src), js["title"].Value<string>()));
+                                            var targetUrl = ensureUrl(src);
+                                            list.Add(new DxxTargetInfo(targetUrl, DxxUrl.GetFileName(targetUrl), js["title"].Value<string>()));
                                         }
                                     }
                                 }
@@ -236,32 +241,31 @@ namespace DxxBrowser.driver.dmm
                         return list;
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (Target):{urx.Url}");
                         } else {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Error (Target):{uri.ToString()}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (Target):{urx.Url}");
                         }
                         return null;
                     }
                 });
             }
 
-            public bool IsContainerList(Uri uri) {
-                if (!uri.Host.Contains("dmm.co.jp")) {
+            public bool IsContainerList(DxxUriEx urx) {
+                if (!urx.Uri.Host.Contains("dmm.co.jp")) {
                     return false;
                 }
-                return uri.ToString().Contains("/list/");
+                return urx.Url.Contains("/list/");
             }
 
-            public bool IsContainer(Uri uri) {
-                if (!uri.Host.Contains("dmm.co.jp")) {
+            public bool IsContainer(DxxUriEx urx) {
+                if (!urx.Uri.Host.Contains("dmm.co.jp")) {
                     return false;
                 }
-                var s = uri.ToString();
-                return s.Contains("/cid=");
+                return urx.Url.Contains("/cid=");
             }
 
-            public bool IsTarget(Uri uri) {
-                return DxxUrl.GetFileName(uri).EndsWith(".mp4");
+            public bool IsTarget(DxxUriEx urx) {
+                return DxxUrl.GetFileName(urx.Uri).EndsWith(".mp4");
             }
         }
     }

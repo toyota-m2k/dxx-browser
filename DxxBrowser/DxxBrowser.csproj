@@ -56,14 +56,20 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Disposal.cs" />
+    <Compile Include="driver\carribean\CarribeanDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
+    <Compile Include="driver\DxxFileBasedStorage.cs" />
+    <Compile Include="driver\DxxStorageFolderDialog.xaml.cs">
+      <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="driver\NopDriver.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
+    <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
     <Compile Include="Utils.cs" />
-    <Page Include="driver\dmm\DmmSettingsDialog.xaml">
+    <Page Include="driver\DxxStorageFolderDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -85,9 +91,6 @@
     </Compile>
     <Compile Include="CheckButton.cs" />
     <Compile Include="driver\dmm\DmmDriver.cs" />
-    <Compile Include="driver\dmm\DmmSettingsDialog.xaml.cs">
-      <DependentUpon>DmmSettingsDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="DxxConverter.cs" />
     <Compile Include="DxxMainWindow.xaml.cs">
       <DependentUpon>DxxMainWindow.xaml</DependentUpon>
@@ -148,5 +151,6 @@
       <Version>1.1.1</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

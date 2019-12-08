@@ -17,6 +17,7 @@ namespace DxxBrowser
         bool SaveSettings(XmlElement settings);
 
         bool IsSupported(string url);
+        string GetNameFromUri(Uri uri, string defName="");
 
         IDxxLinkExtractor LinkExtractor { get; }
         IDxxStorageManager StorageManager { get; }

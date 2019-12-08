@@ -21,6 +21,10 @@ namespace DxxBrowser.driver {
             return false;
         }
 
+        public string GetNameFromUri(Uri uri, string defName) {
+            return defName;
+        }
+
         public bool LoadSettins(XmlElement settings) {
             return true;
         }
@@ -34,7 +38,7 @@ namespace DxxBrowser.driver {
         }
 
         class Storage : IDxxStorageManager {
-            public void Download(Uri url, string description, Action<bool> onCompleted) {
+            public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
                 onCompleted?.Invoke(false);
             }
 
@@ -48,23 +52,23 @@ namespace DxxBrowser.driver {
         }
 
         class Extractor : IDxxLinkExtractor {
-            public Task<IList<DxxTargetInfo>> ExtractContainerList(Uri url) {
+            public Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
                 return Task.FromResult<IList<DxxTargetInfo>>(null);
             }
 
-            public Task<IList<DxxTargetInfo>> ExtractTargets(Uri url) {
+            public Task<IList<DxxTargetInfo>> ExtractTargets(DxxUriEx urx) {
                 return Task.FromResult<IList<DxxTargetInfo>>(null);
             }
 
-            public bool IsContainerList(Uri url) {
+            public bool IsContainerList(DxxUriEx urx) {
                 return false;
             }
 
-            public bool IsContainer(Uri url) {
+            public bool IsContainer(DxxUriEx urx) {
                 return false;
             }
 
-            public bool IsTarget(Uri uri) {
+            public bool IsTarget(DxxUriEx urx) {
                 return false;
             }
         }

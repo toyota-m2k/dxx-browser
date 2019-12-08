@@ -1,4 +1,5 @@
 ﻿using DxxBrowser.driver;
+using DxxBrowser.driver.caribbean;
 using DxxBrowser.driver.dmm;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace DxxBrowser
         private DxxDriverManager() {
             mList = new List<IDxxDriver>();
             mList.Add(new DmmDriver());
+            mList.Add(new CaribbeanDriver());
             LoadSettings();
         }
 
