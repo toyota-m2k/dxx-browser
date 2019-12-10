@@ -36,7 +36,7 @@ namespace DxxBrowser.driver.caribbean {
 
         public bool IsSupported(string url) {
             var uri = new Uri(url);
-            return uri.Host.Contains("caribbeancom.com");
+            return uri.Host.Contains("caribbeancom.com") || uri.Host.Contains("caribbeancompr.com");
         }
 
         public string GetNameFromUri(Uri uri, string defName) {
@@ -88,13 +88,13 @@ namespace DxxBrowser.driver.caribbean {
                 return DxxUrl.GetFileName(urx.Uri).EndsWith(".mp4");
             }
 
-            private string ensureUrl(string url) {
+            private string ensureUrl(string scheme, string host, string url) {
                 if (null == url) {
                     return null;
                 }
                 if (!url.StartsWith("http")) {
                     if (url.StartsWith("/")) {
-                        return $"https://www.caribbeancom.com{url}";
+                        return $"{scheme}://{host}{url}";
                     } else {
                         return null;
                     }
@@ -112,7 +112,7 @@ namespace DxxBrowser.driver.caribbean {
                         var web = new HtmlWeb();
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                        var nodes = html.DocumentNode.SelectNodes("//a[@itemprop='url' and contains(@href, '/moviepages/')]");
+                        var nodes = html.DocumentNode.SelectNodes("//a[contains(@href, '/moviepages/')]");
                         if (null == html) {
                             DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{urx.Url}");
                             return null;
@@ -120,16 +120,22 @@ namespace DxxBrowser.driver.caribbean {
                         cancellationToken.ThrowIfCancellationRequested();
                         if (!Utils.IsNullOrEmpty(nodes)) {
                             var list = nodes.Select((v) => {
-                                var href = ensureUrl(v.Attributes["href"]?.Value);
+                                var href = ensureUrl(urx.Uri.Scheme, urx.Uri.Host, v.Attributes["href"]?.Value);
                                 if (null == href) {
                                     return null;
                                 }
-                                var desc = v.InnerText;
+                                string desc = v.InnerText.Trim();
+                                if(string.IsNullOrEmpty(desc)) {
+                                    var img = v.SelectSingleNode("img");
+                                    if(null!=img) {
+                                        desc = img.Attributes["alt"].Value;
+                                    }
+                                }
                                 var targetUri = new Uri(href);
                                 var idx = targetUri.Segments.Count() - 2;
                                 var name = idx >= 0 ? targetUri.Segments.ElementAt(idx) : "untitled";
 
-                                return (href != null) ? new DxxTargetInfo(href, name, v.InnerText) : null;
+                                return (href != null) ? new DxxTargetInfo(href, name, desc) : null;
                             }).Where((v) => v != null)?.ToList();
                             cancellationToken.ThrowIfCancellationRequested();
                             return list;
@@ -224,7 +230,10 @@ namespace DxxBrowser.driver.caribbean {
                 if(filename.EndsWith("/")) {
                     filename = filename.Substring(0, filename.Length - 1);
                 }
-                return Path.Combine(Driver.StoragePath, filename+".mp4");
+                if (uri.Host.Contains("caribbeancompr.com")) {
+                    filename = "pr" + filename;
+                }
+                return Path.Combine(Driver.StoragePath, filename + ".mp4");
             }
         }
     }
