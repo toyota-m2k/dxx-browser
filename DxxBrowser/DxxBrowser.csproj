@@ -64,6 +64,7 @@
       <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="driver\NopDriver.cs" />
+    <Compile Include="DxxBookmark.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
     <Compile Include="DxxUriEx.cs" />

@@ -15,15 +15,17 @@ using System.Windows;
 using System.Windows.Controls;
 
 namespace DxxBrowser {
-    public enum DxxNaviMode {
-        Self,
-        SubView,
-        DirectDL,
+    public enum DxxClickMode {
+        NaviMode,
+        DLMode,
     }
 
     public class DxxMainViewModel : DxxViewModelBase, IDisposable {
         #region Properties
-        public ReactiveProperty<DxxNaviMode> NaviMode { get; } = new ReactiveProperty<DxxNaviMode>(DxxNaviMode.Self);
+        public ReactiveProperty<DxxClickMode> ClickMode { get; } = new ReactiveProperty<DxxClickMode>(DxxClickMode.DLMode);
+        public ReactiveProperty<bool> NaviToSubView { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> DLAndSubView { get; } = new ReactiveProperty<bool>(false);
+
         public ReactiveProperty<string> MainUrl { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> SubUrl { get; } = new ReactiveProperty<string>();
 
@@ -250,7 +252,12 @@ namespace DxxBrowser {
             if (e.Action == NotifyCollectionChangedAction.Add) {
                 var list = sender as ObservableCollection<T>;
                 if (list.Count > 0) {
-                    statusList.ScrollIntoView(list.Last());
+                    var last = list.Last();
+                    if (last is DxxLogInfo) {
+                        statusList.ScrollIntoView(last);
+                    } else if(last is DxxDownloadingItem) {
+                        downloadingList.ScrollIntoView(last);
+                    }
                 }
             }
         }
@@ -286,24 +293,32 @@ namespace DxxBrowser {
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             if (!mLoadingMain) {
                 if (ViewModel.IsContainerList.Value) {
-                    switch (ViewModel.NaviMode.Value) {
-                        case DxxNaviMode.DirectDL:
+                    switch (ViewModel.ClickMode.Value) {
+                        case DxxClickMode.NaviMode:
+                            if(ViewModel.NaviToSubView.Value) {
+                                subBrowser.Stop();
+                                subBrowser.Navigate(e.Uri);
+                                ViewModel.SubUrl.Value = e.Uri.ToString();
+                                e.Cancel = true;
+                                return;
+                            }
+                            break;
+                        case DxxClickMode.DLMode:
                             var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
-                            if(driver!=null) {
+                            if (driver != null) {
                                 var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
                                 if (du.IsContainer || du.IsTarget) {
+                                    if (ViewModel.DLAndSubView.Value) {
+                                        subBrowser.Stop();
+                                        subBrowser.Navigate(e.Uri);
+                                        ViewModel.SubUrl.Value = e.Uri.ToString();
+                                    }
                                     _ = du.Download();
                                     e.Cancel = true;
                                     return;
                                 }
                             }
                             break;
-                            
-                        case DxxNaviMode.SubView:
-                            e.Cancel = true;
-                            subBrowser.Navigate(e.Uri);
-                            ViewModel.SubUrl.Value = e.Uri.ToString();
-                            return;
                         default:
                             break;
                     }

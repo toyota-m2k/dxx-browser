@@ -34,7 +34,9 @@ namespace DxxBrowser {
             }
             var r = await Driver.LinkExtractor.ExtractContainerList(this);
             if(r==null||r.Count==0) {
+#if !DEBUG
                 mActualHasTargetContainers = false;
+#endif
                 return null;
             }
             return r;
@@ -46,7 +48,9 @@ namespace DxxBrowser {
             }
             var r = await Driver.LinkExtractor.ExtractTargets(this);
             if (r == null || r.Count == 0) {
+#if !DEBUG
                 mActualHasTargets = false;
+#endif
                 return null;
             }
             return r;
@@ -97,12 +101,23 @@ namespace DxxBrowser {
             
         }
 
-        public async Task Download() {
+        public async Task<bool> Download() {
+            bool result = false;
             if(Driver.LinkExtractor.IsTarget(this)) {
                 Driver.StorageManager.Download(new DxxTargetInfo(Url, Name, Description));
+                result = true;
             }
-            DownloadTargets(Driver, await TryGetTargetContainers());
-            DownloadTargets(Driver, await TryGetTargets());
+            var containers = await TryGetTargetContainers();
+            if (!Utils.IsNullOrEmpty(containers)) {
+                DownloadTargets(Driver, containers);
+                result = true;
+            }
+            var targets = await TryGetTargets();
+            if (!Utils.IsNullOrEmpty(targets)) {
+                DownloadTargets(Driver, targets);
+                result = true;
+            }
+            return result;
         }
 
         public string Host => Uri.Host;

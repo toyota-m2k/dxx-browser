@@ -86,10 +86,11 @@
                     </StackPanel>
                     <TextBlock Text="リンククリック時のアクション"/>
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton GroupName="NaviMode" Content="ダウンロード"     IsChecked="{Binding NaviMode.Value, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=DirectDL}"/>
-                        <RadioButton GroupName="NaviMode" Content="サブビューに表示" IsChecked="{Binding NaviMode.Value, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=SubView}" Margin="20,0"/>
-                        <RadioButton GroupName="NaviMode" Content="リンク先へ移動"   IsChecked="{Binding NaviMode.Value, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=Self}"/>
+                        <RadioButton GroupName="ClickMode" Content="ダウンロードモード" IsChecked="{Binding ClickMode.Value, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=DLMode}"/>
+                        <RadioButton GroupName="ClickMode" Content="ナビゲートモード" IsChecked="{Binding ClickMode.Value, Mode=TwoWay, Converter={StaticResource EnumBooleanConverter}, ConverterParameter=NaviMode}" Margin="20,0"/>
                     </StackPanel>
+                    <CheckBox Content="サブビューに表示" IsChecked="{Binding NaviToSubView.Value, Mode=TwoWay}" Visibility="{Binding ClickMode.Value, Converter={StaticResource EnumVisibilityConverter}, ConverterParameter=NaviMode}"/>
+                    <CheckBox Content="サブビューに表示" IsChecked="{Binding DLAndSubView.Value, Mode=TwoWay}" Visibility="{Binding ClickMode.Value, Converter={StaticResource EnumVisibilityConverter}, ConverterParameter=DLMode}"/>
                 </StackPanel>
 
             </StackPanel>

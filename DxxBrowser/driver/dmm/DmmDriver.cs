@@ -159,10 +159,12 @@ namespace DxxBrowser.driver.dmm
                 });
             }
 
-            private string ensureUrl(string url) {
-                if(url.StartsWith("//")) {
-                    return "https:" + url;
-                } else {
+            private string ensureUrl(Uri baseUri, string url) {
+                if (url.StartsWith("//")) {
+                    return $"{baseUri.Scheme}:{url}";
+                } else if (url.StartsWith("/")) {
+                    return $"{baseUri.Scheme}://{baseUri.Host}{url}";
+                } else { 
                     return url;
                 }
             }
@@ -181,17 +183,53 @@ namespace DxxBrowser.driver.dmm
                             return null;
                         }
 
-                        var frames = outer.DocumentNode.SelectNodes("//iframe").Select((f) => {
-                            return f.GetAttributeValue("src", null);
-                        });
-                        if (Utils.IsNullOrEmpty(frames)) {
+                        IEnumerable<string> anchors = null;
+                        var iframes = outer.DocumentNode.SelectNodes("//iframe");
+                        if (null != iframes) {
+                            // カテゴリとか、そんなページ
+                            anchors = iframes.Select((f) => {
+                                return f.GetAttributeValue("src", null);
+                            }).Where((u) => u != null);
+                        } else {
+                            // トップページ（新着とか）
+                            do {
+                                var a = outer.DocumentNode.SelectSingleNode("//a[contains(@onclick,'sampleplay')]");
+                                if (a == null) {
+                                    break;
+                                }
+                                var onclick = a.GetAttributeValue("onclick", null);
+                                if (null == onclick) {
+                                    break;
+                                }
+                                var regex = new Regex(@"sampleplay\(\'(?<url>.*)\'\)");
+                                var v = regex.Match(onclick);
+                                if (!v.Success) {
+                                    break;
+                                }
+                                var onclickUrl = ensureUrl(urx.Uri, v.Groups["url"].Value);
+                                var next = await web.LoadFromWebAsync(onclickUrl, cancellationToken);
+                                if (null == next) {
+                                    break;
+                                }
+                                var last = next.DocumentNode.SelectSingleNode("//iframe");
+                                if (null == last) {
+                                    break;
+                                }
+                                var anchor = last.GetAttributeValue("src", null);
+                                if (anchor == null) {
+                                    break;
+                                }
+                                anchors = new List<string>() { anchor };
+                            } while (false);
+                        } 
+                        if (Utils.IsNullOrEmpty(anchors)) {
                             DxxLogger.Instance.Error(LOG_CAT, $"No Target: {urx.Url}");
                         }
 
                         var list = new List<DxxTargetInfo>();
-                        foreach (var frame in frames) {
+                        foreach (var frame in anchors) {
                             cancellationToken.ThrowIfCancellationRequested();
-                            var innerUrl = ensureUrl(frame);
+                            var innerUrl = ensureUrl(urx.Uri, frame);
                             if (!Driver.IsSupported(innerUrl)) {
                                 continue;
                             }
@@ -230,7 +268,7 @@ namespace DxxBrowser.driver.dmm
                                             }
                                         }
                                         if (src != null) {
-                                            var targetUrl = ensureUrl(src);
+                                            var targetUrl = ensureUrl(urx.Uri, src);
                                             list.Add(new DxxTargetInfo(targetUrl, DxxUrl.GetFileName(targetUrl), js["title"].Value<string>()));
                                         }
                                     }
