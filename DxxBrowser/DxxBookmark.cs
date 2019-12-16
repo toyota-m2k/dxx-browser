@@ -11,12 +11,16 @@ using System.Xml.Serialization;
 namespace DxxBrowser {
     public class DxxBookmark : ObservableCollection<DxxBookmark.DxxBookmarkRec> {
         public class DxxBookmarkRec {
-            public string Name { get; }
-            public string Url { get; }
+            public string Name { get; set; }
+            public string Url { get; set; }
+
+            public DxxBookmarkRec() {
+
+            }
 
             public DxxBookmarkRec(string name, string url) {
                 Name = name;
-                Url = Url;
+                Url = url;
             }
         }
 

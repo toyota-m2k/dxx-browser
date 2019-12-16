@@ -3,14 +3,12 @@ using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Reactive.Disposables;
-using System.Runtime.CompilerServices;
+using System.Reactive.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -56,10 +54,11 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> ShowStatusList { get; } = new ReactiveProperty<bool>(true);
 
         public ReactiveProperty<bool> ShowSubBrowser { get; } = new ReactiveProperty<bool>(true);
-        
+
+        public ReactiveProperty<DxxBookmark> Bookmarks { get; } = new ReactiveProperty<DxxBookmark>(DxxBookmark.Deserialize());
+        public ReactiveProperty<bool> IsBookmarked { get; } = new ReactiveProperty<bool>(false);
 
         private void InitializeProperties() {
-
             MainUrl.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
@@ -71,6 +70,7 @@ namespace DxxBrowser {
                     Driver = DxxDriverManager.DEFAULT;
                 }
                 UpdateContent();
+                IsBookmarked.Value = Bookmarks.Value.FindBookmark(v) != null;
             });
             SubUrl.Subscribe((v) => {
                 if (Driver.IsSupported(v)) {
@@ -107,6 +107,8 @@ namespace DxxBrowser {
         public ReactiveCommand ClearDownloadingListCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClearTargetListCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClearURLCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand BookmarkChanged { get; } = new ReactiveCommand();
 
         private void InitializeCommands() {
             NavigateCommand.Subscribe((v) => {
@@ -156,6 +158,20 @@ namespace DxxBrowser {
             ClearURLCommand.Subscribe(() => {
                 MainUrl.Value = "";
                 View.urlInput.Focus();
+            });
+
+            BookmarkChanged.Subscribe(() => {
+                var url = MainUrl.Value;
+                if (string.IsNullOrEmpty(url)) {
+                    IsBookmarked.Value = false;
+                    return;
+                }
+                if(IsBookmarked.Value) {
+                    Bookmarks.Value.AddBookmark("", url);
+                } else {
+                    Bookmarks.Value.RemoveBookmark(url);
+                    MainUrl.Value = url;
+                }
             });
         }
 
@@ -237,7 +253,6 @@ namespace DxxBrowser {
 
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
-
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
@@ -349,6 +364,7 @@ namespace DxxBrowser {
                     return;
                 }
             }
+            ViewModel.Bookmarks.Value.Serialize();
             CloseAnyway();
         }
         private async void CloseAnyway() {
