@@ -110,6 +110,8 @@ namespace DxxBrowser {
 
         public ReactiveCommand BookmarkChanged { get; } = new ReactiveCommand();
 
+        public ReactiveCommand ShowAnalysisView { get; } = new ReactiveCommand();
+
         private void InitializeCommands() {
             NavigateCommand.Subscribe((v) => {
                 NavigateTo?.Invoke(v);
@@ -161,6 +163,7 @@ namespace DxxBrowser {
             });
 
             BookmarkChanged.Subscribe(() => {
+                View.urlInput.Focus();
                 var url = MainUrl.Value;
                 if (string.IsNullOrEmpty(url)) {
                     IsBookmarked.Value = false;
@@ -172,6 +175,11 @@ namespace DxxBrowser {
                     Bookmarks.Value.RemoveBookmark(url);
                     MainUrl.Value = url;
                 }
+            });
+
+            ShowAnalysisView.Subscribe(() => {
+                var aw = new DxxAnalysisWindow(MainUrl.Value);
+                aw.Show();
             });
         }
 

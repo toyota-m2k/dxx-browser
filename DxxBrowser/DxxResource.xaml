@@ -18,6 +18,7 @@
     <local:BoolGridLengthConverter x:Key="BoolGridLengthConverter"/>
     <local:BoolGridLengthAutoConverter x:Key="BoolGridLengthAutoConverter"/>
     <local:IntBoolConverter x:Key="IntBoolConverter"/>
+    <local:HtmlNodeStringConverter x:Key="HtmlNodeStringConverter"/>
 
     <!-- Colors -->
     <SolidColorBrush x:Key="DialogBG" Color="#FF190280" />

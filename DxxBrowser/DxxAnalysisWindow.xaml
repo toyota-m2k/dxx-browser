@@ -1,0 +1,78 @@
+﻿<Window x:Class="DxxBrowser.DxxAnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DxxBrowser"
+        mc:Ignorable="d"
+        Title="DxxAnalysisWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid> <!-- 左ペイン-->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="URL"/>
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="urlInput" Text="{Binding BaseUrl.Value}" FontSize="14" VerticalContentAlignment="Center" HorizontalAlignment="Stretch">
+                <TextBox.InputBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding BeginAnalysis}" CommandParameter="{Binding ElementName=urlInput, Path=Text}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="XPath" Margin="0,0,4,0"/>
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="xpathInput" Text="{Binding XPath.Value}" FontSize="14" VerticalContentAlignment="Center" HorizontalAlignment="Stretch">
+                <TextBox.InputBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding ApplyXPath}" CommandParameter="{Binding ElementName=xpathInput, Path=Text}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <TreeView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding Nodes.Value}"
+                      SelectedItemChanged="OnNodeSelected">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding ChildNodes}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Description}"/>
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Grid>
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
+        <Grid Grid.Column="2">
+            <!-- 右ペイン -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Vertical">
+                <TextBlock Text="HTML Source"/>
+                    <TextBox IsReadOnly="True" Text="{Binding OuterHtml.Value}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <TextBlock Text="Inner Text"/>
+                <TextBox IsReadOnly="True" Text="{Binding InnerText.Value}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Orientation="Vertical">
+                <TextBlock Text="Attributes"/>
+                <ListView ItemsSource="{Binding Attributes.Value}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

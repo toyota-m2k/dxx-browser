@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -240,4 +241,37 @@ namespace DxxBrowser {
     //        throw new NotImplementedException();
     //    }
     //}
+
+    public class HtmlNodeStringConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            var node = value as HtmlNode;
+            if (node!=null) { 
+                if(node.NodeType!= HtmlNodeType.Element) {
+                    return node.Name;
+                }
+                switch(node.Name.ToLower()) {
+                    case "a": {
+                        var href = node.GetAttributeValue("href", "??");
+                        return $"A (href={href})";
+                    }
+                    case "iframe":
+                    case "frame":
+                    case "video":
+                    case "img": {
+                        var src = node.GetAttributeValue("src", "??");
+                        return $"{node.Name.ToUpper()} (src={src})";
+                    }
+                    default:
+                        return node.Name;
+                }
+                return String.Format("{0:#,0}", value);
+            }
+            return "unknown object";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
+
 }

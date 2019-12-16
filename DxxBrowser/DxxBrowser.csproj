@@ -64,13 +64,21 @@
       <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="driver\NopDriver.cs" />
+    <Compile Include="DxxAnalysisWindow.xaml.cs">
+      <DependentUpon>DxxAnalysisWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="DxxBookmark.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
+    <Compile Include="DxxHtmlNode.cs" />
     <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
     <Compile Include="Utils.cs" />
     <Page Include="driver\DxxStorageFolderDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxAnalysisWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

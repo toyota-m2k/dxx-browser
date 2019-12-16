@@ -36,6 +36,7 @@
                 <Button IsEnabled="{Binding HasPrev.Value}" Click="OnHistoryPrev"  Content="{StaticResource PathHistoryPrev}" Style="{StaticResource PushButtonStyle}"/>
                 <Button IsEnabled="{Binding HasNext.Value}" Click="OnHistoryNext"  Content="{StaticResource PathHistoryNext}" Style="{StaticResource PushButtonStyle}" Margin="2,0,2,0"/>
             </StackPanel>
+            <!-- URL Input area -->
             <ComboBox Grid.Column="1" FontSize="14" x:Name="urlInput" VerticalContentAlignment="Center" 
                       IsEditable="True" Text="{Binding MainUrl.Value}" ItemsSource="{Binding Bookmarks.Value}"
                       TextSearch.TextPath="Url">
@@ -65,11 +66,20 @@
                           Command="{Binding BookmarkChanged}"
                           />
             <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button IsEnabled="{Binding Loaded.Value}" Click="OnReload"  Content="{StaticResource PathReload}" Style="{StaticResource PushButtonStyle}" Margin="2,0,8,0">
+                <!-- Reload Button -->
+                <Button IsEnabled="{Binding Loaded.Value}" Click="OnReload"  Content="{StaticResource PathReload}" Style="{StaticResource PushButtonStyle}" Margin="2,0,2,0">
                     <ToolTipService.ToolTip>
                         <ToolTip Content="再読み込み"/>
                     </ToolTipService.ToolTip>
                 </Button>
+                <!-- Analyzer Button -->
+                <Button Content="{StaticResource PathAnalyze}" Style="{StaticResource PushButtonStyle}" Margin="2,0,8,0"
+                        Command="{Binding ShowAnalysisView}">
+                    <ToolTipService.ToolTip>
+                        <ToolTip Content="ページ分析ビューを表示"/>
+                    </ToolTipService.ToolTip>
+                </Button>
+
                 <Grid VerticalAlignment="Stretch" Background="#64FF64" Margin="4,4">
                     <TextBlock Text="{Binding DriverName.Value}" Background="Transparent" FontWeight="Bold" Foreground="Black" Margin="5,0" VerticalAlignment="Center"/>
                 </Grid>
