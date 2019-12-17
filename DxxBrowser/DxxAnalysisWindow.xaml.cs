@@ -1,4 +1,5 @@
-﻿using DxxBrowser.driver;
+﻿using Microsoft.WindowsAPICodePack.Dialogs;
+using DxxBrowser.driver;
 using HtmlAgilityPack;
 using Reactive.Bindings;
 using System;
@@ -26,17 +27,9 @@ namespace DxxBrowser {
         public ReactiveProperty<IEnumerable<DxxHtmlNode>> Nodes { get; } = new ReactiveProperty<IEnumerable<DxxHtmlNode>>();
         public ReactiveProperty<DxxHtmlNode> CurrentNode { get; } = new ReactiveProperty<DxxHtmlNode>();
 
-        public ReactiveProperty<HtmlNode> SelectedNode { get; } = new ReactiveProperty<HtmlNode>();
-        public ReactiveProperty<string> OuterHtml { get; } = new ReactiveProperty<string>();
-        public ReactiveProperty<string> InnerText { get; } = new ReactiveProperty<string>();
-        public ReactiveProperty<HtmlAttributeCollection> Attributes { get; } = new ReactiveProperty<HtmlAttributeCollection>();
+        public ReactiveProperty<DxxHtmlNode> SelectedNode { get; } = new ReactiveProperty<DxxHtmlNode>();
 
         private void InitializeProperties() {
-            SelectedNode.Subscribe((v) => {
-                OuterHtml.Value = v?.OuterHtml;
-                InnerText.Value = v?.InnerText;
-                Attributes.Value = v?.Attributes;
-            });
         }
 
         #endregion
@@ -47,6 +40,18 @@ namespace DxxBrowser {
 
         public ReactiveCommand<string> ApplyXPath { get; } = new ReactiveCommand<string>();
 
+        public ReactiveCommand<DxxLink> CopyLinkUrl { get; } = new ReactiveCommand<DxxLink>();
+        public ReactiveCommand<DxxLink> AnalizeLinkUrl { get; } = new ReactiveCommand<DxxLink>();
+        public ReactiveCommand<DxxLink> AnalizeNewLinkUrl { get; } = new ReactiveCommand<DxxLink>();
+        public ReactiveCommand<DxxLink> ExecuteLinkUrl { get; } = new ReactiveCommand<DxxLink>();
+        public ReactiveCommand<DxxLink> DownloadLinkUrl { get; } = new ReactiveCommand<DxxLink>();
+
+        public ReactiveCommand<DxxHtmlNode> SelectParent { get; } = new ReactiveCommand<DxxHtmlNode>();
+        public ReactiveCommand<DxxHtmlNode> SelectThisNode { get; } = new ReactiveCommand<DxxHtmlNode>();
+        public ReactiveCommand<HtmlAttribute> CopyAttrValue { get; } = new ReactiveCommand<HtmlAttribute>();
+        public ReactiveCommand<HtmlAttribute> CopyAttrName { get; } = new ReactiveCommand<HtmlAttribute>();
+
+
         private void InitializeCommands() {
             BeginAnalysis.Subscribe((v) => {
                 BaseUrl.Value = v;
@@ -55,6 +60,54 @@ namespace DxxBrowser {
 
             ApplyXPath.Subscribe((v) => {
                 SetXPath(v);
+            });
+
+            CopyLinkUrl.Subscribe((v) => {
+                Debug.WriteLine(v.Value);
+                Clipboard.SetData(DataFormats.Text, v.Value);
+            });
+            ExecuteLinkUrl.Subscribe((v) => {
+                Debug.WriteLine(v);
+                Process.Start(v.Value);
+            });
+            AnalizeLinkUrl.Subscribe((v) => {
+                Debug.WriteLine(v);
+                BeginAnalysis.Execute(v.Value);
+            });
+            AnalizeNewLinkUrl.Subscribe((v) => {
+                Debug.WriteLine(v);
+                var aw = new DxxAnalysisWindow(v.Value);
+                aw.Show();
+            });
+            DownloadLinkUrl.Subscribe((v) => {
+                using (var dlg = new CommonSaveFileDialog("Download to file.")) {
+                    var uri = new Uri(v.Value);
+                    var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
+                    dlg.OverwritePrompt = true;
+                    dlg.DefaultFileName = ti.Name;
+                    if (dlg.ShowDialog() == CommonFileDialogResult.Ok) {
+                        DxxDownloader.Instance.Download(ti, dlg.FileName);
+                    }
+                }
+            });
+
+            SelectParent.Subscribe((v) => {
+                var parent = v.Node.ParentNode;
+                if(null!=parent) {
+                    ApplyXPath.Execute(parent.XPath);
+                }
+            });
+
+            SelectThisNode.Subscribe((v) => {
+                //Debug.WriteLine(v);
+                ApplyXPath.Execute(v.Node.XPath);
+            });
+
+            CopyAttrName.Subscribe((v) => {
+                Clipboard.SetData(DataFormats.Text, v.Name);
+            });
+            CopyAttrValue.Subscribe((v) => {
+                Clipboard.SetData(DataFormats.Text, v.Value??"");
             });
         }
 
@@ -126,15 +179,27 @@ namespace DxxBrowser {
             InitializeComponent();
         }
 
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            ViewModel.Dispose();
+        }
+
         public DxxAnalysysViewModel ViewModel {
             get => DataContext as DxxAnalysysViewModel;
             private set { DataContext = value; }
         }
 
         private void OnNodeSelected(object sender, RoutedPropertyChangedEventArgs<object> e) {
-            ViewModel.SelectedNode.Value = (e.NewValue as DxxHtmlNode)?.Node;
+            ViewModel.SelectedNode.Value = e.NewValue as DxxHtmlNode;
         }
 
+        private void OnLinkDoubleClick(object sender, MouseButtonEventArgs e) {
+            var v = (sender as ListViewItem)?.Content as DxxLink;
+
+            if(v !=null) {
+                Debug.WriteLine(v.Value);
+                System.Diagnostics.Process.Start(v.Value);
+            }
+        }
 
     }
 }

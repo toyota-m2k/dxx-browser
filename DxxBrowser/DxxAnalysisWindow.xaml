@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DxxBrowser"
         mc:Ignorable="d"
+        Unloaded="OnUnloaded"
         Title="DxxAnalysisWindow" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -37,6 +38,22 @@
 
             <TreeView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding Nodes.Value}"
                       SelectedItemChanged="OnNodeSelected">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <!-- ContextMenu/MenuItem から ListViewの（＝Windowの）DataContextを参照するため、Tag:object に DataContextをセットしておく -->
+                        <Setter Property="Tag"
+                                Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" />
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
+                                <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="Select Parent" Command="{Binding SelectParent}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Select This Node" Command="{Binding SelectThisNode}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding ChildNodes}">
                         <StackPanel Orientation="Horizontal">
@@ -48,31 +65,91 @@
         </Grid>
         <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch"/>
         <Grid Grid.Column="2">
-            <!-- 右ペイン -->
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Vertical">
-                <TextBlock Text="HTML Source"/>
-                    <TextBox IsReadOnly="True" Text="{Binding OuterHtml.Value}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
-            </StackPanel>
-            <StackPanel Grid.Row="1" Orientation="Vertical">
-                <TextBlock Text="Inner Text"/>
-                <TextBox IsReadOnly="True" Text="{Binding InnerText.Value}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
-            </StackPanel>
-            <StackPanel Grid.Row="2" Orientation="Vertical">
-                <TextBlock Text="Attributes"/>
-                <ListView ItemsSource="{Binding Attributes.Value}">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding Name}" />
-                            <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid>
+                    <!-- 右ペイン -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Vertical">
+                        <TextBlock Text="HTML Source"/>
+                        <TextBox IsReadOnly="True" Text="{Binding SelectedNode.Value.FormattedHtml, Mode=OneWay}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Orientation="Vertical">
+                        <TextBlock Text="Inner Text"/>
+                        <TextBox IsReadOnly="True" Text="{Binding SelectedNode.Value.FormattedInnerText, Mode=OneWay}" MaxHeight="400" VerticalScrollBarVisibility="Auto"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Vertical">
+                        <TextBlock Text="Attributes"/>
+                        <ListView ItemsSource="{Binding SelectedNode.Value.Attributes}" MaxHeight="400">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <!-- ContextMenu/MenuItem から ListViewの（＝Windowの）DataContextを参照するため、Tag:object に DataContextをセットしておく -->
+                                    <Setter Property="Tag"
+                                            Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}" />
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
+                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="Copy Value" Command="{Binding CopyAttrValue}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                <MenuItem Header="Copy Name" Command="{Binding CopyAttrName}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" Width="60" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Value" Width="300" DisplayMemberBinding="{Binding Value}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </StackPanel>
+                    <StackPanel Grid.Row="3" Orientation="Vertical">
+                        <TextBlock Text="Links"/>
+                        <ListView ItemsSource="{Binding SelectedNode.Value.Links}" MaxHeight="400">
+                            <!--<ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Copy" Command="{Binding CopyLinkUrl}"/>
+                                    <MenuItem Header="Analyze" Command="{Binding AnalizeLinkUrl}"/>
+                                    <MenuItem Header="Analyze(New)" Command="{Binding AnalizeNewLinkUrl}"/>
+                                    <MenuItem Header="Execute" Command="{Binding ExecuteLinkUrl}"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>-->
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <EventSetter Event="MouseDoubleClick" Handler="OnLinkDoubleClick"/>
+                                    <!-- ContextMenu/MenuItem から ListViewの（＝Windowの）DataContextを参照するため、Tag:object に DataContextをセットしておく -->
+                                    <Setter Property="Tag"
+                                            Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}" />
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
+                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="Copy" Command="{Binding CopyLinkUrl}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                <MenuItem Header="Analyze" Command="{Binding AnalizeLinkUrl}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                <MenuItem Header="Analyze(New)" Command="{Binding AnalizeNewLinkUrl}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                <MenuItem Header="Execute" Command="{Binding ExecuteLinkUrl}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                <MenuItem Header="Download" Command="{Binding DownloadLinkUrl}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" Width="60" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Value" Width="300" DisplayMemberBinding="{Binding Value}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>
