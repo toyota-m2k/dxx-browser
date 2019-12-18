@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -271,9 +272,26 @@ namespace DxxBrowser {
             mainBrowser.ScriptNotify += WebView_ScriptNotify;
             mainBrowser.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
             mainBrowser.Process.ProcessExited += WebView_ProcessExited;
+            mainBrowser.NewWindowRequested += WebView_NewWindowRequested;
+            mainBrowser.PermissionRequested += WebView_PermissionRequired;
+            mainBrowser.MoveFocusRequested += WebView_MoveFocusRequested;
 
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
+        }
+
+        private void WebView_MoveFocusRequested(object sender, WebViewControlMoveFocusRequestedEventArgs e) {
+            Debug.WriteLine("WebView_MoveFocusRequested");
+        }
+
+        private void WebView_PermissionRequired(object sender, WebViewControlPermissionRequestedEventArgs e) {
+            Debug.WriteLine("WebView_PermissionRequired");
+        }
+
+        private void WebView_NewWindowRequested(object sender, WebViewControlNewWindowRequestedEventArgs e) {
+            Debug.WriteLine($"WebView_NewWindowRequested:{e.Uri}");
+            subBrowser.Navigate(e.Uri);
+            ViewModel.SubUrl.Value = e.Uri.ToString();
         }
 
         private void WebView_ProcessExited(object sender, object e) {
@@ -302,6 +320,13 @@ namespace DxxBrowser {
 
         private void WebView_FrameNavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             Debug.WriteLine("WebView_FrameNavigationStarting");
+            //e.Cancel = true;
+            Task.Run(() => {
+                Dispatcher.InvokeAsync(() => {
+                    subBrowser.Navigate(e.Uri);
+                    ViewModel.SubUrl.Value = e.Uri.ToString();
+                });
+            });
         }
 
         private void WebView_FrameNavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
@@ -352,8 +377,8 @@ namespace DxxBrowser {
                 mLoadingMain = true;
                 try {
                     mainBrowser.Stop();
-                    //mainBrowser.Navigate(uri.ToString());
-                    mainBrowser.Source = uri;
+                    mainBrowser.Navigate(uri.ToString());
+                    //mainBrowser.Source = uri;
                 } catch (Exception) {
                     mLoadingMain = false;
                 }
@@ -378,41 +403,45 @@ namespace DxxBrowser {
 
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             Debug.WriteLine("WebView_NavigationStarting");
-            if (!mLoadingMain) {
-                if (ViewModel.IsContainerList.Value) {
-                    switch (ViewModel.ClickMode.Value) {
-                        case DxxClickMode.NaviMode:
-                            if(ViewModel.NaviToSubView.Value) {
-                                subBrowser.Stop();
-                                subBrowser.Navigate(e.Uri);
-                                ViewModel.SubUrl.Value = e.Uri.ToString();
-                                e.Cancel = true;
-                                return;
-                            }
-                            break;
-                        case DxxClickMode.DLMode:
-                            var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
-                            if (driver != null) {
-                                var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
-                                if (du.IsContainer || du.IsTarget) {
-                                    if (ViewModel.DLAndSubView.Value) {
-                                        subBrowser.Stop();
-                                        subBrowser.Navigate(e.Uri);
-                                        ViewModel.SubUrl.Value = e.Uri.ToString();
-                                    }
-                                    _ = du.Download();
+            try {
+                if (!mLoadingMain) {
+                    if (ViewModel.IsContainerList.Value) {
+                        switch (ViewModel.ClickMode.Value) {
+                            case DxxClickMode.NaviMode:
+                                if (ViewModel.NaviToSubView.Value) {
+                                    subBrowser.Stop();
+                                    subBrowser.Navigate(e.Uri);
+                                    ViewModel.SubUrl.Value = e.Uri.ToString();
                                     e.Cancel = true;
                                     return;
                                 }
-                            }
-                            break;
-                        default:
-                            break;
+                                break;
+                            case DxxClickMode.DLMode:
+                                var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
+                                if (driver != null) {
+                                    var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
+                                    if (du.IsContainer || du.IsTarget) {
+                                        if (ViewModel.DLAndSubView.Value) {
+                                            subBrowser.Stop();
+                                            subBrowser.Navigate(e.Uri);
+                                            ViewModel.SubUrl.Value = e.Uri.ToString();
+                                        }
+                                        _ = du.Download();
+                                        e.Cancel = true;
+                                        return;
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
+                ViewModel.Loaded.Value = false;
+                ViewModel.MainUrl.Value = e.Uri.ToString();
+            } finally {
+                mLoadingMain = false;
             }
-            ViewModel.Loaded.Value = false;
-            ViewModel.MainUrl.Value = e.Uri.ToString();
         }
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
