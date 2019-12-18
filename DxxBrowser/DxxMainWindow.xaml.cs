@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace DxxBrowser {
     public enum DxxClickMode {
@@ -258,9 +259,69 @@ namespace DxxBrowser {
         private void OnLoaded(object sender, RoutedEventArgs e) {
             mainBrowser.NavigationStarting += WebView_NavigationStarting;
             mainBrowser.NavigationCompleted += WebView_NavigationCompleted;
+            mainBrowser.SourceUpdated += WebView_SourceUpdated;
+            mainBrowser.ContentLoading += WebView_ContentLoading;
+            mainBrowser.DOMContentLoaded += WebView_DOMContentLoaded;
+            mainBrowser.FrameContentLoading += WebView_FrameContentLoading;
+            mainBrowser.FrameNavigationCompleted += WebView_FrameNavigationCompleted;
+            mainBrowser.FrameNavigationStarting += WebView_FrameNavigationStarting;
+            mainBrowser.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
+            mainBrowser.UnsupportedUriSchemeIdentified += WebView_UnsupportedUriSchemeIdentified;
+            mainBrowser.UnviewableContentIdentified += WebView_UnviewableContentIdentified;
+            mainBrowser.ScriptNotify += WebView_ScriptNotify;
+            mainBrowser.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
+            mainBrowser.Process.ProcessExited += WebView_ProcessExited;
 
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
+        }
+
+        private void WebView_ProcessExited(object sender, object e) {
+            Debug.WriteLine("WebView_ProcessExited");
+        }
+
+        private void WebView_LongRunningScriptDetected(object sender, WebViewControlLongRunningScriptDetectedEventArgs e) {
+            Debug.WriteLine("WebView_LongRunningScriptDetected");
+        }
+
+        private void WebView_ScriptNotify(object sender, WebViewControlScriptNotifyEventArgs e) {
+            Debug.WriteLine("WebView_ScriptNotify");
+        }
+
+        private void WebView_UnviewableContentIdentified(object sender, WebViewControlUnviewableContentIdentifiedEventArgs e) {
+            Debug.WriteLine("WebView_UnviewableContentIdentified");
+        }
+
+        private void WebView_UnsupportedUriSchemeIdentified(object sender, WebViewControlUnsupportedUriSchemeIdentifiedEventArgs e) {
+            Debug.WriteLine("WebView_UnsupportedUriSchemeIdentified");
+        }
+
+        private void WebView_UnsafeContentWarningDisplaying(object sender, object e) {
+            Debug.WriteLine("WebView_UnsafeContentWarningDisplaying");
+        }
+
+        private void WebView_FrameNavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
+            Debug.WriteLine("WebView_FrameNavigationStarting");
+        }
+
+        private void WebView_FrameNavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
+            Debug.WriteLine("WebView_FrameNavigationCompleted");
+        }
+
+        private void WebView_FrameContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
+            Debug.WriteLine("WebView_FrameContentLoading");
+        }
+
+        private void WebView_DOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
+            Debug.WriteLine("WebView_DOMContentLoaded");
+        }
+
+        private void WebView_ContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
+            Debug.WriteLine("WebView_ContentLoading");
+        }
+
+        private void WebView_SourceUpdated(object sender, DataTransferEventArgs e) {
+            Debug.WriteLine("WebView_SourceUpdated");
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
@@ -287,10 +348,12 @@ namespace DxxBrowser {
 
         private void NavigateTo(string url) {
             var uri = DxxUrl.FixUpUrl(url);
-            if (mainBrowser.Source.ToString() != url.ToString()) {
+            if (mainBrowser.Source?.ToString() != url.ToString()) {
                 mLoadingMain = true;
                 try {
-                    mainBrowser.Navigate(uri.ToString());
+                    mainBrowser.Stop();
+                    //mainBrowser.Navigate(uri.ToString());
+                    mainBrowser.Source = uri;
                 } catch (Exception) {
                     mLoadingMain = false;
                 }
@@ -314,6 +377,7 @@ namespace DxxBrowser {
 
 
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
+            Debug.WriteLine("WebView_NavigationStarting");
             if (!mLoadingMain) {
                 if (ViewModel.IsContainerList.Value) {
                     switch (ViewModel.ClickMode.Value) {
@@ -352,6 +416,7 @@ namespace DxxBrowser {
         }
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
+            Debug.WriteLine("WebView_NavigationCompleted");
             mLoadingMain = false;
             ViewModel.MainUrl.Value = e.Uri.ToString();
             ViewModel.Loaded.Value = true;
