@@ -51,7 +51,12 @@ namespace DxxBrowser {
         public ReactiveCommand<HtmlAttribute> CopyAttrValue { get; } = new ReactiveCommand<HtmlAttribute>();
         public ReactiveCommand<HtmlAttribute> CopyAttrName { get; } = new ReactiveCommand<HtmlAttribute>();
 
-
+        private string ensureName(string s) {
+            if(s.EndsWith("/")) {
+                s = s.Substring(0, s.Length - 1) + ".html";
+            }
+            return s.Replace("/", "_").Replace("\\", "_");
+        }
         private void InitializeCommands() {
             BeginAnalysis.Subscribe((v) => {
                 BaseUrl.Value = v;
@@ -84,9 +89,15 @@ namespace DxxBrowser {
                     var uri = new Uri(v.Value);
                     var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
                     dlg.OverwritePrompt = true;
-                    dlg.DefaultFileName = ti.Name;
-                    if (dlg.ShowDialog() == CommonFileDialogResult.Ok) {
-                        DxxDownloader.Instance.Download(ti, dlg.FileName);
+                    dlg.DefaultFileName = ensureName(ti.Name);
+                    if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
+                        DxxDownloader.Instance.Download(ti, dlg.FileName, (f)=> {
+                            Owner.Dispatcher.InvokeAsync(() => {
+                                if (f) {
+                                    DxxFileDispositionDialog.Show(dlg.FileName, Owner);
+                                }
+                            });
+                        });
                     }
                 }
             });
@@ -114,8 +125,11 @@ namespace DxxBrowser {
         #endregion
 
         #region Initialize
+        private WeakReference<DxxAnalysisWindow> mOwner;
+        private DxxAnalysisWindow Owner => mOwner?.GetValue();
 
-        public DxxAnalysysViewModel(string initialUrl) {
+        public DxxAnalysysViewModel(DxxAnalysisWindow owner, string initialUrl) {
+            mOwner = new WeakReference<DxxAnalysisWindow>(owner);
             if (!string.IsNullOrEmpty(initialUrl)) {
                 BaseUrl.Value = initialUrl;
                 Load();
@@ -175,7 +189,7 @@ namespace DxxBrowser {
     /// </summary>
     public partial class DxxAnalysisWindow : Window {
         public DxxAnalysisWindow(string url) {
-            ViewModel = new DxxAnalysysViewModel(url);
+            ViewModel = new DxxAnalysysViewModel(this, url);
             InitializeComponent();
         }
 

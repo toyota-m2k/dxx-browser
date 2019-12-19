@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver {
@@ -33,7 +34,7 @@ namespace DxxBrowser.driver {
             return false;
         }
 
-        public bool Setup(XmlElement settings) {
+        public bool Setup(XmlElement settings, Window owner) {
             return false;
         }
 

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver.caribbean {
@@ -49,8 +50,9 @@ namespace DxxBrowser.driver.caribbean {
             return defName;
         }
 
-        public bool Setup(XmlElement settings) {
+        public bool Setup(XmlElement settings, Window owner) {
             var dlg = new DxxStorageFolderDialog(Name, StoragePath);
+            dlg.Owner = owner;
             if (dlg.ShowDialog() ?? false) {
                 StoragePath = dlg.Path;
                 if (null != settings) {

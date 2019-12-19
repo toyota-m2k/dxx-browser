@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser
@@ -12,7 +13,7 @@ namespace DxxBrowser
         string Name { get; }
         string ID { get; }
         bool HasSettings { get; }
-        bool Setup(XmlElement settings);
+        bool Setup(XmlElement settings, Window owner);
         bool LoadSettins(XmlElement settings);
         bool SaveSettings(XmlElement settings);
 

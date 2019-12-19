@@ -70,6 +70,9 @@
     <Compile Include="DxxBookmark.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
+    <Compile Include="DxxFileDispositionDialog.xaml.cs">
+      <DependentUpon>DxxFileDispositionDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="DxxHtmlNode.cs" />
     <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
@@ -79,6 +82,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="DxxAnalysisWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxFileDispositionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

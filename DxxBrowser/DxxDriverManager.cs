@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser
@@ -24,7 +25,6 @@ namespace DxxBrowser
             mList = new List<IDxxDriver>();
             mList.Add(new DmmDriver());
             mList.Add(new CaribbeanDriver());
-            LoadSettings();
         }
 
         public IDxxDriver FindDriver(string url) {
@@ -77,7 +77,7 @@ namespace DxxBrowser
             }
         }
 
-        public void LoadSettings() {
+        public void LoadSettings(Window owner) {
             var doc = getSettings();
             var root = doc.GetElementsByTagName(ROOT_NAME)[0];
             bool update = false;
@@ -88,7 +88,7 @@ namespace DxxBrowser
                     d.LoadSettins(el as XmlElement);
                 } else {
                     var el = doc.CreateElement(d.ID);
-                    if (d.Setup(el)) {
+                    if (d.Setup(el,owner)) {
                         root.AppendChild(el);
                         update = true;
                     }
@@ -99,7 +99,7 @@ namespace DxxBrowser
             }
         }
 
-        public void Setup(IDxxDriver targetDriver) {
+        public void Setup(IDxxDriver targetDriver, Window owner) {
             if(!targetDriver.HasSettings) {
                 return;
             }
@@ -110,7 +110,7 @@ namespace DxxBrowser
                 el = doc.CreateElement(targetDriver.ID);
                 root.AppendChild(el);
             }
-            if(targetDriver.Setup(el as XmlElement)) {
+            if(targetDriver.Setup(el as XmlElement, owner)) {
                 doc.Save(SETTINGS_PATH);
             }
         }
