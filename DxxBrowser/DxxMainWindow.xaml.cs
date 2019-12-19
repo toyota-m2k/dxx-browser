@@ -106,8 +106,6 @@ namespace DxxBrowser {
             private set { DataContext = value; }
         }
 
-        private bool mLoadingMain = false;
-
         public DxxMainWindow() {
             DxxDownloader.Instance.Initialize(this);
             DxxLogger.Instance.Initialize(this);
@@ -118,6 +116,11 @@ namespace DxxBrowser {
         private void OnLoaded(object sender, RoutedEventArgs e) {
             mainViewer.Initialize(true, ViewModel.Bookmarks, ViewModel.TargetList);
             subViewer.Initialize(false, ViewModel.Bookmarks, ViewModel.TargetList);
+            mainViewer.ViewModel.RequestLoadInSubview.Subscribe((v) => {
+                Dispatcher.InvokeAsync(() => {
+                    subViewer.ViewModel.NavigateCommand.Execute(v);
+                });
+            });
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
         }

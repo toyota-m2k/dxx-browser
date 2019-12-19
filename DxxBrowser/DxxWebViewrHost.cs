@@ -41,6 +41,7 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> Loading { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsBookmarked { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> HasFrameLink { get; } = new ReactiveProperty<bool>(false);
 
         public ReactiveProperty<IDxxDriver> Driver { get; } = new ReactiveProperty<IDxxDriver>(DxxDriverManager.DEFAULT);
         public ReactiveProperty<bool> IsTarget { get; } = new ReactiveProperty<bool>(false);
@@ -51,7 +52,7 @@ namespace DxxBrowser {
         public ReactiveProperty<ErrorLevel> HasError{ get; } = new ReactiveProperty<ErrorLevel>(ErrorLevel.NONE);
         public ReactiveProperty<string> CurrentError { get; } = new ReactiveProperty<string>();
 
-        public ReactiveProperty<ObservableCollection<string>> FrameUrls = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
+        public ReactiveProperty<ObservableCollection<string>> FrameUrls { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
 
         private void InitializeProperties() {
             Url.Subscribe((v) => {
@@ -316,11 +317,13 @@ namespace DxxBrowser {
 
         void ClearFrameList() {
             FrameUrls.Value.Clear();
+            HasFrameLink.Value = false;
         }
 
         void AddFrameList(string url) {
             FrameUrls.Value.Remove(url);
             FrameUrls.Value.Insert(0, url);
+            HasFrameLink.Value = FrameUrls.Value.Count > 0;
         }
 
         #endregion

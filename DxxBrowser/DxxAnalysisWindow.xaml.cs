@@ -57,6 +57,18 @@ namespace DxxBrowser {
             }
             return s.Replace("/", "_").Replace("\\", "_");
         }
+
+        private Uri ensureUri(string url) {
+            if(url.StartsWith("http")) {
+                return new Uri(url);
+            }
+            var baseUri = new Uri(BaseUrl.Value);
+            if(Uri.TryCreate(baseUri, url, out var r)) {
+                return r;
+            }
+            return null;
+        }
+
         private void InitializeCommands() {
             BeginAnalysis.Subscribe((v) => {
                 BaseUrl.Value = v;
@@ -86,18 +98,20 @@ namespace DxxBrowser {
             });
             DownloadLinkUrl.Subscribe((v) => {
                 using (var dlg = new CommonSaveFileDialog("Download to file.")) {
-                    var uri = new Uri(v.Value);
-                    var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
-                    dlg.OverwritePrompt = true;
-                    dlg.DefaultFileName = ensureName(ti.Name);
-                    if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
-                        DxxDownloader.Instance.Download(ti, dlg.FileName, (f)=> {
-                            Owner.Dispatcher.InvokeAsync(() => {
-                                if (f) {
-                                    DxxFileDispositionDialog.Show(dlg.FileName, Owner);
-                                }
+                    var uri = ensureUri(v.Value);
+                    if (uri != null) {
+                        var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
+                        dlg.OverwritePrompt = true;
+                        dlg.DefaultFileName = ensureName(ti.Name);
+                        if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
+                            DxxDownloader.Instance.Download(ti, dlg.FileName, (f) => {
+                                Owner.Dispatcher.InvokeAsync(() => {
+                                    if (f) {
+                                        DxxFileDispositionDialog.Show(dlg.FileName, Owner);
+                                    }
+                                });
                             });
-                        });
+                        }
                     }
                 }
             });
