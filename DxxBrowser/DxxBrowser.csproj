@@ -55,6 +55,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CompoundProperty.cs" />
     <Compile Include="Disposal.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
@@ -68,6 +69,13 @@
       <DependentUpon>DxxAnalysisWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DxxBookmark.cs" />
+    <Compile Include="DxxBrowserView.xaml.cs">
+      <DependentUpon>DxxBrowserView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DxxNaviBar.xaml.cs">
+      <DependentUpon>DxxNaviBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
     <Compile Include="DxxFileDispositionDialog.xaml.cs">
@@ -82,6 +90,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="DxxAnalysisWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxBrowserView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxNaviBar.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
