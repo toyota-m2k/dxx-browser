@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Threading;
+using System.Windows;
 
 namespace DxxBrowser.driver.dmm
 {
@@ -47,8 +48,9 @@ namespace DxxBrowser.driver.dmm
             return DxxUrl.GetFileName(uri);
         }
 
-        public bool Setup(XmlElement settings) {
+        public bool Setup(XmlElement settings, Window owner) {
             var dlg = new DxxStorageFolderDialog(Name, StoragePath);
+            dlg.Owner = owner;
             if(dlg.ShowDialog() ?? false) {
                 StoragePath = dlg.Path;
                 if (null!=settings) {

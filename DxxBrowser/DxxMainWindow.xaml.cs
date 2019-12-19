@@ -31,9 +31,6 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
 
-        public delegate void NavigateToProc(string url);
-        public NavigateToProc NavigateTo;
-
         public ReactiveProperty<string> DriverName { get; } = new ReactiveProperty<string>(DxxDriverManager.DEFAULT.Name);
         public ReactiveProperty<bool> SettingEnabled { get; } = new ReactiveProperty<bool>(false);
 
@@ -114,13 +111,13 @@ namespace DxxBrowser {
 
         private void InitializeCommands() {
             NavigateCommand.Subscribe((v) => {
-                NavigateTo?.Invoke(v);
+                Owner?.NavigateTo(v);
             });
             ClearStatusCommand.Subscribe(() => {
                 StatusList.Value.Clear();
             });
             SetupDriverCommand.Subscribe(() => {
-                DxxDriverManager.Instance.Setup(Driver);
+                DxxDriverManager.Instance.Setup(Driver, OwnerWindow);
             });
             // カレントURLからターゲットをダウンロード
             DownloadCommand.Subscribe(() => {
@@ -159,11 +156,11 @@ namespace DxxBrowser {
             });
             ClearURLCommand.Subscribe(() => {
                 MainUrl.Value = "";
-                View.urlInput.Focus();
+                Owner.urlInput.Focus();
             });
 
             BookmarkChanged.Subscribe(() => {
-                View.urlInput.Focus();
+                Owner.urlInput.Focus();
                 var url = MainUrl.Value;
                 if (string.IsNullOrEmpty(url)) {
                     IsBookmarked.Value = false;
@@ -188,7 +185,7 @@ namespace DxxBrowser {
         #region Initialize/Terminate
 
         public DxxMainViewModel(DxxMainWindow owner) {
-            mView = new WeakReference<DxxMainWindow>(owner);
+            mOwner = new WeakReference<DxxMainWindow>(owner);
             InitializeCommands();
             InitializeProperties();
         }
@@ -206,7 +203,6 @@ namespace DxxBrowser {
 
         public override void Dispose() {
             base.Dispose();
-            NavigateTo = null;
         }
         #endregion
 
@@ -230,8 +226,9 @@ namespace DxxBrowser {
         public DxxUrl DxxMainUrl => mDxxMainUrl;
         public DxxUrl DxxSubUrl => mDxxSubUrl;
 
-        private WeakReference<DxxMainWindow> mView;
-        private DxxMainWindow View => mView?.GetValue();
+        private WeakReference<DxxMainWindow> mOwner;
+        private DxxMainWindow Owner => mOwner?.GetValue();
+        private Window OwnerWindow => Window.GetWindow(Owner);
 
         #endregion
     }
@@ -251,8 +248,8 @@ namespace DxxBrowser {
         public DxxMainWindow() {
             DxxDownloader.Instance.Initialize(this);
             DxxLogger.Instance.Initialize(this);
+            DxxDriverManager.Instance.LoadSettings(this);
             ViewModel = new DxxMainViewModel(this);
-            ViewModel.NavigateTo = NavigateTo;
             InitializeComponent();
         }
         private void OnLoaded(object sender, RoutedEventArgs e) {
@@ -285,7 +282,7 @@ namespace DxxBrowser {
             }
         }
 
-        private void NavigateTo(string url) {
+        public void NavigateTo(string url) {
             var uri = DxxUrl.FixUpUrl(url);
             if (mainBrowser.Source.ToString() != url.ToString()) {
                 mLoadingMain = true;

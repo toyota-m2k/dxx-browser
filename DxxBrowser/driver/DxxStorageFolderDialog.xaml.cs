@@ -44,7 +44,7 @@ namespace DxxBrowser.driver {
             using (var dlg = new CommonOpenFileDialog("Select Folder")) {
                 dlg.IsFolderPicker = true;
                 dlg.Multiselect = false;
-                if (dlg.ShowDialog() == CommonFileDialogResult.Ok) {
+                if (dlg.ShowDialog(GetWindow(this)) == CommonFileDialogResult.Ok) {
                     ViewModel.Path.Value = dlg.FileName;
                 }
             }
