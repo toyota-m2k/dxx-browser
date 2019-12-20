@@ -23,8 +23,8 @@
     <!-- Colors -->
     <SolidColorBrush x:Key="DialogBG" Color="#FF190280" />
 
-    <SolidColorBrush x:Key="NormalBtnBG" Color="#30FFFFFF" />
-    <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80888888" />
+    <SolidColorBrush x:Key="NormalBtnBG" Color="#00FFFFFF" />
+    <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80FF8080" />
     <SolidColorBrush x:Key="PressedBtnBG" Color="#80888888" />
     <SolidColorBrush x:Key="DisabledBtnBG" Color="#30FFFFFF" />
 
@@ -259,6 +259,7 @@
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Width" Value="20"/>
         <Setter Property="Height" Value="20"/>
+        <Setter Property="Margin" Value="5,0"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="LightGray"/>
@@ -272,19 +273,18 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="Gray" />
+                <Setter Property="Foreground" Value="White" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Foreground" Value="DarkGray" />
+                <Setter Property="Foreground" Value="Yellow" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Foreground" Value="{StaticResource DisabledBtnFG}" />
             </Trigger>
             <Trigger Property="IsChecked" Value="true">
-                <Setter Property="Foreground" Value="#0080FF"/>
                 <Setter Property="Content">
                     <Setter.Value>
-                        <Path Data="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" Stretch="Fill" Fill="#0080FF"/>
+                        <Path Data="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" Stretch="Fill" Fill="#80FFFF"/>
                     </Setter.Value>
                 </Setter>
             </Trigger>

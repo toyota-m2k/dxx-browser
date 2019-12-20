@@ -115,7 +115,7 @@ namespace DxxBrowser {
                 Stop();
             });
             BookmarkCommand.Subscribe((v) => {
-                if (string.IsNullOrEmpty(v)) {
+                if (string.IsNullOrEmpty(v)||!v.StartsWith("http")) {
                     IsBookmarked.Value = false;
                     return;
                 }

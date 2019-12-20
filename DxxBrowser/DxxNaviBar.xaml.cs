@@ -26,5 +26,14 @@ namespace DxxBrowser {
         public DxxNaviBar() {
             InitializeComponent();
         }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            var edit = Utils.FindChild(urlInput, "PART_EditableTextBox", typeof(TextBox)) as TextBox;
+            if(null!=edit) {
+                var th = edit.Margin;
+                th.Right = 25;
+                edit.Margin = th;
+            }
+        }
     }
 }
