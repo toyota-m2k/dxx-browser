@@ -133,6 +133,17 @@ namespace DxxBrowser {
             return GetFileName(uri);
         }
 
+        public static string TrimName(string name) {
+            if(null==name) {
+                return "";
+            }
+            if (name.EndsWith("/")) {
+                name = name.Substring(0, name.Length - 1) + ".html";
+            }
+            return name.Replace("/", "_").Replace("\\", "_");
+        }
+
+
         public static Uri FixUpUrl(string url) {
             if (string.IsNullOrEmpty(url)) {
                 return null;

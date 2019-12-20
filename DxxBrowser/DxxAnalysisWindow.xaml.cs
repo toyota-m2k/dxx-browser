@@ -54,12 +54,12 @@ namespace DxxBrowser {
         public ReactiveCommand<HtmlAttribute> CopyAttrValue { get; } = new ReactiveCommand<HtmlAttribute>();
         public ReactiveCommand<HtmlAttribute> CopyAttrName { get; } = new ReactiveCommand<HtmlAttribute>();
 
-        private string ensureName(string s) {
-            if(s.EndsWith("/")) {
-                s = s.Substring(0, s.Length - 1) + ".html";
-            }
-            return s.Replace("/", "_").Replace("\\", "_");
-        }
+        //private string ensureName(string s) {
+        //    if(s.EndsWith("/")) {
+        //        s = s.Substring(0, s.Length - 1) + ".html";
+        //    }
+        //    return s.Replace("/", "_").Replace("\\", "_");
+        //}
 
         private Uri ensureUri(string url) {
             if(url.StartsWith("http")) {
@@ -105,7 +105,7 @@ namespace DxxBrowser {
                     if (uri != null) {
                         var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
                         dlg.OverwritePrompt = true;
-                        dlg.DefaultFileName = ensureName(ti.Name);
+                        dlg.DefaultFileName = DxxUrl.TrimName(ti.Name);
                         if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
                             DxxDownloader.Instance.Download(ti, dlg.FileName, (f) => {
                                 Owner.Dispatcher.InvokeAsync(() => {

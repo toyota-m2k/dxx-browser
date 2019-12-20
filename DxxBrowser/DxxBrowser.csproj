@@ -58,7 +58,9 @@
     <Compile Include="CompoundProperty.cs" />
     <Compile Include="Disposal.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
+    <Compile Include="driver\DefaultDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
+    <Compile Include="driver\DxxDBStorage.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
     <Compile Include="driver\DxxFileBasedStorage.cs" />
     <Compile Include="driver\DxxStorageFolderDialog.xaml.cs">
@@ -182,6 +184,9 @@
     </PackageReference>
     <PackageReference Include="ReactiveProperty">
       <Version>6.1.4</Version>
+    </PackageReference>
+    <PackageReference Include="System.Data.SQLite">
+      <Version>1.0.112</Version>
     </PackageReference>
     <PackageReference Include="WindowsAPICodePack-Shell">
       <Version>1.1.1</Version>
