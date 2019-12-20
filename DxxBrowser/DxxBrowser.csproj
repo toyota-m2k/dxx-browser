@@ -75,6 +75,7 @@
     <Compile Include="DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DxxWebViewManager.cs" />
     <Compile Include="DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />

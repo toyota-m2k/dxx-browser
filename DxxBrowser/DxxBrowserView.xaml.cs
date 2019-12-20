@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using Microsoft.Toolkit.Wpf.UI.Controls;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,7 +20,7 @@ namespace DxxBrowser {
     /// <summary>
     /// DxxBrowserView.xaml の相互作用ロジック
     /// </summary>
-    public partial class DxxBrowserView : UserControl {
+    public partial class DxxBrowserView : UserControl, DxxWebViewManager.IDxxWebViewContainer {
 
         public DxxWebViewHost ViewModel {
             get => DataContext as DxxWebViewHost;
@@ -32,13 +33,20 @@ namespace DxxBrowser {
 
         public void Initialize(bool isMain, DxxBookmark bookmarks,
             ReactiveProperty<ObservableCollection<DxxTargetInfo>> targetList) {
-            var vm = new DxxWebViewHost(webView, isMain, Window.GetWindow(this), bookmarks, targetList);
+            var vm = new DxxWebViewHost(isMain, Window.GetWindow(this), bookmarks, targetList);
             naviBar.ViewModel = vm;
             this.ViewModel = vm;
+            DxxWebViewManager.Instance.PrepareBrowser(this);
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e) {
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
             naviBar.ViewModel.Dispose();
+        }
+
+        public void OnWebViewLoaded(WebView wv) {
+            browserHostGrid.Children.Clear();
+            browserHostGrid.Children.Add(wv);
+            naviBar.ViewModel.SetBrowser(wv);
         }
     }
 }

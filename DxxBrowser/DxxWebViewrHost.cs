@@ -167,60 +167,74 @@ namespace DxxBrowser {
 
         #region Construction / Disposition
 
-        public DxxWebViewHost(WebView wv, bool isMain, Window owner, DxxBookmark bookmarks,
+        public DxxWebViewHost(bool isMain, Window owner, DxxBookmark bookmarks,
             ReactiveProperty<ObservableCollection<DxxTargetInfo>> targetList) {
             IsMain = isMain;
             Bookmarks = new ReactiveProperty<DxxBookmark>(bookmarks);
             TargetList = targetList;
             mOwner = new WeakReference<Window>(owner);
-            mBrowser = new WeakReference<WebView>(wv);
-            Browser.NavigationStarting += WebView_NavigationStarting;
-            Browser.NavigationCompleted += WebView_NavigationCompleted;
-            Browser.SourceUpdated += WebView_SourceUpdated;
-            Browser.ContentLoading += WebView_ContentLoading;
-            Browser.DOMContentLoaded += WebView_DOMContentLoaded;
-            Browser.FrameContentLoading += WebView_FrameContentLoading;
-            Browser.FrameNavigationCompleted += WebView_FrameNavigationCompleted;
-            Browser.FrameNavigationStarting += WebView_FrameNavigationStarting;
-            Browser.FrameDOMContentLoaded += WebView_FrameDOMContentLoaded;
-            Browser.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
-            Browser.UnsupportedUriSchemeIdentified += WebView_UnsupportedUriSchemeIdentified;
-            Browser.UnviewableContentIdentified += WebView_UnviewableContentIdentified;
-            Browser.ScriptNotify += WebView_ScriptNotify;
-            Browser.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
-            Browser.NewWindowRequested += WebView_NewWindowRequested;
-            Browser.PermissionRequested += WebView_PermissionRequired;
-            Browser.MoveFocusRequested += WebView_MoveFocusRequested;
-            Browser.Process.ProcessExited += WebView_ProcessExited;
-
+            mBrowser = null;
             InitializeProperties();
             InitializeCommands();
         }
 
-        public override void Dispose() {
-            if(null==Browser) {
+        public void SetBrowser(WebView wv) { 
+            if(Browser!=null && Browser!=wv) {
+                ResetBrowser();
+            }
+            mBrowser = new WeakReference<WebView>(wv);
+            wv.NavigationStarting += WebView_NavigationStarting;
+            wv.NavigationCompleted += WebView_NavigationCompleted;
+            wv.SourceUpdated += WebView_SourceUpdated;
+            wv.ContentLoading += WebView_ContentLoading;
+            wv.DOMContentLoaded += WebView_DOMContentLoaded;
+            wv.FrameContentLoading += WebView_FrameContentLoading;
+            wv.FrameNavigationCompleted += WebView_FrameNavigationCompleted;
+            wv.FrameNavigationStarting += WebView_FrameNavigationStarting;
+            wv.FrameDOMContentLoaded += WebView_FrameDOMContentLoaded;
+            wv.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
+            wv.UnsupportedUriSchemeIdentified += WebView_UnsupportedUriSchemeIdentified;
+            wv.UnviewableContentIdentified += WebView_UnviewableContentIdentified;
+            wv.ScriptNotify += WebView_ScriptNotify;
+            wv.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
+            wv.NewWindowRequested += WebView_NewWindowRequested;
+            wv.PermissionRequested += WebView_PermissionRequired;
+            wv.MoveFocusRequested += WebView_MoveFocusRequested;
+            //wv.Process.ProcessExited += WebView_ProcessExited;
+        }
+
+        private void ResetBrowser() {
+            WebView wv = Browser;
+            if (null == wv) {
                 return;
             }
-            Browser.NavigationStarting -= WebView_NavigationStarting;
-            Browser.NavigationCompleted -= WebView_NavigationCompleted;
-            Browser.SourceUpdated -= WebView_SourceUpdated;
-            Browser.ContentLoading -= WebView_ContentLoading;
-            Browser.DOMContentLoaded -= WebView_DOMContentLoaded;
-            Browser.FrameContentLoading -= WebView_FrameContentLoading;
-            Browser.FrameNavigationCompleted -= WebView_FrameNavigationCompleted;
-            Browser.FrameNavigationStarting -= WebView_FrameNavigationStarting;
-            Browser.FrameDOMContentLoaded -= WebView_FrameDOMContentLoaded;
-            Browser.UnsafeContentWarningDisplaying -= WebView_UnsafeContentWarningDisplaying;
-            Browser.UnsupportedUriSchemeIdentified -= WebView_UnsupportedUriSchemeIdentified;
-            Browser.UnviewableContentIdentified -= WebView_UnviewableContentIdentified;
-            Browser.ScriptNotify -= WebView_ScriptNotify;
-            Browser.LongRunningScriptDetected -= WebView_LongRunningScriptDetected;
-            Browser.NewWindowRequested -= WebView_NewWindowRequested;
-            Browser.PermissionRequested -= WebView_PermissionRequired;
-            Browser.MoveFocusRequested -= WebView_MoveFocusRequested;
-            Browser.Process.ProcessExited -= WebView_ProcessExited;
-            //Browser.Dispose();
+            wv.NavigationStarting -= WebView_NavigationStarting;
+            wv.NavigationCompleted -= WebView_NavigationCompleted;
+            wv.SourceUpdated -= WebView_SourceUpdated;
+            wv.ContentLoading -= WebView_ContentLoading;
+            wv.DOMContentLoaded -= WebView_DOMContentLoaded;
+            wv.FrameContentLoading -= WebView_FrameContentLoading;
+            wv.FrameNavigationCompleted -= WebView_FrameNavigationCompleted;
+            wv.FrameNavigationStarting -= WebView_FrameNavigationStarting;
+            wv.FrameDOMContentLoaded -= WebView_FrameDOMContentLoaded;
+            wv.UnsafeContentWarningDisplaying -= WebView_UnsafeContentWarningDisplaying;
+            wv.UnsupportedUriSchemeIdentified -= WebView_UnsupportedUriSchemeIdentified;
+            wv.UnviewableContentIdentified -= WebView_UnviewableContentIdentified;
+            wv.ScriptNotify -= WebView_ScriptNotify;
+            wv.LongRunningScriptDetected -= WebView_LongRunningScriptDetected;
+            wv.NewWindowRequested -= WebView_NewWindowRequested;
+            wv.PermissionRequested -= WebView_PermissionRequired;
+            wv.MoveFocusRequested -= WebView_MoveFocusRequested;
+            //wv.Process.ProcessExited -= WebView_ProcessExited;
             mBrowser = null;
+        }
+
+        public override void Dispose() {
+            var wv = Browser;
+            ResetBrowser();
+            //if(null!=wv) {
+            //    wv.Dispose();
+            //}
             base.Dispose();
         }
 
@@ -247,58 +261,82 @@ namespace DxxBrowser {
 
         void Navigate(string url) {
             var uri = DxxUrl.FixUpUrl(url);
-            if(null==uri) {
+            var browser = Browser;
+            if (null==uri||null==browser) {
                 return;
             }
 
             if (Loading.Value) {
                 PendingCommand.Waiting = Pending.Command.Load;
                 PendingCommand.Url = url;
-                Browser.Stop();
+                browser.Stop();
             } else {
                 PendingCommand.Waiting = Pending.Command.None;
-                Browser.Navigate(url);
+                browser.Navigate(url);
             }
         }
 
         void Stop() {
+            var browser = Browser;
+            if (null == browser) {
+                return;
+            }
             PendingCommand.Waiting = Pending.Command.None;
-            Browser.Stop();
+            browser.Stop();
         }
 
         void Reload() {
+            var browser = Browser;
+            if (null == browser) {
+                return;
+            }
             if (Loading.Value) {
                 PendingCommand.Waiting = Pending.Command.Reload;
-                Browser.Stop();
+                browser.Stop();
             } else {
                 PendingCommand.Waiting = Pending.Command.None;
-                Browser.Refresh();
+                browser.Refresh();
             }
         }
 
         void GoBack() {
+            var browser = Browser;
+            if (null == browser) {
+                return;
+            }
+
             if (Loading.Value) {
                 PendingCommand.Waiting = Pending.Command.GoBack;
-                Browser.Stop();
+                browser.Stop();
             } else {
                 PendingCommand.Waiting = Pending.Command.None;
-                Browser.GoBack();
+                browser.GoBack();
             }
         }
 
         void GoForward() {
+            var browser = Browser;
+            if (null == browser) {
+                return;
+            }
             if (Loading.Value) {
                 PendingCommand.Waiting = Pending.Command.GoForward;
-                Browser.Stop();
+                browser.Stop();
             } else {
                 PendingCommand.Waiting = Pending.Command.None;
-                Browser.GoForward();
+                browser.GoForward();
             }
         }
 
         void UpdateHistory() {
-            HasPrev.Value = Browser.CanGoBack;
-            HasNext.Value = Browser.CanGoForward;
+            var browser = Browser;
+            if (null == browser) {
+                HasPrev.Value = false;
+                HasNext.Value = false;
+            } else {
+                HasPrev.Value = Browser.CanGoBack;
+                HasNext.Value = Browser.CanGoForward;
+            }
         }
 
         int mLoading = 0;
@@ -370,21 +408,25 @@ namespace DxxBrowser {
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
             Debug.WriteLine(callerName());
-            Browser.Dispatcher.InvokeAsync(() => {
+            Owner.Dispatcher.InvokeAsync(() => {
+                var browser = Browser;
+                if(browser==null) {
+                    return;
+                }
                 UpdateHistory();
                 UpdateLoading(false);
                 switch (PendingCommand.Waiting) {
                     case Pending.Command.Load:
-                        Browser.Navigate(PendingCommand.Url);
+                        browser.Navigate(PendingCommand.Url);
                         break;
                     case Pending.Command.GoBack:
-                        Browser.GoBack();
+                        browser.GoBack();
                         break;
                     case Pending.Command.GoForward:
-                        Browser.GoForward();
+                        browser.GoForward();
                         break;
                     case Pending.Command.Reload:
-                        Browser.Refresh();
+                        browser.Refresh();
                         break;
                     case Pending.Command.None:
                     default:
@@ -481,6 +523,7 @@ namespace DxxBrowser {
 
 
         #region Fatal Error
+
         private void WebView_ProcessExited(object sender, object e) {
             Debug.WriteLine(callerName());
             HasError.Value = ErrorLevel.FATAL_ERROR;
