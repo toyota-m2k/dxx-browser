@@ -134,7 +134,7 @@ namespace DxxBrowser {
             });
             AnalyzeCommand.Subscribe(() => {
                 var aw = new DxxAnalysisWindow(Url.Value);
-                aw.Owner = Owner;
+                //aw.Owner = Owner;
                 aw.Show();
             });
             DownloadCommand.Subscribe(async () => {

@@ -26,10 +26,13 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> DocumentAvailable { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<IEnumerable<DxxHtmlNode>> Nodes { get; } = new ReactiveProperty<IEnumerable<DxxHtmlNode>>();
         public ReactiveProperty<DxxHtmlNode> CurrentNode { get; } = new ReactiveProperty<DxxHtmlNode>();
-
         public ReactiveProperty<DxxHtmlNode> SelectedNode { get; } = new ReactiveProperty<DxxHtmlNode>();
+        public ReactiveCollection<string> XPathList { get; } = new ReactiveCollection<string>();
 
         private void InitializeProperties() {
+            XPathList.Add(".//a[contains(@href,'.mp') or contains(@href,'.wmv') or contains(@href,'.mov')]");
+            XPathList.Add(".//iframe");
+            XPathList.Add(".//frame");
         }
 
         #endregion

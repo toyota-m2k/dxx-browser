@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:DxxBrowser"
         mc:Ignorable="d"
         Unloaded="OnUnloaded"
@@ -30,11 +31,30 @@
                 </TextBox.InputBindings>
             </TextBox>
             <TextBlock Grid.Row="1" Grid.Column="0" Text="XPath" Margin="0,0,4,0"/>
-            <TextBox Grid.Row="1" Grid.Column="1" x:Name="xpathInput" Text="{Binding XPath.Value}" FontSize="14" VerticalContentAlignment="Center" HorizontalAlignment="Stretch">
+
+            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="xpathInput" VerticalContentAlignment="Center" 
+                      IsEditable="True" Text="{Binding XPath.Value}" ItemsSource="{Binding XPathList}"
+                      >
+                <ComboBox.InputBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding ApplyXPath}" CommandParameter="{Binding ElementName=xpathInput, Path=Text}"/>
+                </ComboBox.InputBindings>
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <i:InvokeCommandAction Command="{Binding ApplyXPath}" CommandParameter="{Binding ElementName=xpathInput, Path=SelectedValue}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </ComboBox>
+
+            <!--<TextBox Grid.Row="1" Grid.Column="1" x:Name="xpathInput" Text="{Binding XPath.Value}" FontSize="14" VerticalContentAlignment="Center" HorizontalAlignment="Stretch">
                 <TextBox.InputBindings>
                     <KeyBinding Gesture="Enter" Command="{Binding ApplyXPath}" CommandParameter="{Binding ElementName=xpathInput, Path=Text}"/>
                 </TextBox.InputBindings>
-            </TextBox>
+            </TextBox>-->
 
             <TreeView Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding Nodes.Value}"
                       SelectedItemChanged="OnNodeSelected">
