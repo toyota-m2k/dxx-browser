@@ -145,28 +145,21 @@ namespace DxxBrowser {
             }
         }
 
-        private bool WillShutdown = false;
         private void OnClosing(object sender, CancelEventArgs e) {
-            if(WillShutdown) {
-                return;
-            }
-
-            e.Cancel = true;
             if (DxxDownloader.Instance.IsBusy||DxxActivityWatcher.Instance.IsBusy) {
-                var r = MessageBox.Show("終了しますか？", "DXX Browser", MessageBoxButton.YesNo);
+                var r = MessageBox.Show("なんかやってます。強制終了しますか？", "DXX Browser", MessageBoxButton.YesNo);
                 if(r== MessageBoxResult.Cancel) {
+                    e.Cancel = true;
                     return;
                 }
             }
             ViewModel.Bookmarks.Serialize();
-            CloseAnyway();
+            TerminateAll().Wait();
         }
-        private async void CloseAnyway() {
-            WillShutdown = true;
+
+        private async Task TerminateAll() {
             await DxxActivityWatcher.Instance.TerminateAsync(true);
             await DxxDownloader.Instance.TerminateAsync(true);
-            //System.Windows.Application.Current.Shutdown();
-            Environment.Exit(0);
         }
 
         private void OnDownloadedItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {

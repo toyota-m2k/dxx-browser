@@ -164,6 +164,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Expression.Interaction">
+      <Version>3.0.40218</Version>
+    </PackageReference>
     <PackageReference Include="HtmlAgilityPack">
       <Version>1.11.17</Version>
     </PackageReference>

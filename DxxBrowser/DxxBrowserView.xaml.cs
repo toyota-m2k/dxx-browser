@@ -36,5 +36,9 @@ namespace DxxBrowser {
             naviBar.ViewModel = vm;
             this.ViewModel = vm;
         }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            naviBar.ViewModel.Dispose();
+        }
     }
 }

@@ -6,7 +6,9 @@
              xmlns:local="clr-namespace:DxxBrowser"
              xmlns:ct="clr-namespace:Microsoft.Toolkit.Wpf.UI.Controls;assembly=Microsoft.Toolkit.Wpf.UI.Controls.WebView"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             Unloaded="OnLoaded"
+             >
     <UserControl.Resources>
         <ResourceDictionary Source="DxxResource.xaml"/>
     </UserControl.Resources>

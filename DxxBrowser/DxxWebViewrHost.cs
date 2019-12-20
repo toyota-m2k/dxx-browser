@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,8 +47,8 @@ namespace DxxBrowser {
         public ReactiveProperty<IDxxDriver> Driver { get; } = new ReactiveProperty<IDxxDriver>(DxxDriverManager.DEFAULT);
         public ReactiveProperty<bool> IsTarget { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsContainer { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> IsDownloadable { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsContainerList { get; } = new ReactiveProperty<bool>(false);
+        public ReadOnlyReactiveProperty<bool> IsDownloadable { get; private set; }
 
         public ReactiveProperty<ErrorLevel> HasError{ get; } = new ReactiveProperty<ErrorLevel>(ErrorLevel.NONE);
         public ReactiveProperty<string> CurrentError { get; } = new ReactiveProperty<string>();
@@ -55,6 +56,10 @@ namespace DxxBrowser {
         public ReactiveProperty<ObservableCollection<string>> FrameUrls { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
 
         private void InitializeProperties() {
+            IsDownloadable = IsContainer.CombineLatest(IsTarget, (c, t) => {
+                return c || t;
+            }).ToReadOnlyReactiveProperty();
+
             Url.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
@@ -64,13 +69,11 @@ namespace DxxBrowser {
                     IsTarget.Value = driver.LinkExtractor.IsTarget(dxxUrl);
                     IsContainer.Value = driver.LinkExtractor.IsContainer(dxxUrl);
                     IsContainerList.Value = driver.LinkExtractor.IsContainerList(dxxUrl);
-                    IsDownloadable.Value = IsTarget.Value || IsContainer.Value;
                 } else {
                     Driver.Value = DxxDriverManager.DEFAULT;
                     IsTarget.Value = false;
                     IsContainer.Value = false;
                     IsContainerList.Value = false;
-                    IsDownloadable.Value = false;
                 }
                 IsBookmarked.Value = Bookmarks.Value.FindBookmark(v)!=null;
             });
@@ -216,6 +219,8 @@ namespace DxxBrowser {
             Browser.PermissionRequested -= WebView_PermissionRequired;
             Browser.MoveFocusRequested -= WebView_MoveFocusRequested;
             Browser.Process.ProcessExited -= WebView_ProcessExited;
+            //Browser.Dispose();
+            mBrowser = null;
             base.Dispose();
         }
 
