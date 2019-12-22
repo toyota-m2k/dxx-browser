@@ -58,7 +58,7 @@ namespace DxxBrowser {
 
         private const string LOG_CAT = "URL";
 
-        public static async void DownloadTargets(IDxxDriver driver, IList<DxxTargetInfo> targets) {
+        public static async void DownloadTargets(IList<DxxTargetInfo> targets) {
             if(targets==null||targets.Count==0) {
                 return;
             }
@@ -66,26 +66,29 @@ namespace DxxBrowser {
                 try {
                     foreach (var t in targets) {
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (driver.LinkExtractor.IsTarget(t)) {
-                            if (driver.StorageManager.IsDownloaded(t.Uri)) {
-                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {t.Name}");
-                            } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
-                                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {t.Name}");
+                        var driver = DxxDriverManager.Instance.FindDriver(t.Url);
+                        if (driver != null) {
+                            if (driver.LinkExtractor.IsTarget(t)) {
+                                if (driver.StorageManager.IsDownloaded(t.Uri)) {
+                                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {t.Name}");
+                                } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
+                                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {t.Name}");
+                                } else {
+                                    DxxLogger.Instance.Comment(LOG_CAT, $"Start: {t.Name}");
+                                    driver.StorageManager.Download(t);
+                                }
                             } else {
-                                DxxLogger.Instance.Comment(LOG_CAT, $"Start: {t.Name}");
-                                driver.StorageManager.Download(t);
-                            }
-                        } else {
-                            var du = new DxxUrl(t, driver);
-                            var cnt = await du.TryGetTargetContainers();
-                            if (cnt != null && cnt.Count > 0) {
-                                DxxLogger.Instance.Comment(LOG_CAT, $"{cnt.Count} containers in {du.FileName}");
-                                DownloadTargets(driver, cnt);
-                            }
-                            var tgt = await du.TryGetTargets();
-                            if (tgt != null && tgt.Count > 0) {
-                                DxxLogger.Instance.Comment(LOG_CAT, $"{tgt.Count} targets in {du.FileName}");
-                                DownloadTargets(driver, tgt);
+                                var du = new DxxUrl(t, driver);
+                                var cnt = await du.TryGetTargetContainers();
+                                if (cnt != null && cnt.Count > 0) {
+                                    DxxLogger.Instance.Comment(LOG_CAT, $"{cnt.Count} containers in {du.FileName}");
+                                    DownloadTargets(cnt);
+                                }
+                                var tgt = await du.TryGetTargets();
+                                if (tgt != null && tgt.Count > 0) {
+                                    DxxLogger.Instance.Comment(LOG_CAT, $"{tgt.Count} targets in {du.FileName}");
+                                    DownloadTargets(tgt);
+                                }
                             }
                         }
                     }
@@ -109,12 +112,12 @@ namespace DxxBrowser {
             }
             var containers = await TryGetTargetContainers();
             if (!Utils.IsNullOrEmpty(containers)) {
-                DownloadTargets(Driver, containers);
+                DownloadTargets(containers);
                 result = true;
             }
             var targets = await TryGetTargets();
             if (!Utils.IsNullOrEmpty(targets)) {
-                DownloadTargets(Driver, targets);
+                DownloadTargets(targets);
                 result = true;
             }
             return result;

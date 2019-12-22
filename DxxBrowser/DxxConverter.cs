@@ -264,7 +264,6 @@ namespace DxxBrowser {
                     default:
                         return node.Name;
                 }
-                return String.Format("{0:#,0}", value);
             }
             return "unknown object";
         }

@@ -226,6 +226,7 @@ namespace DxxBrowser.driver.dmm
                         } 
                         if (Utils.IsNullOrEmpty(anchors)) {
                             DxxLogger.Instance.Error(LOG_CAT, $"No Target: {urx.Url}");
+                            return null;
                         }
 
                         var list = new List<DxxTargetInfo>();

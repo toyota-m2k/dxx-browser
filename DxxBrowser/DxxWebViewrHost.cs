@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace DxxBrowser {
 #pragma warning disable CS0618 // 型またはメンバーが古い形式です
@@ -40,11 +41,12 @@ namespace DxxBrowser {
 
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
-        public ReactiveProperty<bool> Loading { get; } = new ReactiveProperty<bool>(false);
+        public ReadOnlyReactiveProperty<bool> Loading { get; private set; }
+
         public ReactiveProperty<bool> IsBookmarked { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasFrameLink { get; } = new ReactiveProperty<bool>(false);
 
-        public ReactiveProperty<IDxxDriver> Driver { get; } = new ReactiveProperty<IDxxDriver>(DxxDriverManager.DEFAULT);
+        public ReactiveProperty<IDxxDriver> Driver { get; } = new ReactiveProperty<IDxxDriver>(DxxDriverManager.NOP);
         public ReactiveProperty<bool> IsTarget { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsContainer { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> IsContainerList { get; } = new ReactiveProperty<bool>(false);
@@ -60,6 +62,7 @@ namespace DxxBrowser {
                 return c || t;
             }).ToReadOnlyReactiveProperty();
 
+            Loading = LMonitor.IsLoading.ToReadOnlyReactiveProperty();
             Url.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
@@ -70,7 +73,7 @@ namespace DxxBrowser {
                     IsContainer.Value = driver.LinkExtractor.IsContainer(dxxUrl);
                     IsContainerList.Value = driver.LinkExtractor.IsContainerList(dxxUrl);
                 } else {
-                    Driver.Value = DxxDriverManager.DEFAULT;
+                    Driver.Value = DxxDriverManager.NOP;
                     IsTarget.Value = false;
                     IsContainer.Value = false;
                     IsContainerList.Value = false;
@@ -94,6 +97,7 @@ namespace DxxBrowser {
         public ReactiveCommand DownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ListingCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetupDriverCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand<string> FrameSelectCommand { get; } = new ReactiveCommand<string>();
 
         private DxxUrl CreateDxxUrl() {
             var driver = Driver.Value;
@@ -157,12 +161,21 @@ namespace DxxBrowser {
             SetupDriverCommand.Subscribe(() => {
                 DxxDriverManager.Instance.Setup(Driver.Value, Owner);
             });
+
+            FrameSelectCommand.Subscribe((v) => {
+                if(IsMain) {
+                    RequestLoadInSubview.OnNext(v);
+                } else {
+                    Navigate(v);
+                }
+            });
         }
         #endregion
 
         #region Events
         public Subject<DxxUrl> MainViewBeginAutoDownload { get; } = new Subject<DxxUrl>();
         public Subject<string> RequestLoadInSubview { get; } = new Subject<string>();
+        public Subject<string> RequestLoadInMainView { get; } = new Subject<string>();
         #endregion
 
         #region Construction / Disposition
@@ -242,38 +255,29 @@ namespace DxxBrowser {
 
         #region Navigation
 
-        struct Pending {
-            public enum Command {
-                None,
-                Load,
-                GoBack,
-                GoForward,
-                Reload,
-            }
-            public Command Waiting;
-            public string Url;
-            public Pending(Command cmd, string url=null) {
-                Waiting = Command.None;
-                Url = null;
-            }
-        }
-        Pending PendingCommand = new Pending(Pending.Command.None);
+        //struct Pending {
+        //    public enum Command {
+        //        None,
+        //        Load,
+        //        GoBack,
+        //        GoForward,
+        //        Reload,
+        //    }
+        //    public Command Waiting;
+        //    public string Url;
+        //    public Pending(Command cmd, string url=null) {
+        //        Waiting = Command.None;
+        //        Url = null;
+        //    }
+        //}
+        //Pending PendingCommand = new Pending(Pending.Command.None);
 
         void Navigate(string url) {
             var uri = DxxUrl.FixUpUrl(url);
-            var browser = Browser;
-            if (null==uri||null==browser) {
+            if (null==uri) { 
                 return;
             }
-
-            if (Loading.Value) {
-                PendingCommand.Waiting = Pending.Command.Load;
-                PendingCommand.Url = url;
-                browser.Stop();
-            } else {
-                PendingCommand.Waiting = Pending.Command.None;
-                browser.Navigate(url);
-            }
+            Browser?.Navigate(url);
         }
 
         void Stop() {
@@ -281,51 +285,20 @@ namespace DxxBrowser {
             if (null == browser) {
                 return;
             }
-            PendingCommand.Waiting = Pending.Command.None;
-            browser.Stop();
+            LMonitor.Renew();
+            browser?.Stop();
         }
 
         void Reload() {
-            var browser = Browser;
-            if (null == browser) {
-                return;
-            }
-            if (Loading.Value) {
-                PendingCommand.Waiting = Pending.Command.Reload;
-                browser.Stop();
-            } else {
-                PendingCommand.Waiting = Pending.Command.None;
-                browser.Refresh();
-            }
+            Browser?.Refresh();
         }
 
         void GoBack() {
-            var browser = Browser;
-            if (null == browser) {
-                return;
-            }
-
-            if (Loading.Value) {
-                PendingCommand.Waiting = Pending.Command.GoBack;
-                browser.Stop();
-            } else {
-                PendingCommand.Waiting = Pending.Command.None;
-                browser.GoBack();
-            }
+            Browser?.GoBack();
         }
 
         void GoForward() {
-            var browser = Browser;
-            if (null == browser) {
-                return;
-            }
-            if (Loading.Value) {
-                PendingCommand.Waiting = Pending.Command.GoForward;
-                browser.Stop();
-            } else {
-                PendingCommand.Waiting = Pending.Command.None;
-                browser.GoForward();
-            }
+            Browser.GoForward();
         }
 
         void UpdateHistory() {
@@ -339,20 +312,56 @@ namespace DxxBrowser {
             }
         }
 
-        int mLoading = 0;
-        void UpdateLoading(bool loading) {
-            if(loading) {
-                if (0==mLoading) {
-                    Loading.Value = true;
+        class LoadingMonitor {
+            class Info {
+                ulong Generation;
+                string Url;
+                bool Frame;
+
+                public Info(ulong gene, string url, bool frame) {
+                    Generation = gene;
+                    Url = url;
+                    Frame = frame;
                 }
-                mLoading++;
-            } else {
-                mLoading--;
-                if(0==mLoading) {
-                    Loading.Value = false;
+
+                public bool IsSame(string url, bool frame) {
+                    return url == Url && frame == Frame;
                 }
             }
+
+            ulong Generation = 0;
+            static IEnumerable<Info> EMPTY = new Info[0];
+            IEnumerable<Info> Loadings = EMPTY;
+
+            IEnumerable<Info> One(Info info) {
+                yield return info;
+            }
+
+            public LoadingMonitor() {
+
+            }
+
+            public void Renew() {
+                Generation++;
+                Loadings = EMPTY;
+                IsLoading.Value = false;
+            }
+
+            public void OnStartLoading(string url, bool frame) {
+                Loadings = Loadings.Concat(One(new Info(Generation, url, frame)));
+                IsLoading.Value = !Utils.IsNullOrEmpty(Loadings);
+            }
+
+            public void OnEndLoading(string url, bool frame) {
+                Loadings = Loadings.Where((v) => !v.IsSame(url, frame)) ?? EMPTY;
+                IsLoading.Value = !Utils.IsNullOrEmpty(Loadings);
+            }
+
+            public ReactiveProperty<bool> IsLoading { get; } = new ReactiveProperty<bool>(false);
         }
+
+        private LoadingMonitor LMonitor = new LoadingMonitor();
+
 
         #endregion
 
@@ -375,25 +384,35 @@ namespace DxxBrowser {
 
         private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             Debug.WriteLine(callerName());
-            var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
-            if (driver != null) {
-                var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
-                if (du.IsContainer || du.IsTarget) {
-                    if(IsMain) {
-                        MainViewBeginAutoDownload.OnNext(du);
-                    }
-                    _ = du.Download();
+            if (IsMain) {
+                if (Keyboard.IsKeyDown(Key.LeftCtrl)) {
+                    RequestLoadInSubview.OnNext(e.Uri.ToString());
                     e.Cancel = true;
                     return;
                 }
             }
+            if (!Keyboard.IsKeyDown(Key.LeftCtrl)) {
+                var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
+                if (driver != null) {
+                    var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
+                    if (du.IsContainer || du.IsTarget) {
+                        if (IsMain) {
+                            MainViewBeginAutoDownload.OnNext(du);
+                        }
+                        _ = du.Download();
+                        e.Cancel = true;
+                        return;
+                    }
+                }
+            }
+            LMonitor.Renew();
             UpdateHistory();
         }
 
         private void WebView_ContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
             Debug.WriteLine(callerName());
             Url.Value = e.Uri.ToString();
-            UpdateLoading(true);
+            LMonitor.OnStartLoading(e.Uri.ToString(), false);
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
             }
@@ -408,32 +427,8 @@ namespace DxxBrowser {
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
             Debug.WriteLine(callerName());
-            Owner.Dispatcher.InvokeAsync(() => {
-                var browser = Browser;
-                if(browser==null) {
-                    return;
-                }
-                UpdateHistory();
-                UpdateLoading(false);
-                switch (PendingCommand.Waiting) {
-                    case Pending.Command.Load:
-                        browser.Navigate(PendingCommand.Url);
-                        break;
-                    case Pending.Command.GoBack:
-                        browser.GoBack();
-                        break;
-                    case Pending.Command.GoForward:
-                        browser.GoForward();
-                        break;
-                    case Pending.Command.Reload:
-                        browser.Refresh();
-                        break;
-                    case Pending.Command.None:
-                    default:
-                        break;
-                }
-                PendingCommand.Waiting = Pending.Command.None;
-            });
+            LMonitor.OnEndLoading(e.Uri.ToString(), false);
+            UpdateHistory();
         }
 
         #endregion
@@ -441,7 +436,11 @@ namespace DxxBrowser {
         #region Frame Loading Events
 
         private void WebView_FrameNavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
-            Debug.WriteLine(callerName());
+            Debug.WriteLine($"{callerName()}:{e.Uri}");
+            if(e.Uri.ToString()=="about:blank") {
+                e.Cancel = true;
+                return;
+            }
             UpdateHistory();
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
@@ -449,7 +448,7 @@ namespace DxxBrowser {
         }
         private void WebView_FrameContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
             Debug.WriteLine(callerName());
-            UpdateLoading(true);
+            LMonitor.OnStartLoading(e.Uri.ToString(), true);
             AddFrameList(e.Uri.ToString());
             UpdateHistory();
         }
@@ -460,7 +459,7 @@ namespace DxxBrowser {
 
         private void WebView_FrameNavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
             Debug.WriteLine(callerName());
-            UpdateLoading(false);
+            LMonitor.OnEndLoading(e.Uri.ToString(), true);
             UpdateHistory();
         }
         #endregion

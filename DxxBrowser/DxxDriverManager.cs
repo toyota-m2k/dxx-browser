@@ -18,7 +18,8 @@ namespace DxxBrowser
 
         List<IDxxDriver> mList;
 
-        public static IDxxDriver DEFAULT = new NopDriver();
+        public static IDxxDriver NOP = new NopDriver();
+        public static IDxxDriver DEFAULT = new DefaultDriver();
 
 
         private DxxDriverManager() {
@@ -29,11 +30,15 @@ namespace DxxBrowser
 
         public IDxxDriver FindDriver(string url) {
             try {
-                if(string.IsNullOrEmpty(url)) {
+                if(string.IsNullOrEmpty(url)||!url.StartsWith("http")) {
                     return null;
                 }
-                return mList.Where((v) => v.IsSupported(url))
-                            .First();
+                var drv = mList.Where((v) => v.IsSupported(url));
+                if(!Utils.IsNullOrEmpty(drv)) {
+                    return drv.First();
+                } else {
+                    return DEFAULT;
+                }
             } catch(Exception) {
                 return null;
             }
@@ -81,7 +86,9 @@ namespace DxxBrowser
             var doc = getSettings();
             var root = doc.GetElementsByTagName(ROOT_NAME)[0];
             bool update = false;
-            foreach(var d in mList) {
+
+            var driverList = (new IDxxDriver[] { DEFAULT }).Concat(mList);
+            foreach(var d in driverList) {
                 var elems = doc.GetElementsByTagName(d.ID);
                 if(elems.Count>0) {
                     var el = elems[0];

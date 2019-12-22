@@ -189,7 +189,7 @@ namespace DxxBrowser {
                 Nodes.Value = CurrentNode.Value.ChildNodes;
                 return;
             }
-            var v = CurrentNode.Value.SelectNodes(xpath);
+            var v = CurrentNode?.Value.SelectNodes(xpath);
             if(Utils.IsNullOrEmpty(v)) {
                 return;
             }

@@ -30,10 +30,11 @@ namespace DxxBrowser.driver {
                 mTxn?.Dispose();
                 mTxn = null;
             }
-
         }
 
-        public DxxDBStorage Instance { get; } = new DxxDBStorage();
+        public static DxxDBStorage Instance { get; } = new DxxDBStorage();
+
+        public string StoragePath { get; set; }
         private SQLiteConnection mDB;
 
         private enum DLStatus {
@@ -129,7 +130,7 @@ namespace DxxBrowser.driver {
                     }
                 }
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc) VALUES('{url}','{name}','',{(int)DLStatus.RESERVED},{target.Description})";
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc) VALUES('{url}','{name}','',{(int)DLStatus.RESERVED},'{target.Description}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         return Retrieve(url);
                     }
@@ -140,13 +141,62 @@ namespace DxxBrowser.driver {
             return null;
         }
 
-            public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        private const string LOG_CAT = "DBStorage";
+
+        private bool CompletePath(long id, string path) {
+            using (var cmd = mDB.CreateCommand()) {
+                cmd.CommandText = $"UPDATE t_storage SET path='{path}', status={(int)DLStatus.COMPLETED} WHERE id={id}";
+                if (1 == cmd.ExecuteNonQuery()) {
+                    return true;
+                }
+            }
+            Debug.WriteLine("RegisterPath error.");
+            DxxLogger.Instance.Comment(LOG_CAT, "Complete path error.");
+            return false;
         }
 
-        public string GetSavedFile(Uri url) {
+        private string createFileName(DBRecord rec) {
+            var uri = new Uri(rec.Url);
+            var ext = System.IO.Path.GetExtension(rec.Name) ?? "";
+            var name = System.IO.Path.GetFileNameWithoutExtension(rec.Name) ?? "noname";
+            return $"{name}-{rec.ID}{ext}";
         }
 
-        public bool IsDownloaded(Uri url) {
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            var rec = Retrieve(target.Url);
+            if(rec!=null) {
+                if ( rec.Status == DLStatus.COMPLETED || 
+                     (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
+                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
+                    return;
+                }
+            } else { 
+                rec = Reserve(target);
+                if (rec == null) {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
+                    return;
+                }
+            }
+            string fileName = createFileName(rec);
+            var path = System.IO.Path.Combine(StoragePath, fileName);
+            DxxDownloader.Instance.Download(target, path, (r) => {
+                if (r) {
+                    CompletePath(rec.ID, path);
+                }
+                onCompleted?.Invoke(r);
+            });
         }
+
+        public string GetSavedFile(Uri uri) {
+            var rec = Retrieve(uri.ToString());
+            return rec?.Path;
+        }
+
+        public bool IsDownloaded(Uri uri) {
+            var rec = Retrieve(uri.ToString());
+            return rec?.Status == DLStatus.COMPLETED;
+        }
+
+
     }
 }

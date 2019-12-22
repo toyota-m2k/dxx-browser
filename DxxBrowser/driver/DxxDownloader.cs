@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -99,7 +100,7 @@ namespace DxxBrowser.driver {
     }
 
     public class DxxDownloader {
-        HttpClient mHttpClient = new HttpClient();
+        HttpClient mHttpClient = new HttpClient() { Timeout = Timeout.InfiniteTimeSpan };
         HashSet<string> mDownloading = new HashSet<string>();
         Dictionary<string, CancellationTokenSource> mCancellationTokens = new Dictionary<string, CancellationTokenSource>();
         bool mTerminated = false;
@@ -274,8 +275,7 @@ namespace DxxBrowser.driver {
                 DxxDownloadingItem.DownloadStatus result = DxxDownloadingItem.DownloadStatus.Error;
                 try {
                     var ct = cts.Token;
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, target.Url))
-                    using (var response = await mHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)) {
+                    using (var response = await mHttpClient.GetAsync(target.Url, HttpCompletionOption.ResponseHeadersRead, ct)) {
                         if (response.StatusCode == HttpStatusCode.OK) {
                             using (var content = response.Content)
                             using (var stream = await content.ReadAsStreamAsync())
@@ -310,7 +310,8 @@ namespace DxxBrowser.driver {
                             }
                         }
                     }
-                } catch (Exception) {
+                } catch (Exception e) {
+                    Debug.WriteLine(e.StackTrace);
                 } finally {
                     if (result!=DxxDownloadingItem.DownloadStatus.Completed) {
                         if (result == DxxDownloadingItem.DownloadStatus.Cancelled) {

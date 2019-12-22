@@ -51,13 +51,7 @@ namespace DxxBrowser {
              * ターゲットリスト内のアイテムをすべてDL開始
              */
             DownloadByTargetList.Subscribe(() => {
-                var v = TargetList.Value.First();
-                if(null!=v) {
-                    var driver = DxxDriverManager.Instance.FindDriver(v.Url);
-                    if(null!=driver) {
-                        DxxUrl.DownloadTargets(driver, TargetList.Value);
-                    }
-                }
+                DxxUrl.DownloadTargets(TargetList.Value);
             });
 
             CancellAllCommand.Subscribe(() => {
@@ -121,6 +115,11 @@ namespace DxxBrowser {
                     subViewer.ViewModel.NavigateCommand.Execute(v);
                 });
             });
+            subViewer.ViewModel.RequestLoadInMainView.Subscribe((v) => {
+                Dispatcher.InvokeAsync(() => {
+                    mainViewer.ViewModel.NavigateCommand.Execute(v);
+                });
+            });
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
         }
@@ -146,15 +145,11 @@ namespace DxxBrowser {
         }
 
         private void OnClosing(object sender, CancelEventArgs e) {
-            if (DxxDownloader.Instance.IsBusy||DxxActivityWatcher.Instance.IsBusy) {
-                var r = MessageBox.Show("なんかやってます。強制終了しますか？", "DXX Browser", MessageBoxButton.YesNo);
-                if(r== MessageBoxResult.Cancel) {
-                    e.Cancel = true;
-                    return;
-                }
-            }
             ViewModel.Bookmarks.Serialize();
-            TerminateAll().Wait();
+            _ = TerminateAll();
+            while (DxxDownloader.Instance.IsBusy||DxxActivityWatcher.Instance.IsBusy) {
+                MessageBox.Show("なんかやってるので終了できません。", "DXX Browser", MessageBoxButton.OK);
+            }
         }
 
         private async Task TerminateAll() {
@@ -164,15 +159,24 @@ namespace DxxBrowser {
 
         private void OnDownloadedItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             var di = (sender as ListViewItem)?.Content as DxxDownloadingItem;
-            if(di!=null && di.Status==DxxDownloadingItem.DownloadStatus.Completed) {
-                var driver = DxxDriverManager.Instance.FindDriver(di.Url);
-                if (driver != null) {
-                    var file = driver.StorageManager?.GetSavedFile(new Uri(di.Url));
-                    if (file != null) {
-                        var proc = new Process();
-                        proc.StartInfo.FileName = file;
-                        proc.StartInfo.UseShellExecute = true;
-                        proc.Start();
+            if (di != null) {
+                if (di.Status == DxxDownloadingItem.DownloadStatus.Completed) {
+                    var driver = DxxDriverManager.Instance.FindDriver(di.Url);
+                    if (driver != null) {
+                        var file = driver.StorageManager?.GetSavedFile(new Uri(di.Url));
+                        if (file != null) {
+                            var proc = new Process();
+                            proc.StartInfo.FileName = file;
+                            proc.StartInfo.UseShellExecute = true;
+                            proc.Start();
+                        }
+                    }
+                } else if (di.Status != DxxDownloadingItem.DownloadStatus.Downloading) {
+                    // retry
+                    var driver = DxxDriverManager.Instance.FindDriver(di.Url);
+                    if (driver != null) {
+                        var dxxUrl = new DxxUrl(new Uri(di.Url), driver, di.Name, di.Description);
+                        _ = dxxUrl.Download();
                     }
                 }
             }
