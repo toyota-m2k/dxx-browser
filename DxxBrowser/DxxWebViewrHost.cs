@@ -45,6 +45,7 @@ namespace DxxBrowser {
 
         public ReactiveProperty<bool> IsBookmarked { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasFrameLink { get; } = new ReactiveProperty<bool>(false);
+        public ReactiveProperty<bool> ShowFrameList { get; } = new ReactiveProperty<bool>(false);
 
         public ReactiveProperty<IDxxDriver> Driver { get; } = new ReactiveProperty<IDxxDriver>(DxxDriverManager.NOP);
         public ReactiveProperty<bool> IsTarget { get; } = new ReactiveProperty<bool>(false);
@@ -93,10 +94,11 @@ namespace DxxBrowser {
         public ReactiveCommand<string> BookmarkCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand ClearURLCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand AnalyzeCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand<string> AnalyzeCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand DownloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ListingCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SetupDriverCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand<string> CopyCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand<string> FrameSelectCommand { get; } = new ReactiveCommand<string>();
 
         private DxxUrl CreateDxxUrl() {
@@ -136,10 +138,16 @@ namespace DxxBrowser {
             ClearURLCommand.Subscribe((v) => {
                 Url.Value = "";
             });
-            AnalyzeCommand.Subscribe(() => {
-                var aw = new DxxAnalysisWindow(Url.Value);
+            AnalyzeCommand.Subscribe((v) => {
+                if(v==null) {
+                    v = Url.Value;
+                }
+                var aw = new DxxAnalysisWindow(v);
                 //aw.Owner = Owner;
                 aw.Show();
+            });
+            CopyCommand.Subscribe((v) => {
+                Clipboard.SetData(DataFormats.Text, v);
             });
             DownloadCommand.Subscribe(async () => {
                 if(IsTarget.Value || IsContainer.Value) {
@@ -370,12 +378,14 @@ namespace DxxBrowser {
         void ClearFrameList() {
             FrameUrls.Value.Clear();
             HasFrameLink.Value = false;
+            ShowFrameList.Value = false;
         }
 
         void AddFrameList(string url) {
             FrameUrls.Value.Remove(url);
             FrameUrls.Value.Insert(0, url);
             HasFrameLink.Value = FrameUrls.Value.Count > 0;
+            ShowFrameList.Value = HasFrameLink.Value;
         }
 
         #endregion

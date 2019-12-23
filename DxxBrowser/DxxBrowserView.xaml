@@ -21,48 +21,82 @@
         </Grid.RowDefinitions>
         <local:DxxNaviBar Grid.Row="0" x:Name="naviBar"/>
         <Grid Grid.Row="1" x:Name="browserHostGrid"/>
-        <ListView Grid.Row="2" ItemsSource="{Binding FrameUrls.Value}" 
+        <Grid Grid.Row="2"
+              Background="{StaticResource DialogBG}"
+              Visibility="{Binding HasFrameLink.Value, Converter={StaticResource BoolVisibilityConverter}}">
+            <Grid.Resources>
+                <ResourceDictionary Source="DxxFoldingButton.xaml"/>
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" MaxHeight="200"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ToggleButton Grid.Row="0" Grid.Column="0" Style="{StaticResource FoldingButtonStyle}" IsChecked="{Binding ShowFrameList.Value, Mode=TwoWay}"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Frames" VerticalAlignment="Center" Foreground="White" Margin="8,0"/>
+            <ListView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding FrameUrls.Value}" 
                   x:Name="frameListView"
-                  MaxHeight="200"
-                  Visibility="{Binding HasFrameLink.Value, Converter={StaticResource BoolVisibilityConverter}}">
-            <!--<i:Interaction.Triggers>
+                  Visibility="{Binding ShowFrameList.Value, Converter={StaticResource BoolVisibilityConverter}}">
+                <!--<i:Interaction.Triggers>
                 <i:EventTrigger EventName="LeftDoubleClick">
                     <i:InvokeCommandAction Command="{Binding FrameSelectCommand}" 
                                            CommandParameter="{Binding ElementName=frameListView,Path=SelectedItem}" />
                 </i:EventTrigger>
-            </i:Interaction.Triggers>-->
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding}">
-                        <TextBlock.InputBindings>
-                            <!--<MouseBinding Gesture="LeftDoubleClick" Command="{Binding FrameSelectCommand}"/>-->
-                            <MouseBinding Gesture="LeftDoubleClick" 
+                </i:Interaction.Triggers>-->
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}">
+                            <TextBlock.InputBindings>
+                                <!--<MouseBinding Gesture="LeftDoubleClick" Command="{Binding FrameSelectCommand}"/>-->
+                                <MouseBinding Gesture="LeftDoubleClick" 
                                 Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}, Path=DataContext.FrameSelectCommand}"
                                 CommandParameter="{Binding}" />
-                        </TextBlock.InputBindings>
-                    </TextBlock>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-            <!--<ListView.ItemContainerStyle>
+                            </TextBlock.InputBindings>
+                        </TextBlock>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <!-- ContextMenu/MenuItem から ListViewの（＝Windowの）DataContextを参照するため、Tag:object に DataContextをセットしておく -->
+                        <Setter Property="Tag"
+                            Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}" />
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
+                                <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="Copy" Command="{Binding CopyCommand}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                    <MenuItem Header="Analyze" Command="{Binding AnalyzeCommand}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+
+                    </Style>
+                </ListView.ItemContainerStyle>
+
+                <!--<ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <EventSetter Event="MouseDoubleClick" Handler="OnDownloadedItemActivate"/>
                 </Style>
-            </ListView.ItemContainerStyle>-->
-            <!--<ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}" />
-                    <GridViewColumn Header="Status" Width="150">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding StatusString}" Foreground="{Binding StatusColor}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Percent" Width="50" DisplayMemberBinding="{Binding PercentString}"/>
-                    <GridViewColumn Header="Description" Width="200" DisplayMemberBinding="{Binding Description}"/>
-                </GridView>
-            </ListView.View>-->
-        </ListView>
+                </ListView.ItemContainerStyle>-->
+                    <!--<ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}" />
+                        <GridViewColumn Header="Status" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StatusString}" Foreground="{Binding StatusColor}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Percent" Width="50" DisplayMemberBinding="{Binding PercentString}"/>
+                        <GridViewColumn Header="Description" Width="200" DisplayMemberBinding="{Binding Description}"/>
+                    </GridView>
+                </ListView.View>-->
+            </ListView>
+        </Grid>
 
     </Grid>
 </UserControl>

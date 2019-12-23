@@ -30,6 +30,11 @@ namespace DxxBrowser {
         public ReactiveProperty<bool> ShowSubBrowser { get; } = new ReactiveProperty<bool>(true);
 
         private void InitializeProperties() {
+            TargetList.Subscribe((v) => {
+                if (v.Count > 0) {
+                    ShowTargetList.Value = true;
+                }
+            });
         }
 
         #endregion
@@ -103,7 +108,7 @@ namespace DxxBrowser {
         public DxxMainWindow() {
             DxxDownloader.Instance.Initialize(this);
             DxxLogger.Instance.Initialize(this);
-            DxxDriverManager.Instance.LoadSettings(this);
+            DxxDriverManager.Instance.LoadSettings(Window.GetWindow(this));
             ViewModel = new DxxMainViewModel(this);
             InitializeComponent();
         }
