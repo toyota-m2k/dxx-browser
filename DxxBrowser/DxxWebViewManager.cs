@@ -44,6 +44,7 @@ namespace DxxBrowser {
         private WebView CreatePrimaryBrowser(IDxxWebViewContainer host) {
             Debug.Assert(PrimaryWebView == null);
             var wv = new WebView();
+            wv.IsScriptNotifyAllowed = true;
             Views.Add(wv, host);
             wv.Loaded += OnWebViewLoaded;
             wv.Unloaded += OnWebViewUnloaded;
@@ -53,6 +54,7 @@ namespace DxxBrowser {
         private WebView CreateSecondaryBrowser(IDxxWebViewContainer host) {
             Debug.Assert(PrimaryWebView != null);
             var wv = new WebView(PrimaryWebView.Process);
+            wv.IsScriptNotifyAllowed = true;
             Views.Add(wv, host);
             wv.Unloaded += OnWebViewUnloaded;
             return wv;

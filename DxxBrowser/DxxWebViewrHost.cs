@@ -433,6 +433,7 @@ namespace DxxBrowser {
         private void WebView_DOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
             Debug.WriteLine(callerName());
             UpdateHistory();
+            _ = Browser.InvokeScriptAsync("eval", new string[] { "document.onmousemove = function(e) { window.external.notify(e); }" });
         }
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
@@ -525,7 +526,7 @@ namespace DxxBrowser {
         #region Interaction
 
         private void WebView_ScriptNotify(object sender, WebViewControlScriptNotifyEventArgs e) {
-            Debug.WriteLine(callerName());
+            Debug.WriteLine($"{callerName()} {e.Value}");
         }
 
         #endregion
