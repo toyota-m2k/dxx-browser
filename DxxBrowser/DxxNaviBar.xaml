@@ -23,8 +23,16 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0" Orientation="Horizontal">
-            <Button IsEnabled="{Binding HasPrev.Value}" Command="{Binding GoBackCommand}"    Content="{StaticResource PathHistoryPrev}" Style="{StaticResource PushButtonStyle}"/>
-            <Button IsEnabled="{Binding HasNext.Value}" Command="{Binding GoForwardCommand}" Content="{StaticResource PathHistoryNext}" Style="{StaticResource PushButtonStyle}" Margin="2,0,2,0"/>
+            <Button IsEnabled="{Binding HasPrev.Value}" Command="{Binding GoBackCommand}" Content="{StaticResource PathHistoryPrev}" Style="{StaticResource PushButtonStyle}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="戻る"/>
+                </ToolTipService.ToolTip>
+            </Button>
+            <Button IsEnabled="{Binding HasNext.Value}" Command="{Binding GoForwardCommand}" Content="{StaticResource PathHistoryNext}" Style="{StaticResource PushButtonStyle}" Margin="2,0,2,0">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="進む"/>
+                </ToolTipService.ToolTip>
+            </Button>
         </StackPanel>
         <!-- URL Input area -->
         <ComboBox Grid.Column="1" FontSize="14" x:Name="urlInput" VerticalContentAlignment="Center" 
@@ -61,7 +69,11 @@
                         IsChecked="{Binding IsBookmarked.Value, Mode=TwoWay}"
                         Command="{Binding BookmarkCommand}"
                         CommandParameter="{Binding ElementName=urlInput, Path=Text}"
-                        />
+                        >
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="ブックマーク"/>
+                </ToolTipService.ToolTip>
+            </ToggleButton>
             <!-- Reload Button -->
             <Button Visibility="{Binding Loading.Value, Converter={StaticResource NegBoolVisibilityConverter}}" Command="{Binding ReloadCommand}"
                         Content="{StaticResource PathReload}" Style="{StaticResource PushButtonStyle}" Margin="2,0">

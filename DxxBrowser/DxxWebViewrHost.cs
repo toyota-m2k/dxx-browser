@@ -41,7 +41,7 @@ namespace DxxBrowser {
 
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
-        public ReadOnlyReactiveProperty<bool> Loading { get; private set; }
+        public ReactiveProperty<bool> Loading { get; } = new ReactiveProperty<bool>(false);
 
         public ReactiveProperty<bool> IsBookmarked { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasFrameLink { get; } = new ReactiveProperty<bool>(false);
@@ -57,15 +57,16 @@ namespace DxxBrowser {
         public ReactiveProperty<string> CurrentError { get; } = new ReactiveProperty<string>();
 
         public ReactiveProperty<ObservableCollection<string>> FrameUrls { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
-        public ReactiveProperty<string> ActivatedUrl { get; } = new ReactiveProperty<string>();
-        public ReactiveProperty<bool> LinkActivated { get; } = new ReactiveProperty<bool>();
+        //public ReactiveProperty<string> ActivatedUrl { get; } = new ReactiveProperty<string>();
+        //public ReactiveProperty<bool> LinkActivated { get; } = new ReactiveProperty<bool>();
+        public ReactiveProperty<string> StatusLine { get; } = new ReactiveProperty<string>();
+
 
         private void InitializeProperties() {
             IsDownloadable = IsContainer.CombineLatest(IsTarget, (c, t) => {
                 return c || t;
             }).ToReadOnlyReactiveProperty();
 
-            Loading = LMonitor.IsLoading.ToReadOnlyReactiveProperty();
             Url.Subscribe((v) => {
                 var driver = DxxDriverManager.Instance.FindDriver(v);
                 if (driver != null) {
@@ -199,6 +200,7 @@ namespace DxxBrowser {
             mBrowser = null;
             InitializeProperties();
             InitializeCommands();
+            LMonitor = new LoadingMonitor(this);
         }
 
         public void SetBrowser(WebView wv) { 
@@ -323,10 +325,16 @@ namespace DxxBrowser {
         }
 
         class LoadingMonitor {
+            private WeakReference<DxxWebViewHost> mViewModel;
+            private DxxWebViewHost ViewModel => mViewModel?.GetValue();
+
+            public LoadingMonitor(DxxWebViewHost viewModel) {
+                mViewModel = new WeakReference<DxxWebViewHost>(viewModel);
+            }
             class Info {
                 ulong Generation;
-                string Url;
-                bool Frame;
+                public string Url;
+                public bool Frame;
 
                 public Info(ulong gene, string url, bool frame) {
                     Generation = gene;
@@ -347,30 +355,42 @@ namespace DxxBrowser {
                 yield return info;
             }
 
-            public LoadingMonitor() {
-
-            }
-
             public void Renew() {
                 Generation++;
                 Loadings = EMPTY;
-                IsLoading.Value = false;
+                ViewModel.Loading.Value = false;
+                ViewModel.StatusLine.Value = "";
             }
 
             public void OnStartLoading(string url, bool frame) {
                 Loadings = Loadings.Concat(One(new Info(Generation, url, frame)));
-                IsLoading.Value = !Utils.IsNullOrEmpty(Loadings);
+                // 挙動から推測して、
+                // ドキュメントのロードが完了してから、Frameのロードが始まり、その場合、NavigationCompletedイベントは発行されないようだ。
+                // なので、frame の Loadが開始されるタイミングで、NavigationCompletedを受け取ったものとしてみる。
+                if (frame) {
+                    Loadings = Loadings.Where((v) => { return v.Frame; });
+                }
+                ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
+                ViewModel.StatusLine.Value = $"Loading> {url}";
             }
 
             public void OnEndLoading(string url, bool frame) {
                 Loadings = Loadings.Where((v) => !v.IsSame(url, frame)) ?? EMPTY;
-                IsLoading.Value = !Utils.IsNullOrEmpty(Loadings);
+                ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
+                ResumeStatusLine();
             }
 
-            public ReactiveProperty<bool> IsLoading { get; } = new ReactiveProperty<bool>(false);
+            public void ResumeStatusLine() {
+                if (Utils.IsNullOrEmpty(Loadings)) {
+                    ViewModel.StatusLine.Value = "Ready";
+                } else {
+                    var last = Loadings.Last()?.Url;
+                    ViewModel.StatusLine.Value = (string.IsNullOrEmpty(last)) ? "Ready" : $"Loading> {last}";
+                }
+            }
         }
 
-        private LoadingMonitor LMonitor = new LoadingMonitor();
+        private LoadingMonitor LMonitor;
 
 
         #endregion
@@ -462,7 +482,8 @@ namespace DxxBrowser {
 
         private void WebView_FrameNavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
             Debug.WriteLine($"{callerName()}:{e.Uri}");
-            if(e.Uri.ToString()=="about:blank") {
+            var url = e.Uri.ToString();
+            if(url=="about:blank"||url.StartsWith("javascript:")) {
                 e.Cancel = true;
                 return;
             }
@@ -543,14 +564,10 @@ namespace DxxBrowser {
             Debug.WriteLine($"{callerName()} {e.Value}");
             switch(e.Value[0]) {
                 case 'i':
-                    ActivatedUrl.Value = e.Value.Substring(2);
-                    LinkActivated.Value = !string.IsNullOrWhiteSpace(ActivatedUrl.Value);
+                    StatusLine.Value = e.Value.Substring(2);
                     break;
                 case 'o':
-                    if (ActivatedUrl.Value == e.Value.Substring(2)) {
-                        ActivatedUrl.Value = "";
-                        LinkActivated.Value = false;
-                    }
+                    LMonitor.ResumeStatusLine();
                     break;
                 //case 'c':
                 //    CopyCommand.Execute(e.Value.Substring(2));
