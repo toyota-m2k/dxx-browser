@@ -57,6 +57,8 @@ namespace DxxBrowser {
         public ReactiveProperty<string> CurrentError { get; } = new ReactiveProperty<string>();
 
         public ReactiveProperty<ObservableCollection<string>> FrameUrls { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
+        public ReactiveProperty<string> ActivatedUrl { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<bool> LinkActivated { get; } = new ReactiveProperty<bool>();
 
         private void InitializeProperties() {
             IsDownloadable = IsContainer.CombineLatest(IsTarget, (c, t) => {
@@ -433,7 +435,19 @@ namespace DxxBrowser {
         private void WebView_DOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
             Debug.WriteLine(callerName());
             UpdateHistory();
-            _ = Browser.InvokeScriptAsync("eval", new string[] { "document.onmousemove = function(e) { window.external.notify(e); }" });
+            var script = @"
+                    var els = document.getElementsByTagName('a');
+                    Array.prototype.map.call(els, (v) => {
+                        v.onmouseover = function(e) {
+                            window.external.notify('i=' + e.currentTarget.href);
+                        }
+                        v.onmouseleave = function(e) {
+                            window.external.notify('o=' + e.currentTarget.href);
+                        }
+                        
+                    })";
+            _ = Browser.InvokeScriptAsync("eval", new string[] { script });
+            //_ = Browser.InvokeScriptAsync("eval", new string[] { "document.onmousemove = function(e) { window.external.notify(e); }" });
         }
 
         private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
@@ -527,6 +541,24 @@ namespace DxxBrowser {
 
         private void WebView_ScriptNotify(object sender, WebViewControlScriptNotifyEventArgs e) {
             Debug.WriteLine($"{callerName()} {e.Value}");
+            switch(e.Value[0]) {
+                case 'i':
+                    ActivatedUrl.Value = e.Value.Substring(2);
+                    LinkActivated.Value = !string.IsNullOrWhiteSpace(ActivatedUrl.Value);
+                    break;
+                case 'o':
+                    if (ActivatedUrl.Value == e.Value.Substring(2)) {
+                        ActivatedUrl.Value = "";
+                        LinkActivated.Value = false;
+                    }
+                    break;
+                //case 'c':
+                //    CopyCommand.Execute(e.Value.Substring(2));
+                //    break;
+                default:
+                    Debug.Assert(false, $"unknown command:{e.Value}");
+                    break;
+            }
         }
 
         #endregion
