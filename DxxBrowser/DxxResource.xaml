@@ -22,6 +22,7 @@
 
     <!-- Colors -->
     <SolidColorBrush x:Key="DialogBG" Color="#FF190280" />
+    <SolidColorBrush x:Key="ControlPanelBG" Color="#90000000" />
 
     <SolidColorBrush x:Key="NormalBtnBG" Color="#00FFFFFF" />
     <SolidColorBrush x:Key="MouseOverBtnBG" Color="#80FF8080" />

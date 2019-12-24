@@ -1,0 +1,80 @@
+﻿<UserControl x:Class="DxxBrowser.DxxPlayerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DxxBrowser"
+             Loaded="OnLoaded"
+             Unloaded="OnUnloaded"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary Source="DxxResource.xaml"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <MediaElement x:Name="mMediaElement"
+                       LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
+                          VerticalAlignment="Center" HorizontalAlignment="Center"
+                          ScrubbingEnabled="True"
+                          MediaOpened="OnMediaOpened" 
+                          MediaEnded="OnMediaEnded" 
+                          MediaFailed="OnMediaFailed"
+                          Volume="{Binding Volume, Mode=OneWay}"
+                          IsMuted="{Binding Mute, Mode=OneWay}"
+                          />
+
+        <Grid Name="mPanelBase" 
+              Background="{StaticResource ControlPanelBG}" 
+              MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
+              Opacity="0"
+              >
+            <Grid.Style>
+                <!-- Fade in/out effect -->
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowPanel}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <StopStoryboard BeginStoryboardName="MouseLeaveStoryboard" />
+                                <BeginStoryboard Name="MouseOverStoryboard" Storyboard="{StaticResource MouseOverStoryboard}" />
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <StopStoryboard BeginStoryboardName="MouseOverStoryboard" />
+                                <BeginStoryboard Name="MouseLeaveStoryboard" Storyboard="{StaticResource MouseLeaveStoryboard}" />
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Button IsEnabled="{Binding IsReady.Value}"
+                        Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
+                        Command="{Binding PlayCommand}"
+                        Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}"/>
+                <Button IsEnabled="{Binding IsReady.Value}" 
+                        Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                        Command="{Binding PauseCommand}"
+                        Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0"/>
+                <Button Visibility="{Binding HasPrev.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                        Command="{Binding GoBackCommand}"  
+                        Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
+                <Button Visibility="{Binding HasNext.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                        Command="{Binding GoForwardCommand}"  
+                        Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
+            </StackPanel>
+            <local:TimelineSlider 
+                    Grid.Row="1" Grid.Column="0"
+                    VerticalAlignment="Center"
+                    x:Name="mTimelineSlider" 
+                    Width="300"
+                    Minimum="0" Maximum="{Binding Duration.Value}"
+                    LargeChange="{Binding LargePositionChange.Value}" 
+                    SmallChange="{Binding SmallPositionChange.Value}" />
+        </Grid>
+
+    </Grid>
+</UserControl>

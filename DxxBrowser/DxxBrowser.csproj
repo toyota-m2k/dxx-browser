@@ -37,6 +37,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -77,6 +79,12 @@
     <Compile Include="DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DxxPlayer.xaml.cs">
+      <DependentUpon>DxxPlayer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="DxxPlayerView.xaml.cs">
+      <DependentUpon>DxxPlayerView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="DxxWebViewManager.cs" />
     <Compile Include="DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
@@ -87,6 +95,7 @@
     <Compile Include="DxxHtmlNode.cs" />
     <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
+    <Compile Include="TimelineSlider.cs" />
     <Compile Include="Utils.cs" />
     <Page Include="driver\DxxStorageFolderDialog.xaml">
       <SubType>Designer</SubType>
@@ -109,6 +118,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="DxxFoldingButton.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxPlayer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxPlayerView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
