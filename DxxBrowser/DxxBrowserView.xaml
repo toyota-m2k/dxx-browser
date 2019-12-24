@@ -35,7 +35,7 @@
 
         <!-- Frames List -->
         <Grid
-                Grid.Row="2"
+              Grid.Row="2"
               Background="{StaticResource DialogBG}"
               Visibility="{Binding HasFrameLink.Value, Converter={StaticResource BoolVisibilityConverter}}">
             <Grid.Resources>
@@ -113,7 +113,7 @@
         </Grid>
 
         <Grid Grid.Row="3" HorizontalAlignment="Stretch" Background="#FF575757">
-            <TextBlock Text="{Binding StatusLine.Value}" HorizontalAlignment="Left" Foreground="White" Margin="5,1"/>
+            <TextBlock Text="{Binding StatusLine.Value}" HorizontalAlignment="Left" Foreground="White" Margin="5,2"/>
         </Grid>
 
     </Grid>

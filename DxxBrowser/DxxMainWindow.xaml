@@ -23,7 +23,6 @@
         <!-- 左ペイン -->
         <local:DxxBrowserView Grid.Column="0" x:Name="mainViewer"/>
 
-
         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"/>
 
         <!-- 右ペイン -->
