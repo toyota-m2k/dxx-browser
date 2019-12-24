@@ -30,5 +30,13 @@ namespace DxxBrowser
             }
             return null;
         }
+
+        public static T Apply<T>(this T obj, Action<T> fn) where T : class {
+            fn(obj);
+            return obj;
+        }
+        public static R Run<T,R>(this T obj, Func<T,R> fn) where T : class {
+            return fn(obj);
+        }
     }
 }

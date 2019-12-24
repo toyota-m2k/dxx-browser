@@ -19,10 +19,10 @@ namespace DxxBrowser {
     public partial class DxxPlayer : Window {
         public DxxPlayer() {
             InitializeComponent();
-            player.AutoPlay = true;
-            var src = player.Source;
-            var s = player.MediaPlayer.Source;
+        }
 
+        public void AddSource(Uri source) {
+            mPlayer.AddSource(source);
         }
     }
 }

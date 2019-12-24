@@ -1,41 +1,83 @@
 ﻿using Reactive.Bindings;
 using System;
 using System.Reactive.Subjects;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 
 namespace DxxBrowser {
-    public interface ITimelineOwner {
-        ReactiveProperty<bool> IsPlaying { get; }
+    public interface ITimelineOwnerPlayer {
+        IObservable<bool> IsPlayingProperty { get; }
         double SeekPosition { get; set; }
         void Play();
         void Pause();
     }
 
+    public class TimelineViewModel : DxxViewModelBase {
+        public ReactiveProperty<double> SeekPosition { get; } = new ReactiveProperty<double>(0);
+        public ReadOnlyReactiveProperty<bool> IsPlaying { get; set; }
+
+        private WeakReference<ITimelineOwnerPlayer> mOwner;
+        private ITimelineOwnerPlayer Owner => mOwner?.GetValue();
+
+        public void Initialize(ITimelineOwnerPlayer owner) {
+            mOwner = new WeakReference<ITimelineOwnerPlayer>(owner);
+            IsPlaying = owner.IsPlayingProperty.ToReadOnlyReactiveProperty();
+        }
+
+        public void Play() {
+            Owner?.Play();
+        }
+        public void Pause() {
+            Owner?.Pause();
+        }
+        
+        public void PlayerSeek() {
+            Owner?.Apply((v) => {
+                v.SeekPosition = SeekPosition.Value;
+            });
+        }
+
+        public void SliderSeek() {
+            Owner?.Apply((v) => {
+                SeekPosition.Value = v.SeekPosition;
+            });
+        }
+    }
+
     public class TimelineSlider : Slider {
-        public ReactiveProperty<bool> Dragging { get; } = new ReactiveProperty<bool>();
-
-        private WeakReference<ITimelineOwner> mOwner;
-        private ReadOnlyReactiveProperty<bool> IsPlaying;
-
-        public DispatcherTimer mTimer;
+        private DispatcherTimer mTimer;
+        private TimelineViewModel ViewModel {
+            get => DataContext as TimelineViewModel;
+            set => DataContext = value;
+        }
 
         public TimelineSlider() {
+            ViewModel = new TimelineViewModel();
             mTimer = new DispatcherTimer();
             mTimer.Interval = TimeSpan.FromMilliseconds(50);
             mTimer.Tick += (s, e) => {
-                var player = Owner;
-                if (null != player) {
-                    this.Value = player.SeekPosition;
-                }
+                ViewModel.SliderSeek();
             };
+            Loaded += OnLoaded;
         }
 
-        public void Initialize(ITimelineOwner owner) {
-            Owner = owner;
-            IsPlaying = owner.IsPlaying.ToReadOnlyReactiveProperty();
-            IsPlaying.Subscribe((v) => {
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            Loaded -= OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            Unloaded -= OnUnloaded;
+            mTimer.Stop();
+            ViewModel.Dispose();
+        }
+
+
+        public void Initialize(ITimelineOwnerPlayer owner) {
+            ViewModel.Initialize(owner);
+            ViewModel.IsPlaying.Subscribe((v) => {
                 if(v) {
                     mTimer.Start();
                 } else {
@@ -44,26 +86,23 @@ namespace DxxBrowser {
             });
         }
 
-        public ITimelineOwner Owner {
-            get => mOwner?.GetValue();
-            set => mOwner = new WeakReference<ITimelineOwner>(value);
-        }
         private bool mOrgPlaying = false;
         protected override void OnThumbDragStarted(DragStartedEventArgs e) {
             base.OnThumbDragStarted(e);
-            mOrgPlaying = IsPlaying.Value;
-            Owner?.Pause();
+            mOrgPlaying = ViewModel.IsPlaying.Value;
+            ViewModel.Pause();
         }
 
         protected override void OnThumbDragDelta(DragDeltaEventArgs e) {
             base.OnThumbDragDelta(e);
-            Owner.SeekPosition = this.Value;
+            ViewModel.PlayerSeek();
         }
 
         protected override void OnThumbDragCompleted(DragCompletedEventArgs e) {
             base.OnThumbDragCompleted(e);
+            ViewModel.PlayerSeek();
             if (mOrgPlaying) {
-                Owner?.Play();
+                ViewModel.Play();
             }
         }
     }
