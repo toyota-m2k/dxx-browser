@@ -71,7 +71,7 @@ namespace DxxBrowser {
                 TargetList.Value.Clear();
             });
             ShowPlayerCommand.Subscribe(() => {
-                DxxPlayer.ShowPlayer();
+                DxxPlayer.ShowPlayer(OwnerWindow);
             });
         }
 
@@ -164,6 +164,8 @@ namespace DxxBrowser {
         private async Task TerminateAll() {
             await DxxActivityWatcher.Instance.TerminateAsync(true);
             await DxxDownloader.Instance.TerminateAsync(true);
+            DxxPlayer.Terminate();
+            DxxAnalysisWindow.Terminate();
         }
 
         private void OnDownloadedItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {

@@ -226,6 +226,7 @@ namespace DxxBrowser.driver.caribbean {
             public Storage(IDxxFileBasedDriver driver) : base(driver) {
 
             }
+            protected override string LOG_CAT => "CRB";
             protected override string GetPath(Uri uri) {
                 var idx = uri.Segments.Count() - 2;
                 var filename = idx >= 0 ? uri.Segments.ElementAt(idx) : "unknown";

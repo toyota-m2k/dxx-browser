@@ -1,27 +1,24 @@
 ﻿using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace DxxBrowser {
     /// <summary>
     /// DxxPlayerView.xaml の相互作用ロジック
     /// </summary>
     public partial class DxxPlayerView : UserControl {
+        public interface IPlayList {
+            ReactiveProperty<ObservableCollection<string>> PlayList { get; }
+            ReactiveProperty<int> CurrentIndex { get; }
+            void AddSource(string source);
+        }
 
         public class DxxPlayerViewModel : DxxViewModelBase, ITimelineOwnerPlayer {
             public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
@@ -29,8 +26,7 @@ namespace DxxBrowser {
             public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
-            public ReactiveProperty<double> LargePositionChange { get; } = new ReactiveProperty<double>(10);
-            public ReactiveProperty<double> SmallPositionChange { get; } = new ReactiveProperty<double>(1);
+            public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
 
             public Subject<bool> Ended { get; } = new Subject<bool>();
 
@@ -39,25 +35,24 @@ namespace DxxBrowser {
             public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
             public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
 
-
             public IObservable<bool> IsPlayingProperty => IsPlaying;
-            private bool ToBePlayed = false;
+            public IObservable<double> DurationProperty => Duration;
+
+            private bool Idle = true;
             private WeakReference<MediaElement> mPlayer = null;
 
-            public ReactiveCollection<Uri> PlayList { get; } = new ReactiveCollection<Uri>();
-            private ReactiveProperty<int> CurrentIndex = new ReactiveProperty<int>(-1);
+            //public ReactiveCollection<Uri> PlayList { get; } = new ReactiveCollection<Uri>();
+            //private ReactiveProperty<int> CurrentIndex = new ReactiveProperty<int>(-1);
+
+            [Disposal(false)]
+            public ReactiveProperty<ObservableCollection<string>> PlayList { get; set;  } = null;
+            [Disposal(false)]
+            public ReactiveProperty<int> CurrentIndex { get; set; } = null;
 
             public void SetSource(Uri source) {
-                PlayList.Clear();
+                PlayList = null;
                 Source = source;
             }
-            public void AddSource(Uri source) {
-                PlayList.Add(source);
-            }
-            public void AddSource(IEnumerable<Uri> sources) {
-                PlayList.AddRangeOnScheduler(sources);
-            }
-
 
             public MediaElement Player {
                 get => mPlayer?.GetValue();
@@ -68,35 +63,46 @@ namespace DxxBrowser {
                 get => Player?.Source;
                 set {
                     IsReady.Value = false;
-                    Player?.Apply((v) => v.Source = value);
+                    Player?.Apply((v) => {
+                        Idle = false;
+                        v.Source = value;
+                        Play();
+                    });
                 }
             }
 
             public double SeekPosition {
-                get => Player?.Run((v) => v.Position.TotalMilliseconds) ?? 0;
-                set => Player?.Apply((v)=>v.Position = TimeSpan.FromMilliseconds(value));
+                get {
+                    return Player?.Run((player) => {
+                        return player.Position.TotalMilliseconds;
+                    }) ?? 0;
+                }
+                set {
+                    Player?.Apply((player) => {
+                        player.Position = TimeSpan.FromMilliseconds(value);
+                    });
+                }
             }
 
             public DxxPlayerViewModel() {
             }
 
-            public void Initialize(MediaElement player) {
+            public void Initialize(MediaElement player, IPlayList reserver) {
                 Player = player;
-                IsReady.Subscribe((v) => {
-                    if(v && ToBePlayed) {
-                        Play();
-                    }
-                });
-                PlayList.CollectionChanged += OnPlayListChanged;
+                if (reserver != null) {
+                    PlayList = reserver.PlayList;
+                    CurrentIndex = reserver.CurrentIndex;
+                }
+
+                PlayList.Value.CollectionChanged += OnPlayListChanged;
                 CurrentIndex.Subscribe((v) => {
-                    if(v>=PlayList.Count) {
-                        Stop();
-                    } else if(v<0) {
+                    if(v<0 || PlayList.Value.Count<=v) {
                         Stop();
                     } else {
-                        Source = PlayList[v];
-                        Play();
+                        Source = new Uri(PlayList.Value[v]);
                     }
+                    HasNext.Value = v < PlayList.Value.Count - 1;
+                    HasPrev.Value = 0 < v;
                 });
 
                 Ended.Subscribe((v) => {
@@ -114,20 +120,23 @@ namespace DxxBrowser {
                 GoForwardCommand.Subscribe(() => {
                     Next();
                 });
+                GoBackCommand.Subscribe(() => {
+                    Prev();
+                });
             }
 
             private void OnPlayListChanged(object sender, NotifyCollectionChangedEventArgs e) {
-                if(PlayList.Count>0) {
+                if(PlayList.Value.Count>0) {
                     if(CurrentIndex.Value<0) {
                         CurrentIndex.Value = 0;
-                    } else if(CurrentIndex.Value < PlayList.Count) {
-                        if (!ToBePlayed) {
-                            Source = PlayList[CurrentIndex.Value];
+                    } else if(CurrentIndex.Value < PlayList.Value.Count) {
+                        if (Idle) {
+                            Source = new Uri(PlayList.Value[CurrentIndex.Value]);
                             Play();
                         }
                     } else { // CurrentIndex >= Count
                     }
-                    HasNext.Value = CurrentIndex.Value < PlayList.Count-1;
+                    HasNext.Value = CurrentIndex.Value < PlayList.Value.Count-1;
                     HasPrev.Value = 0<CurrentIndex.Value;
                 } else {
                     HasNext.Value = false;
@@ -137,30 +146,27 @@ namespace DxxBrowser {
             }
 
             public void Next() {
-                if(CurrentIndex.Value<PlayList.Count-1) {
+                if(CurrentIndex.Value<PlayList.Value.Count) {
                     CurrentIndex.Value++;
                 }
             }
             public void Prev() {
                 if(0<CurrentIndex.Value) {
                     var v = CurrentIndex.Value - 1;
-                    if(v>=PlayList.Count) {
-                        v = PlayList.Count - 1;
+                    if(v>=PlayList.Value.Count) {
+                        v = PlayList.Value.Count - 1;
                     }
                     CurrentIndex.Value = v;
                 }
             }
 
             public void Play() {
-                ToBePlayed = true;
-                if (IsReady.Value) {
-                    IsPlaying.Value = true;
-                    Player?.Play();
-                }
+                Idle = false;
+                IsPlaying.Value = true;
+                Player?.Play();
             }
 
             public void Pause() {
-                ToBePlayed = false;
                 if (IsPlaying.Value) {
                     IsPlaying.Value = false;
                     Player?.Pause();
@@ -168,11 +174,9 @@ namespace DxxBrowser {
             }
 
             public void Stop() {
-                ToBePlayed = false;
+                Idle = true;
                 IsPlaying.Value = false;
-                if (IsReady.Value) {
-                    Player?.Stop();
-                }
+                Player?.Stop();
             }
         }
 
@@ -192,16 +196,13 @@ namespace DxxBrowser {
             ViewModel.SetSource(source);
         }
 
-        public void AddSource(Uri source) {
-            ViewModel.AddSource(source);
-        }
-
-        public void AddSource(IEnumerable<Uri> sources) {
-            ViewModel.AddSource(sources);
-        }
-
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            ViewModel.Initialize(mMediaElement);
+            //ViewModel.Initialize(mMediaElement);
+            //mTimelineSlider.Initialize(ViewModel);
+        }
+
+        public void Initialize(IPlayList pl) {
+            ViewModel.Initialize(mMediaElement, pl);
             mTimelineSlider.Initialize(ViewModel);
         }
 
@@ -220,6 +221,7 @@ namespace DxxBrowser {
 
         private void OnMediaOpened(object sender, RoutedEventArgs e) {
             ViewModel.IsReady.Value = true;
+            ViewModel.Duration.Value = mMediaElement.NaturalDuration.TimeSpan.TotalMilliseconds;
         }
 
         private void OnMediaEnded(object sender, RoutedEventArgs e) {
@@ -231,6 +233,14 @@ namespace DxxBrowser {
             ViewModel.IsReady.Value = false;
             ViewModel.Stop();
             ViewModel.Ended.OnNext(false);
+        }
+
+        private void OnMouseEnter(object sender, MouseEventArgs e) {
+            ViewModel.ShowPanel.Value = true;
+        }
+
+        private void OnMouseLeave(object sender, MouseEventArgs e) {
+            ViewModel.ShowPanel.Value = false;
         }
     }
 }

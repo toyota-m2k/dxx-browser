@@ -69,15 +69,7 @@ namespace DxxBrowser {
                         var driver = DxxDriverManager.Instance.FindDriver(t.Url);
                         if (driver != null) {
                             if (driver.LinkExtractor.IsTarget(t)) {
-                                if (driver.StorageManager.IsDownloaded(t.Uri)) {
-                                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {t.Name}");
-                                    DxxPlayer.GetInstance().AddSource(new Uri(driver.StorageManager.GetSavedFile(t.Uri)));
-                                } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
-                                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {t.Name}");
-                                } else {
-                                    DxxLogger.Instance.Comment(LOG_CAT, $"Start: {t.Name}");
-                                    driver.StorageManager.Download(t);
-                                }
+                                driver.StorageManager.Download(t);
                             } else {
                                 var du = new DxxUrl(t, driver);
                                 var cnt = await du.TryGetTargetContainers();
@@ -107,19 +99,20 @@ namespace DxxBrowser {
 
         public async Task<bool> Download() {
             bool result = false;
-            if(Driver.LinkExtractor.IsTarget(this)) {
+            if (Driver.LinkExtractor.IsTarget(this)) {
                 Driver.StorageManager.Download(new DxxTargetInfo(Url, Name, Description));
                 result = true;
-            }
-            var containers = await TryGetTargetContainers();
-            if (!Utils.IsNullOrEmpty(containers)) {
-                DownloadTargets(containers);
-                result = true;
-            }
-            var targets = await TryGetTargets();
-            if (!Utils.IsNullOrEmpty(targets)) {
-                DownloadTargets(targets);
-                result = true;
+            } else {
+                var containers = await TryGetTargetContainers();
+                if (!Utils.IsNullOrEmpty(containers)) {
+                    DownloadTargets(containers);
+                    result = true;
+                }
+                var targets = await TryGetTargets();
+                if (!Utils.IsNullOrEmpty(targets)) {
+                    DownloadTargets(targets);
+                    result = true;
+                }
             }
             return result;
         }

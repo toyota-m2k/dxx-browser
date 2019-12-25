@@ -23,6 +23,8 @@ namespace DxxBrowser.driver {
             return Path.Combine(Driver.StoragePath, filename);
         }
 
+        protected virtual string LOG_CAT => "FileStorage";
+
         public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
             if (!Driver.LinkExtractor.IsTarget(target)) {
                 onCompleted?.Invoke(false);
@@ -30,12 +32,24 @@ namespace DxxBrowser.driver {
             }
             var path = GetPath(target.Uri);
             if (File.Exists(path)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {target.Name}");
+                DxxPlayer.PlayList.AddSource(path);
                 onCompleted?.Invoke(false);
                 return;
             }
+            if(DxxDownloader.Instance.IsDownloading(target.Url)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {target.Name}");
+                DxxPlayer.PlayList.AddSource(path);
+                onCompleted?.Invoke(false);
+                return;
+            }
+            DxxLogger.Instance.Comment(LOG_CAT, $"Start: {target.Name}");
             DxxDownloader.Instance.Download(target, path, (v)=> {
                 if(v) {
-                    DxxPlayer.GetInstance().AddSource(new Uri(path));
+                    DxxPlayer.PlayList.AddSource(path);
+                    DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
+                } else {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
                 }
             });
         }

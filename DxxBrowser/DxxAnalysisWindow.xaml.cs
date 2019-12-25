@@ -200,7 +200,6 @@ namespace DxxBrowser {
         #endregion
     }
 
-
     /// <summary>
     /// DxxAnalysisWindow.xaml の相互作用ロジック
     /// </summary>
@@ -208,10 +207,26 @@ namespace DxxBrowser {
         public DxxAnalysisWindow(string url) {
             ViewModel = new DxxAnalysysViewModel(this, url);
             InitializeComponent();
+            AnalysisWindows = AnalysisWindows.Concat(new WeakReference<DxxAnalysisWindow>[] {new WeakReference<DxxAnalysisWindow>(this)});
         }
+
+        private static IEnumerable<WeakReference<DxxAnalysisWindow>> AnalysisWindows = new WeakReference<DxxAnalysisWindow>[0];
+        public static void Terminate() {
+            var list = AnalysisWindows;
+            foreach (var v in list) {
+                var win = v.GetValue();
+                win?.Close();
+            }
+        }
+
+
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             ViewModel.Dispose();
+            AnalysisWindows = AnalysisWindows.Where((v) => {
+                var win = v.GetValue();
+                return null != win && win != this;
+            });
         }
 
         public DxxAnalysysViewModel ViewModel {

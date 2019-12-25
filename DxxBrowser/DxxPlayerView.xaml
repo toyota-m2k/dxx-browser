@@ -20,20 +20,20 @@
                           MediaOpened="OnMediaOpened" 
                           MediaEnded="OnMediaEnded" 
                           MediaFailed="OnMediaFailed"
-                          Volume="{Binding Volume, Mode=OneWay}"
-                          IsMuted="{Binding Mute, Mode=OneWay}"
                           />
 
         <Grid Name="mPanelBase" 
               Background="{StaticResource ControlPanelBG}" 
               MouseEnter="OnMouseEnter" MouseLeave="OnMouseLeave"
               Opacity="0"
+              VerticalAlignment="Bottom"
+              HorizontalAlignment="Right"
               >
             <Grid.Style>
                 <!-- Fade in/out effect -->
                 <Style TargetType="Grid">
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding ShowPanel}" Value="True">
+                        <DataTrigger Binding="{Binding ShowPanel.Value}" Value="True">
                             <DataTrigger.EnterActions>
                                 <StopStoryboard BeginStoryboardName="MouseLeaveStoryboard" />
                                 <BeginStoryboard Name="MouseOverStoryboard" Storyboard="{StaticResource MouseOverStoryboard}" />
@@ -46,34 +46,34 @@
                     </Style.Triggers>
                 </Style>
             </Grid.Style>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <Button IsEnabled="{Binding IsReady.Value}"
+            <Grid Margin="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button IsEnabled="{Binding IsReady.Value}"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding PlayCommand}"
                         Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}"/>
-                <Button IsEnabled="{Binding IsReady.Value}" 
+                    <Button IsEnabled="{Binding IsReady.Value}" 
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
                         Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0"/>
-                <Button Visibility="{Binding HasPrev.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                    <Button Visibility="{Binding HasPrev.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding GoBackCommand}"  
                         Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
-                <Button Visibility="{Binding HasNext.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                    <Button Visibility="{Binding HasNext.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding GoForwardCommand}"  
                         Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
-            </StackPanel>
-            <local:TimelineSlider 
+                </StackPanel>
+                <local:TimelineSlider 
                     Grid.Row="1" Grid.Column="0"
                     VerticalAlignment="Center"
                     x:Name="mTimelineSlider" 
                     Width="300"
-                    Minimum="0" Maximum="{Binding Duration.Value}"
-                    LargeChange="{Binding LargePositionChange.Value}" 
-                    SmallChange="{Binding SmallPositionChange.Value}" />
+                    />
+            </Grid>
         </Grid>
 
     </Grid>

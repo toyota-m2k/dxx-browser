@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Wpf.UI.Controls;
+﻿using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
+using Microsoft.Toolkit.Wpf.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -84,7 +85,7 @@ namespace DxxBrowser {
         }
 
         private void OnWebViewProcessExited(object sender, object e) {
-            (sender as WebView).Process.ProcessExited -= OnWebViewProcessExited;
+            (sender as WebViewControlProcess).ProcessExited -= OnWebViewProcessExited;
 
             var oldViews = Views;
             PrimaryWebView = null;

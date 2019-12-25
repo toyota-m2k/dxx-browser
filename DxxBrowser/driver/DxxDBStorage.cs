@@ -141,7 +141,7 @@ namespace DxxBrowser.driver {
             return null;
         }
 
-        private const string LOG_CAT = "DBStorage";
+        protected virtual string LOG_CAT => "DBS";
 
         private bool CompletePath(long id, string path) {
             using (var cmd = mDB.CreateCommand()) {
@@ -168,6 +168,7 @@ namespace DxxBrowser.driver {
                 if ( rec.Status == DLStatus.COMPLETED || 
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
+                    DxxPlayer.PlayList.AddSource(rec.Path);
                     return;
                 }
             } else { 
@@ -182,6 +183,10 @@ namespace DxxBrowser.driver {
             DxxDownloader.Instance.Download(target, path, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);
+                    DxxPlayer.PlayList.AddSource(path);
+                    DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
+                } else {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
                 }
                 onCompleted?.Invoke(r);
             });

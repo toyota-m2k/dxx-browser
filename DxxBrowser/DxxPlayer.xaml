@@ -9,7 +9,8 @@
         Unloaded="OnUnloaded"
         Title="DxxPlayer" Height="450" Width="800">
     <Grid>
-        <local:DxxPlayerView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="mPlayer"/>
+        <local:DxxPlayerView 
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="mPlayer"/>
 
     </Grid>
 </Window>
