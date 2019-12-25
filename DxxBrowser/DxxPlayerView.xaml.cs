@@ -32,14 +32,32 @@ namespace DxxBrowser {
     public partial class DxxPlayerView : UserControl {
 
         public class DxxPlayerViewModel : DxxViewModelBase, ITimelineOwnerPlayer {
+            public double SeekPosition {
+                get {
+                    return Player?.Run((player) => {
+                        var pos = player.Position.TotalMilliseconds;
+                        PositionText.Value = FormatDuration(pos);
+                        return pos;
+                    }) ?? 0;
+                }
+                set {
+                    Player?.Apply((player) => {
+                        PositionText.Value = FormatDuration(value);
+                        player.Position = TimeSpan.FromMilliseconds(value);
+                    });
+                }
+            }
+
             public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
             public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
-
             public Subject<bool> Ended { get; } = new Subject<bool>();
+
+            public ReactiveProperty<string> DurationText { get; } = new ReactiveProperty<string>("0");
+            public ReactiveProperty<string> PositionText { get; } = new ReactiveProperty<string>("0");
 
             public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
             public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
@@ -50,19 +68,22 @@ namespace DxxBrowser {
             public IObservable<bool> IsPlayingProperty => IsPlaying;
             public IObservable<double> DurationProperty => Duration;
 
-            private bool Idle = true;
-            private WeakReference<MediaElement> mPlayer = null;
-
-            //public ReactiveCollection<Uri> PlayList { get; } = new ReactiveCollection<Uri>();
-            //private ReactiveProperty<int> CurrentIndex = new ReactiveProperty<int>(-1);
-
+            [Disposal(false)]
             public IDxxPlayList PlayList { get; set;  } = null;
+
+            private string FormatDuration(double duration) {
+                var t = TimeSpan.FromMilliseconds(duration);
+                return string.Format("{0}:{1:00}:{2:00}", t.Hours, t.Minutes, t.Seconds);
+                //$"{t.Hours}:{t.Minutes}.{t.Seconds}";
+
+            }
 
             public void SetSource(Uri source) {
                 PlayList = null;
                 Source = source;
             }
 
+            private WeakReference<MediaElement> mPlayer = null;
             public MediaElement Player {
                 get => mPlayer?.GetValue();
                 private set => mPlayer = new WeakReference<MediaElement>(value);
@@ -74,27 +95,14 @@ namespace DxxBrowser {
                     IsReady.Value = false;
                     Player?.Apply((v) => {
                         if (value != null) {
-                            Idle = false;
+                            //Idle = false;
                             v.Source = value;
                             Play();
                         } else {
                             Stop();
                             v.Source = null;
-                            Idle = true;
+                            //Idle = true;
                         }
-                    });
-                }
-            }
-
-            public double SeekPosition {
-                get {
-                    return Player?.Run((player) => {
-                        return player.Position.TotalMilliseconds;
-                    }) ?? 0;
-                }
-                set {
-                    Player?.Apply((player) => {
-                        player.Position = TimeSpan.FromMilliseconds(value);
                     });
                 }
             }
@@ -104,7 +112,9 @@ namespace DxxBrowser {
 
             public void Initialize(MediaElement player, IDxxPlayList reserver) {
                 Player = player;
-
+                Duration.Subscribe((v) => {
+                    DurationText.Value = FormatDuration(v);
+                });
                 Ended.Subscribe((v) => {
                     Next();
                 });
@@ -122,12 +132,7 @@ namespace DxxBrowser {
                 });
                 TrashCommand.Subscribe(() => {
                     Stop();
-                    //if(0<=CurrentIndex.Value && CurrentIndex.Value<PlayList.Value.Count) {
-                    //    var item = PlayList.Value[CurrentIndex.Value];
-                    //    string path = item.FilePath;
-                    //    File.Delete(path);
-                    //    DxxNGList.Instance.RegisterNG(item.SourceUrl);
-                    //}
+                    PlayList.DeleteSource(PlayList.Current.Value);
                 });
 
                 if (reserver != null) {
@@ -164,7 +169,7 @@ namespace DxxBrowser {
             }
 
             public void Play() {
-                Idle = false;
+                //Idle = false;
                 IsPlaying.Value = true;
                 Player?.Play();
             }
@@ -177,7 +182,7 @@ namespace DxxBrowser {
             }
 
             public void Stop() {
-                Idle = true;
+                //Idle = true;
                 IsPlaying.Value = false;
                 Player?.Stop();
             }

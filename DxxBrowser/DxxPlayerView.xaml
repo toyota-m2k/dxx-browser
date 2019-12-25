@@ -51,7 +51,11 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
                     <Button IsEnabled="{Binding IsReady.Value}"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding PlayCommand}"
@@ -70,11 +74,17 @@
                         Command="{Binding TrashCommand}"  
                         Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}"/>
                 </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
+                    <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
+                    <TextBlock Text=" / " Foreground="White"/>
+                    <TextBlock Text="{Binding DurationText.Value}" Foreground="White"/>
+                </StackPanel>
                 <local:TimelineSlider 
-                    Grid.Row="1" Grid.Column="0"
+                    Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                     VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch"
                     x:Name="mTimelineSlider" 
-                    Width="300"
+                    MinWidth="300"
                     />
             </Grid>
         </Grid>

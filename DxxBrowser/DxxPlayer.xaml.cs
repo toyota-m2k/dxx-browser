@@ -49,6 +49,12 @@ namespace DxxBrowser {
                     Current.Value = source;
                     CurrentIndex = Sources.Count - 1;
                 }
+                UpdateStatus();
+            }
+
+            public void UpdateStatus() {
+                HasNext.Value = 0<Sources.Count && CurrentIndex < Sources.Count - 1;
+                HasPrev.Value = 0 < Sources.Count && 0 < CurrentIndex;
             }
 
             public void DeleteSource(IDxxPlayItem source) {
@@ -69,12 +75,14 @@ namespace DxxBrowser {
                     File.Delete(item.FilePath);
                     DxxNGList.Instance.RegisterNG(item.SourceUrl);
                 }
+                UpdateStatus();
             }
 
             public bool Next() {
                 if(CurrentIndex<Sources.Count-1) {
                     CurrentIndex++;
                     Current.Value = Sources[CurrentIndex];
+                    UpdateStatus();
                     return true;
                 }
                 return false;
@@ -84,6 +92,7 @@ namespace DxxBrowser {
                 if (0<CurrentIndex) { 
                     CurrentIndex--;
                     Current.Value = Sources[CurrentIndex];
+                    UpdateStatus();
                     return true;
                 }
                 return false;

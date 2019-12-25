@@ -34,7 +34,7 @@ namespace DxxBrowser {
                 OwnerSlider.Maximum = v;
                 OwnerSlider.LargeChange = v / 10;
                 OwnerSlider.SmallChange = v / 100;
-                Debug.WriteLine($"Duration = {v} ms");
+                //Debug.WriteLine($"Duration = {v} ms");
             });
         }
 
@@ -50,7 +50,7 @@ namespace DxxBrowser {
             if(player!=null&&slider!=null) { 
                 var pos = slider.Value;
                 player.SeekPosition = pos;
-                Debug.WriteLine($"Player Seek: {pos} ms");
+                //Debug.WriteLine($"Player Seek: {pos} ms");
             }
         }
 
@@ -63,7 +63,7 @@ namespace DxxBrowser {
                 SliderSeekingAfterPlayer = true;
                 slider.Value = pos;
                 SliderSeekingAfterPlayer = false;
-                Debug.WriteLine($"Slider Seek: {pos} ms");
+                //Debug.WriteLine($"Slider Seek: {pos} ms");
             }
         }
     }
