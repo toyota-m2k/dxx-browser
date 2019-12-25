@@ -42,6 +42,7 @@ namespace DxxBrowser {
         #region Commands
         public ReactiveCommand DownloadByTargetList { get; } = new ReactiveCommand();
         public ReactiveCommand CancellAllCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ShowPlayerCommand { get; } = new ReactiveCommand();
 
         public ReactiveCommand ClearStatusCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClearDownloadingListCommand { get; } = new ReactiveCommand();
@@ -68,6 +69,9 @@ namespace DxxBrowser {
             });
             ClearTargetListCommand.Subscribe(() => {
                 TargetList.Value.Clear();
+            });
+            ShowPlayerCommand.Subscribe(() => {
+                DxxPlayer.ShowPlayer();
             });
         }
 

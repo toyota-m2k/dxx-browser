@@ -33,7 +33,11 @@ namespace DxxBrowser.driver {
                 onCompleted?.Invoke(false);
                 return;
             }
-            DxxDownloader.Instance.Download(target, path, onCompleted);
+            DxxDownloader.Instance.Download(target, path, (v)=> {
+                if(v) {
+                    DxxPlayer.GetInstance().AddSource(new Uri(path));
+                }
+            });
         }
 
         public string GetSavedFile(Uri uri) {

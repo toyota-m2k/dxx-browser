@@ -71,6 +71,7 @@ namespace DxxBrowser {
                             if (driver.LinkExtractor.IsTarget(t)) {
                                 if (driver.StorageManager.IsDownloaded(t.Uri)) {
                                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {t.Name}");
+                                    DxxPlayer.GetInstance().AddSource(new Uri(driver.StorageManager.GetSavedFile(t.Uri)));
                                 } else if (DxxDownloader.Instance.IsDownloading(t.Url)) {
                                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {t.Name}");
                                 } else {

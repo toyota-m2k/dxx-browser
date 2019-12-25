@@ -5,6 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DxxBrowser"
         mc:Ignorable="d"
+        Loaded="OnLoaded"
+        Unloaded="OnUnloaded"
         Title="DxxPlayer" Height="450" Width="800">
     <Grid>
         <local:DxxPlayerView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="mPlayer"/>
