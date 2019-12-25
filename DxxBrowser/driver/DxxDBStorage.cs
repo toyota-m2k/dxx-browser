@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace DxxBrowser.driver {
-    public class DxxDBStorage : IDxxStorageManager {
+    public class DxxDBStorage : IDxxStorageManager, IDxxNGList {
         public class Txn : IDisposable {
             private SQLiteTransaction mTxn;
 
@@ -72,6 +69,11 @@ namespace DxxBrowser.driver {
                     path TEXT NOT NULL,
                     status INTEGER NOT NULL,
                     desc TEXT
+                )",
+                @"CREATE TABLE IF NOT EXISTS t_ng (
+                    id INTEGER NOT NULL PRIMARY KEY,
+                    url TEXT NOT NULL UNIQUE,
+                    ignore INTEGER NOT NULL DEFAULT '0'
                 )"
             );
         }
@@ -163,18 +165,25 @@ namespace DxxBrowser.driver {
         }
 
         public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            if(DxxNGList.Instance.IsNG(target.Url)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
+                onCompleted?.Invoke(false);
+                return;
+            }
             var rec = Retrieve(target.Url);
             if(rec!=null) {
                 if ( rec.Status == DLStatus.COMPLETED || 
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
-                    DxxPlayer.PlayList.AddSource(rec.Path);
+                    DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
+                    onCompleted?.Invoke(false);
                     return;
                 }
             } else { 
                 rec = Reserve(target);
                 if (rec == null) {
                     DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
+                    onCompleted?.Invoke(false);
                     return;
                 }
             }
@@ -183,7 +192,7 @@ namespace DxxBrowser.driver {
             DxxDownloader.Instance.Download(target, path, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);
-                    DxxPlayer.PlayList.AddSource(path);
+                    DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
                 } else {
                     DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
@@ -194,7 +203,10 @@ namespace DxxBrowser.driver {
 
         public string GetSavedFile(Uri uri) {
             var rec = Retrieve(uri.ToString());
-            return rec?.Path;
+            if(null==rec) {
+                return null;
+            }
+            return File.Exists(rec.Path) ? rec.Path : null;
         }
 
         public bool IsDownloaded(Uri uri) {
@@ -202,6 +214,54 @@ namespace DxxBrowser.driver {
             return rec?.Status == DLStatus.COMPLETED;
         }
 
+        #region IDxxNGList i/f
 
+        public bool RegisterNG(string url) {
+            try {
+                using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"UPDATE t_ng SET ignore='0' WHERE url='{url}'";
+                    if (1 == cmd.ExecuteNonQuery()) {
+                        return true;
+                    }
+                    cmd.CommandText = $"INSERT INTO t_ng (url,ignore) VALUES('{url}','0')";
+                    return 1 == cmd.ExecuteNonQuery();
+                }
+            } catch(Exception e) {
+                Debug.WriteLine(e.StackTrace);
+                DxxLogger.Instance.Error(LOG_CAT, "RegisterNG Failed.");
+                return false;
+            }
+        }
+
+        public bool UnregisterNG(string url) {
+            try {
+                using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"UPDATE t_ng SET ignore='1' WHERE url='{url}'";
+                    return true;
+                }
+            } catch (Exception e) {
+                Debug.WriteLine(e.StackTrace);
+                DxxLogger.Instance.Error(LOG_CAT, "UnregisterNG Failed.");
+                return false;
+            }
+        }
+
+        public bool IsNG(string url) {
+            using (var cmd = mDB.CreateCommand()) {
+                try {
+                    cmd.CommandText = $"SELECT * FROM t_ng WHERE url='{url}'";
+                    using (var reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            return Convert.ToInt64(reader["ignore"]) == 0;
+                        }
+                    }
+                } catch (Exception e) {
+                    Debug.WriteLine(e.StackTrace);
+                }
+                return false;
+            }
+        }
+
+        #endregion
     }
 }

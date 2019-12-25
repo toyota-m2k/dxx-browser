@@ -60,12 +60,15 @@
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
                         Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0"/>
-                    <Button Visibility="{Binding HasPrev.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                    <Button IsEnabled="{Binding HasPrev.Value}"
                         Command="{Binding GoBackCommand}"  
                         Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
-                    <Button Visibility="{Binding HasNext.Value, Converter={StaticResource BoolVisibilityConverter}}"
+                    <Button IsEnabled="{Binding HasNext.Value}"
                         Command="{Binding GoForwardCommand}"  
                         Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
+                    <Button IsEnabled="{Binding IsReady.Value}"
+                        Command="{Binding TrashCommand}"  
+                        Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}"/>
                 </StackPanel>
                 <local:TimelineSlider 
                     Grid.Row="1" Grid.Column="0"

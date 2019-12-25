@@ -65,6 +65,8 @@
     <Compile Include="driver\DxxDBStorage.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
     <Compile Include="driver\DxxFileBasedStorage.cs" />
+    <Compile Include="driver\DxxNGList.cs" />
+    <Compile Include="driver\DxxPlayerItem.cs" />
     <Compile Include="driver\DxxStorageFolderDialog.xaml.cs">
       <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
     </Compile>
@@ -95,6 +97,7 @@
     <Compile Include="DxxHtmlNode.cs" />
     <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
+    <Compile Include="IDxxNGList.cs" />
     <Compile Include="TimelineSlider.cs" />
     <Compile Include="Utils.cs" />
     <Page Include="driver\DxxStorageFolderDialog.xaml">

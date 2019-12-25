@@ -1,8 +1,10 @@
-﻿using Reactive.Bindings;
+﻿using DxxBrowser.driver;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
@@ -13,12 +15,21 @@ namespace DxxBrowser {
     /// <summary>
     /// DxxPlayerView.xaml の相互作用ロジック
     /// </summary>
+    public interface IDxxPlayItem {
+        string SourceUrl { get; }   // key
+        string FilePath { get; }
+    }
+    public interface IDxxPlayList {
+        ReactiveProperty<IDxxPlayItem> Current { get; }
+        ReactiveProperty<bool> HasNext { get; }
+        ReactiveProperty<bool> HasPrev { get; }
+        bool Next();
+        bool Prev();
+        void AddSource(IDxxPlayItem source);
+        void DeleteSource(IDxxPlayItem source);
+    }
+
     public partial class DxxPlayerView : UserControl {
-        public interface IPlayList {
-            ReactiveProperty<ObservableCollection<string>> PlayList { get; }
-            ReactiveProperty<int> CurrentIndex { get; }
-            void AddSource(string source);
-        }
 
         public class DxxPlayerViewModel : DxxViewModelBase, ITimelineOwnerPlayer {
             public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
@@ -34,6 +45,7 @@ namespace DxxBrowser {
             public ReactiveCommand PauseCommand { get; } = new ReactiveCommand();
             public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
             public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
+            public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
 
             public IObservable<bool> IsPlayingProperty => IsPlaying;
             public IObservable<double> DurationProperty => Duration;
@@ -44,10 +56,7 @@ namespace DxxBrowser {
             //public ReactiveCollection<Uri> PlayList { get; } = new ReactiveCollection<Uri>();
             //private ReactiveProperty<int> CurrentIndex = new ReactiveProperty<int>(-1);
 
-            [Disposal(false)]
-            public ReactiveProperty<ObservableCollection<string>> PlayList { get; set;  } = null;
-            [Disposal(false)]
-            public ReactiveProperty<int> CurrentIndex { get; set; } = null;
+            public IDxxPlayList PlayList { get; set;  } = null;
 
             public void SetSource(Uri source) {
                 PlayList = null;
@@ -64,9 +73,15 @@ namespace DxxBrowser {
                 set {
                     IsReady.Value = false;
                     Player?.Apply((v) => {
-                        Idle = false;
-                        v.Source = value;
-                        Play();
+                        if (value != null) {
+                            Idle = false;
+                            v.Source = value;
+                            Play();
+                        } else {
+                            Stop();
+                            v.Source = null;
+                            Idle = true;
+                        }
                     });
                 }
             }
@@ -87,77 +102,65 @@ namespace DxxBrowser {
             public DxxPlayerViewModel() {
             }
 
-            public void Initialize(MediaElement player, IPlayList reserver) {
+            public void Initialize(MediaElement player, IDxxPlayList reserver) {
                 Player = player;
-                if (reserver != null) {
-                    PlayList = reserver.PlayList;
-                    CurrentIndex = reserver.CurrentIndex;
-                }
-
-                PlayList.Value.CollectionChanged += OnPlayListChanged;
-                CurrentIndex.Subscribe((v) => {
-                    if(v<0 || PlayList.Value.Count<=v) {
-                        Stop();
-                    } else {
-                        Source = new Uri(PlayList.Value[v]);
-                    }
-                    HasNext.Value = v < PlayList.Value.Count - 1;
-                    HasPrev.Value = 0 < v;
-                });
 
                 Ended.Subscribe((v) => {
                     Next();
                 });
-
                 PlayCommand.Subscribe(() => {
                     Play();
                 });
-
                 PauseCommand.Subscribe(() => {
                     Pause();
                 });
-
                 GoForwardCommand.Subscribe(() => {
                     Next();
                 });
                 GoBackCommand.Subscribe(() => {
                     Prev();
                 });
+                TrashCommand.Subscribe(() => {
+                    Stop();
+                    //if(0<=CurrentIndex.Value && CurrentIndex.Value<PlayList.Value.Count) {
+                    //    var item = PlayList.Value[CurrentIndex.Value];
+                    //    string path = item.FilePath;
+                    //    File.Delete(path);
+                    //    DxxNGList.Instance.RegisterNG(item.SourceUrl);
+                    //}
+                });
+
+                if (reserver != null) {
+                    PlayList = reserver;
+                    PlayList.HasNext.Subscribe((v) => {
+                        HasNext.Value = v;
+                    });
+                    PlayList.HasPrev.Subscribe((v) => {
+                        HasPrev.Value = v;
+                    });
+                    PlayList.Current.Subscribe((v) => {
+                        Start();
+                    });
+                }
             }
 
-            private void OnPlayListChanged(object sender, NotifyCollectionChangedEventArgs e) {
-                if(PlayList.Value.Count>0) {
-                    if(CurrentIndex.Value<0) {
-                        CurrentIndex.Value = 0;
-                    } else if(CurrentIndex.Value < PlayList.Value.Count) {
-                        if (Idle) {
-                            Source = new Uri(PlayList.Value[CurrentIndex.Value]);
-                            Play();
-                        }
-                    } else { // CurrentIndex >= Count
-                    }
-                    HasNext.Value = CurrentIndex.Value < PlayList.Value.Count-1;
-                    HasPrev.Value = 0<CurrentIndex.Value;
+            string mCurrentUrl = "";
+            public void Start() {
+                var item = PlayList.Current.Value;
+                if(item!=null && item.SourceUrl!=mCurrentUrl) {
+                    mCurrentUrl = item.SourceUrl;
+                    Source = new Uri(item.FilePath);
                 } else {
-                    HasNext.Value = false;
-                    HasPrev.Value = false;
-                    CurrentIndex.Value = -1;
+                    Stop();
                 }
             }
 
             public void Next() {
-                if(CurrentIndex.Value<PlayList.Value.Count) {
-                    CurrentIndex.Value++;
-                }
+                PlayList.Next();
             }
+
             public void Prev() {
-                if(0<CurrentIndex.Value) {
-                    var v = CurrentIndex.Value - 1;
-                    if(v>=PlayList.Value.Count) {
-                        v = PlayList.Value.Count - 1;
-                    }
-                    CurrentIndex.Value = v;
-                }
+                PlayList.Prev();
             }
 
             public void Play() {
@@ -201,7 +204,7 @@ namespace DxxBrowser {
             //mTimelineSlider.Initialize(ViewModel);
         }
 
-        public void Initialize(IPlayList pl) {
+        public void Initialize(IDxxPlayList pl) {
             ViewModel.Initialize(mMediaElement, pl);
             mTimelineSlider.Initialize(ViewModel);
         }

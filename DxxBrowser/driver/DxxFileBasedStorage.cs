@@ -30,27 +30,32 @@ namespace DxxBrowser.driver {
                 onCompleted?.Invoke(false);
                 return;
             }
+            if (DxxNGList.Instance.IsNG(target.Url)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
+                onCompleted?.Invoke(false);
+                return;
+            }
             var path = GetPath(target.Uri);
             if (File.Exists(path)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {target.Name}");
-                DxxPlayer.PlayList.AddSource(path);
+                DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
                 onCompleted?.Invoke(false);
                 return;
             }
             if(DxxDownloader.Instance.IsDownloading(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {target.Name}");
-                DxxPlayer.PlayList.AddSource(path);
                 onCompleted?.Invoke(false);
                 return;
             }
             DxxLogger.Instance.Comment(LOG_CAT, $"Start: {target.Name}");
             DxxDownloader.Instance.Download(target, path, (v)=> {
                 if(v) {
-                    DxxPlayer.PlayList.AddSource(path);
+                    DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
                 } else {
                     DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
                 }
+                onCompleted?.Invoke(v);
             });
         }
 
