@@ -23,6 +23,8 @@ namespace DxxBrowser {
         ReactiveProperty<IDxxPlayItem> Current { get; }
         ReactiveProperty<bool> HasNext { get; }
         ReactiveProperty<bool> HasPrev { get; }
+        ReactiveProperty<int> PlayingIndex { get; }
+        ReactiveProperty<int> TotalCount { get; }
         bool Next();
         bool Prev();
         void AddSource(IDxxPlayItem source);
@@ -50,8 +52,12 @@ namespace DxxBrowser {
 
             public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
+
             public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+            public ReactiveProperty<int> PlayingIndex { get; } = new ReactiveProperty<int>(0);
+            public ReactiveProperty<int> TotalCount { get; } = new ReactiveProperty<int>(0);
+
             public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
             public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
             public Subject<bool> Ended { get; } = new Subject<bool>();
@@ -145,6 +151,12 @@ namespace DxxBrowser {
                     });
                     PlayList.Current.Subscribe((v) => {
                         Start();
+                    });
+                    PlayList.TotalCount.Subscribe((v) => {
+                        TotalCount.Value = v;
+                    });
+                    PlayList.PlayingIndex.Subscribe((v) => {
+                        PlayingIndex.Value = v;
                     });
                 }
             }

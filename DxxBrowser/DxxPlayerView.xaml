@@ -50,6 +50,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -59,25 +60,45 @@
                     <Button IsEnabled="{Binding IsReady.Value}"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding PlayCommand}"
-                        Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}"/>
+                        Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="再生"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                     <Button IsEnabled="{Binding IsReady.Value}" 
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
-                        Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0"/>
+                        Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="停止"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                     <Button IsEnabled="{Binding HasPrev.Value}"
                         Command="{Binding GoBackCommand}"  
-                        Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
+                        Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="前の動画"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                     <Button IsEnabled="{Binding HasNext.Value}"
                         Command="{Binding GoForwardCommand}"  
-                        Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
+                        Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="次の動画"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                     <Button IsEnabled="{Binding IsReady.Value}"
                         Command="{Binding TrashCommand}"  
-                        Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}"/>
+                        Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="削除してNGリストに登録"/>
+                        </ToolTipService.ToolTip>
+                    </Button>
                 </StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
-                    <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding PlayingIndex.Value}" Foreground="White"/>
                     <TextBlock Text=" / " Foreground="White"/>
-                    <TextBlock Text="{Binding DurationText.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding TotalCount.Value}" Foreground="White"/>
                 </StackPanel>
                 <local:TimelineSlider 
                     Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
@@ -86,6 +107,11 @@
                     x:Name="mTimelineSlider" 
                     MinWidth="300"
                     />
+                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
+                    <TextBlock Text=" / " Foreground="White"/>
+                    <TextBlock Text="{Binding DurationText.Value}" Foreground="White"/>
+                </StackPanel>
             </Grid>
         </Grid>
 

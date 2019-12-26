@@ -40,8 +40,9 @@ namespace DxxBrowser {
             public int CurrentIndex = 0;
 
             public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
-
             public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+            public ReactiveProperty<int> PlayingIndex { get; } = new ReactiveProperty<int>(0);
+            public ReactiveProperty<int> TotalCount { get; } = new ReactiveProperty<int>(0);
 
             public void AddSource(IDxxPlayItem source) {
                 Sources.Add(source);
@@ -55,6 +56,8 @@ namespace DxxBrowser {
             public void UpdateStatus() {
                 HasNext.Value = 0<Sources.Count && CurrentIndex < Sources.Count - 1;
                 HasPrev.Value = 0 < Sources.Count && 0 < CurrentIndex;
+                TotalCount.Value = Sources.Count;
+                PlayingIndex.Value = Math.Max(0,Math.Min(CurrentIndex + 1, Sources.Count));
             }
 
             public void DeleteSource(IDxxPlayItem source) {
