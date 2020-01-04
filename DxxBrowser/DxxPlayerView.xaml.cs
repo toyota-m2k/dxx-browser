@@ -23,6 +23,8 @@ namespace DxxBrowser {
         ReactiveProperty<IDxxPlayItem> Current { get; }
         ReactiveProperty<bool> HasNext { get; }
         ReactiveProperty<bool> HasPrev { get; }
+        ReactiveProperty<int> CurrentPos { get; }
+        ReactiveProperty<int> TotalCount { get; }
         bool Next();
         bool Prev();
         void AddSource(IDxxPlayItem source);
@@ -50,8 +52,13 @@ namespace DxxBrowser {
 
             public ReactiveProperty<bool> IsPlaying { get; } = new ReactiveProperty<bool>(false);
             public ReactiveProperty<bool> IsReady { get; } = new ReactiveProperty<bool>(false);
-            public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
-            public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+            //public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
+            //public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+            private ReadOnlyReactiveProperty<IDxxPlayItem> CurrentItem { get; set; }
+            public ReadOnlyReactiveProperty<bool> HasNext { get; private set; }
+            public ReadOnlyReactiveProperty<bool> HasPrev { get; private set; }
+
+
             public ReactiveProperty<double> Duration { get; } = new ReactiveProperty<double>(100);
             public ReactiveProperty<bool> ShowPanel { get; } = new ReactiveProperty<bool>(true);
             public Subject<bool> Ended { get; } = new Subject<bool>();
@@ -92,6 +99,9 @@ namespace DxxBrowser {
             public Uri Source {
                 get => Player?.Source;
                 set {
+                    if (mDisposed) {
+                        return;
+                    }
                     IsReady.Value = false;
                     Player?.Apply((v) => {
                         if (value != null) {
@@ -107,7 +117,8 @@ namespace DxxBrowser {
                 }
             }
 
-            public DxxPlayerViewModel() {
+            public DxxPlayerViewModel(MediaElement player, IDxxPlayList reserver) {
+                Initialize(player, reserver);
             }
 
             public void Initialize(MediaElement player, IDxxPlayList reserver) {
@@ -132,18 +143,15 @@ namespace DxxBrowser {
                 });
                 TrashCommand.Subscribe(() => {
                     Stop();
-                    PlayList.DeleteSource(PlayList.Current.Value);
+                    PlayList?.DeleteSource(PlayList.Current.Value);
                 });
 
                 if (reserver != null) {
                     PlayList = reserver;
-                    PlayList.HasNext.Subscribe((v) => {
-                        HasNext.Value = v;
-                    });
-                    PlayList.HasPrev.Subscribe((v) => {
-                        HasPrev.Value = v;
-                    });
-                    PlayList.Current.Subscribe((v) => {
+                    HasNext = PlayList.HasNext.ToReadOnlyReactiveProperty();
+                    HasPrev = PlayList.HasPrev.ToReadOnlyReactiveProperty();
+                    CurrentItem = PlayList.Current.ToReadOnlyReactiveProperty();
+                    CurrentItem.Subscribe((v) => {
                         Start();
                     });
                 }
@@ -151,6 +159,9 @@ namespace DxxBrowser {
 
             string mCurrentUrl = "";
             public void Start() {
+                if (mDisposed) {
+                    return;
+                }
                 var item = PlayList.Current.Value;
                 if(item!=null && item.SourceUrl!=mCurrentUrl) {
                     mCurrentUrl = item.SourceUrl;
@@ -161,20 +172,32 @@ namespace DxxBrowser {
             }
 
             public void Next() {
+                if (mDisposed) {
+                    return;
+                }
                 PlayList.Next();
             }
 
             public void Prev() {
+                if (mDisposed) {
+                    return;
+                }
                 PlayList.Prev();
             }
 
             public void Play() {
+                if (mDisposed) {
+                    return;
+                }
                 //Idle = false;
                 IsPlaying.Value = true;
                 Player?.Play();
             }
 
             public void Pause() {
+                if (mDisposed) {
+                    return;
+                }
                 if (IsPlaying.Value) {
                     IsPlaying.Value = false;
                     Player?.Pause();
@@ -182,9 +205,18 @@ namespace DxxBrowser {
             }
 
             public void Stop() {
+                if(mDisposed) {
+                    return;
+                }
                 //Idle = true;
                 IsPlaying.Value = false;
                 Player?.Stop();
+            }
+
+            private bool mDisposed = false;
+            public override void Dispose() {
+                mDisposed = true;
+                base.Dispose();
             }
         }
 
@@ -196,7 +228,6 @@ namespace DxxBrowser {
         //public Subject<bool> ReachEnd => ViewModel.Ended;
 
         public DxxPlayerView() {
-            ViewModel = new DxxPlayerViewModel();
             InitializeComponent();
         }
 
@@ -210,7 +241,7 @@ namespace DxxBrowser {
         }
 
         public void Initialize(IDxxPlayList pl) {
-            ViewModel.Initialize(mMediaElement, pl);
+            ViewModel = new DxxPlayerViewModel(mMediaElement, pl);
             mTimelineSlider.Initialize(ViewModel);
         }
 

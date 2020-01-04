@@ -14,13 +14,13 @@
 
     <Grid>
         <MediaElement x:Name="mMediaElement"
-                       LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
-                          VerticalAlignment="Center" HorizontalAlignment="Center"
-                          ScrubbingEnabled="True"
-                          MediaOpened="OnMediaOpened" 
-                          MediaEnded="OnMediaEnded" 
-                          MediaFailed="OnMediaFailed"
-                          />
+                      LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                      ScrubbingEnabled="True"
+                      MediaOpened="OnMediaOpened" 
+                      MediaEnded="OnMediaEnded" 
+                      MediaFailed="OnMediaFailed"
+                      />
 
         <Grid Name="mPanelBase" 
               Background="{StaticResource ControlPanelBG}" 
@@ -50,6 +50,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -75,9 +76,9 @@
                         Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}"/>
                 </StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
-                    <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding PlayList.CurrentPos.Value}" Foreground="White"/>
                     <TextBlock Text=" / " Foreground="White"/>
-                    <TextBlock Text="{Binding DurationText.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding PlayList.TotalCount.Value}" Foreground="White"/>
                 </StackPanel>
                 <local:TimelineSlider 
                     Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
@@ -86,6 +87,11 @@
                     x:Name="mTimelineSlider" 
                     MinWidth="300"
                     />
+                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock Text="{Binding PositionText.Value}" Foreground="White"/>
+                    <TextBlock Text=" / " Foreground="White"/>
+                    <TextBlock Text="{Binding DurationText.Value}" Foreground="White"/>
+                </StackPanel>
             </Grid>
         </Grid>
 

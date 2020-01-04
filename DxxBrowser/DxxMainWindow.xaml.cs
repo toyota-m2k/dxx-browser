@@ -125,17 +125,23 @@ namespace DxxBrowser {
                 });
             });
             subViewer.ViewModel.RequestLoadInMainView.Subscribe((v) => {
-                Dispatcher.InvokeAsync(() => {
+                Dispatcher.InvokeAsync(() => { 
                     mainViewer.ViewModel.NavigateCommand.Execute(v);
                 });
             });
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
 
+            DxxPlayer.Initialize(this);
+
             var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
             //Debug.WriteLine(v.ToString());
-            this.Title = String.Format("{0} (v{1}.{2}.{3})", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart);
-
+#if DEBUG
+            string dbg = " <DBG> ";
+#else
+            string dbg = " ";
+#endif
+            this.Title = String.Format("{0}{5}(v{1}.{2}.{3}.{4})", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart,dbg);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
