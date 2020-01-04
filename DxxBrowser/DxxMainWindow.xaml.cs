@@ -131,6 +131,11 @@ namespace DxxBrowser {
             });
             ViewModel.DownloadingList.Value.CollectionChanged += OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged += OnListChanged<DxxLogInfo>;
+
+            var version = FileVersionInfo.GetVersionInfo(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            //Debug.WriteLine(v.ToString());
+            this.Title = String.Format("{0} (v{1}.{2}.{3})", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart);
+
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
