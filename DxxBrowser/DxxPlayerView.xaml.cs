@@ -18,6 +18,7 @@ namespace DxxBrowser {
     public interface IDxxPlayItem {
         string SourceUrl { get; }   // key
         string FilePath { get; }
+        string Description { get; }
     }
     public interface IDxxPlayList {
         ReactiveProperty<IDxxPlayItem> Current { get; }

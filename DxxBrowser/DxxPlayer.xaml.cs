@@ -43,6 +43,7 @@ namespace DxxBrowser {
             public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
 
             public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+            private bool mLast = true;
 
             private WeakReference<DispatcherObject> mDispatherSource;
             private DispatcherObject DispatcherSource {
@@ -56,7 +57,8 @@ namespace DxxBrowser {
                 Dispatcher.Invoke(() => {
                     Sources.Add(source);
                     TotalCount.Value = Sources.Count;
-                    if (Current.Value == null) {
+                    if (mLast) {
+                        mLast = false;
                         Current.Value = source;
                         CurrentPos.Value = Sources.Count;
                     }
@@ -101,6 +103,7 @@ namespace DxxBrowser {
                     UpdateStatus();
                     return true;
                 }
+                mLast = true;
                 return false;
             }
 
@@ -130,12 +133,20 @@ namespace DxxBrowser {
             }
         }
 
+        private ReadOnlyReactiveProperty<IDxxPlayItem> Current;
+
         private void OnLoaded(object sender, RoutedEventArgs e) {
             mPlayer.Initialize(PlayList);
+            Current = PlayList.Current.ToReadOnlyReactiveProperty();
+            Current.Subscribe((v) => {
+                Title = v.Description;
+            });
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             sPlayer = null;
+            Current?.Dispose();
+            Current = null;
         }
 
         public static void Initialize(DispatcherObject source) {
