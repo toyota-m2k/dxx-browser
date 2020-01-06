@@ -70,6 +70,9 @@ namespace DxxBrowser.driver {
             }
 
             private DxxTargetInfo CreateTargetInfo(Uri baseUri, string url, HtmlNode node) {
+                if (string.IsNullOrEmpty(url)) {
+                    return null;
+                }
                 Uri uri;
                 if(!Uri.TryCreate(baseUri, url, out uri)) {
                     return null;
@@ -89,12 +92,12 @@ namespace DxxBrowser.driver {
                         cancellationToken.ThrowIfCancellationRequested();
                         var nodes1 = html.DocumentNode.SelectNodes("//a[contains(@href, '.mp') or contains(@href, '.wmv') or contains(@href,'.mov') or contains(@href,'.qt')]")
                                     ?.Select((v) => {
-                                        return CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v);
+                                        return CreateTargetInfo(urx.Uri, v.Attributes["href"]?.Value, v);
                                     })
                                     ?.Where((v) => v != null);
                         var nodes2 = html.DocumentNode.SelectNodes("//video")
                                     ?.Select((v) => {
-                                        return CreateTargetInfo(urx.Uri, v.Attributes["src"].Value, v);
+                                        return CreateTargetInfo(urx.Uri, v.Attributes["src"]?.Value, v);
                                     })
                                     ?.Where((v) => v != null);
                         IList<DxxTargetInfo> result = null;

@@ -55,6 +55,9 @@ namespace DxxBrowser {
 
 
             public void AddSource(IDxxPlayItem source) {
+                if(null==source) {
+                    return;
+                }
                 Dispatcher.Invoke(() => {
                     Sources.Add(source);
                     TotalCount.Value = Sources.Count;
@@ -140,7 +143,11 @@ namespace DxxBrowser {
             mPlayer.Initialize(PlayList);
             Current = PlayList.Current.ToReadOnlyReactiveProperty();
             Current.Subscribe((v) => {
-                Title = v.Description;
+                if (null != v) {
+                    Title = v.Description;
+                } else {
+                    Title = "No Sources";
+                }
             });
         }
 
