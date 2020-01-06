@@ -35,7 +35,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>dxxbrowser.ico</ApplicationIcon>
+    <ApplicationIcon>res\dxxbrowser.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -60,8 +60,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="CompoundProperty.cs" />
-    <Compile Include="Disposal.cs" />
+    <Compile Include="common\CompoundProperty.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
     <Compile Include="driver\DefaultDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
@@ -74,7 +73,7 @@
       <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="driver\NopDriver.cs" />
-    <Compile Include="DxxAnalysisWindow.xaml.cs">
+    <Compile Include="analyzer\DxxAnalysisWindow.xaml.cs">
       <DependentUpon>DxxAnalysisWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DxxBookmark.cs" />
@@ -84,30 +83,30 @@
     <Compile Include="DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxPlayer.xaml.cs">
+    <Compile Include="player\DxxPlayer.xaml.cs">
       <DependentUpon>DxxPlayer.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxPlayerView.xaml.cs">
+    <Compile Include="player\DxxPlayerView.xaml.cs">
       <DependentUpon>DxxPlayerView.xaml</DependentUpon>
     </Compile>
     <Compile Include="DxxWebViewManager.cs" />
     <Compile Include="DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
-    <Compile Include="DxxFileDispositionDialog.xaml.cs">
+    <Compile Include="analyzer\DxxFileDispositionDialog.xaml.cs">
       <DependentUpon>DxxFileDispositionDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxHtmlNode.cs" />
+    <Compile Include="analyzer\DxxHtmlNode.cs" />
     <Compile Include="DxxUriEx.cs" />
     <Compile Include="DxxUrl.cs" />
     <Compile Include="IDxxNGList.cs" />
-    <Compile Include="TimelineSlider.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="player\TimelineSlider.cs" />
+    <Compile Include="common\Utils.cs" />
     <Page Include="driver\DxxStorageFolderDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxAnalysisWindow.xaml">
+    <Page Include="analyzer\DxxAnalysisWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -119,23 +118,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxFileDispositionDialog.xaml">
+    <Page Include="analyzer\DxxFileDispositionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxFoldingButton.xaml">
+    <Page Include="res\DxxFoldingButton.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxPlayer.xaml">
+    <Page Include="player\DxxPlayer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxPlayerView.xaml">
+    <Page Include="player\DxxPlayerView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxResource.xaml">
+    <Page Include="res\DxxResource.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -149,18 +148,18 @@
     </Compile>
     <Compile Include="CheckButton.cs" />
     <Compile Include="driver\dmm\DmmDriver.cs" />
-    <Compile Include="DxxConverter.cs" />
+    <Compile Include="res\Converter.cs" />
     <Compile Include="DxxMainWindow.xaml.cs">
       <DependentUpon>DxxMainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="DxxSvgPath.xaml">
+    <Page Include="res\DxxSvgPath.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DxxViewModelBase.cs" />
+    <Compile Include="common\DxxViewModelBase.cs" />
     <Compile Include="IDxxDriver.cs" />
     <Compile Include="IDxxLinkExtractor.cs" />
     <Compile Include="IDxxStorageManager.cs" />
@@ -216,7 +215,8 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="dxxbrowser.ico" />
+    <Resource Include="res\dxxbrowser.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

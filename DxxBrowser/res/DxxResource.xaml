@@ -1,24 +1,25 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:DxxBrowser"
+        xmlns:common="clr-namespace:Common"
         >
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="DxxSvgPath.xaml"/>
     </ResourceDictionary.MergedDictionaries>
     <!-- Converters -->
-    <local:BoolVisibilityConverter x:Key="BoolVisibilityConverter"/>
-    <local:NegBoolVisibilityConverter x:Key="NegBoolVisibilityConverter"/>
-    <local:NegBoolConverter x:Key="NegBoolConverter"/>
-    <local:EnumBooleanConverter x:Key="EnumBooleanConverter"/>
-    <local:EnumVisibilityConverter x:Key="EnumVisibilityConverter"/>
-    <local:NegEnumVisibilityConverter x:Key="NegEnumVisibilityConverter"/>
-    <local:DateStringConverter x:Key="DateStringConverter"/>
-    <local:DecimalStringConverter x:Key="DecimalStringConverter"/>
-    <local:BoolGridLengthConverter x:Key="BoolGridLengthConverter"/>
-    <local:BoolGridLengthAutoConverter x:Key="BoolGridLengthAutoConverter"/>
-    <local:IntBoolConverter x:Key="IntBoolConverter"/>
-    <local:HtmlNodeStringConverter x:Key="HtmlNodeStringConverter"/>
+    <common:BoolVisibilityConverter x:Key="BoolVisibilityConverter"/>
+    <common:NegBoolVisibilityConverter x:Key="NegBoolVisibilityConverter"/>
+    <common:NegBoolConverter x:Key="NegBoolConverter"/>
+    <common:EnumBooleanConverter x:Key="EnumBooleanConverter"/>
+    <common:EnumVisibilityConverter x:Key="EnumVisibilityConverter"/>
+    <common:NegEnumVisibilityConverter x:Key="NegEnumVisibilityConverter"/>
+    <common:DateStringConverter x:Key="DateStringConverter"/>
+    <common:DecimalStringConverter x:Key="DecimalStringConverter"/>
+    <common:BoolGridLengthConverter x:Key="BoolGridLengthConverter"/>
+    <common:BoolGridLengthAutoConverter x:Key="BoolGridLengthAutoConverter"/>
+    <common:IntBoolConverter x:Key="IntBoolConverter"/>
+    <common:HtmlNodeStringConverter x:Key="HtmlNodeStringConverter"/>
 
     <!-- Colors -->
     <SolidColorBrush x:Key="DialogBG" Color="#FF190280" />

@@ -16,9 +16,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Common;
 
 namespace DxxBrowser {
-    public class DxxAnalysysViewModel : DxxViewModelBase, IDisposable {
+    public class DxxAnalysysViewModel : MicViewModelBase, IDisposable {
         #region Properties
 
         public ReactiveProperty<string> BaseUrl { get; } = new ReactiveProperty<string>();
@@ -106,6 +107,7 @@ namespace DxxBrowser {
                         var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
                         dlg.OverwritePrompt = true;
                         dlg.DefaultFileName = DxxUrl.TrimName(ti.Name);
+                        dlg.RestoreDirectory = true;
                         if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
                             DxxDownloader.Instance.Download(ti, dlg.FileName, (f) => {
                                 Owner.Dispatcher.InvokeAsync(() => {

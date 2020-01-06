@@ -1,14 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Common;
+using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
-    public class DxxLogInfo : DxxViewModelBase {
+    /**
+     * View Model
+     */
+    public class DxxLogInfo : MicViewModelBase {
+        #region Constants
+
+        /**
+         * ログの種別
+         */
         public enum LogType {
             COMMENT,
             SUCCESS,
@@ -16,15 +21,19 @@ namespace DxxBrowser.driver {
             ERROR,
         }
 
+        private static Brush CommentColor = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+        private static Brush ErrorColor = new SolidColorBrush(Color.FromRgb(216, 0, 0));
+        private static Brush CancelColor = new SolidColorBrush(Color.FromRgb(255, 128, 0));
+        private static Brush SuccessColor = new SolidColorBrush(Color.FromRgb(0, 192, 0));
+
+        #endregion
+
+        #region Properties
+
         public DateTime Time { get; }
         public LogType Type { get; }
         public string Category { get; }
         public string Message { get; }
-
-        private static Brush CommentColor = new SolidColorBrush(Color.FromRgb(0, 0, 0));
-        private static Brush ErrorColor = new SolidColorBrush(Color.FromRgb(216, 0, 0));
-        private static Brush CancelColor = new SolidColorBrush(Color.FromRgb(255,128,0));
-        private static Brush SuccessColor = new SolidColorBrush(Color.FromRgb(0,192,0));
 
         public Brush TextColor {
             get {
@@ -41,6 +50,7 @@ namespace DxxBrowser.driver {
                 }
             }
         }
+        #endregion
 
         public DxxLogInfo(LogType type, string category, string msg) {
             Time = DateTime.Now;
@@ -51,19 +61,33 @@ namespace DxxBrowser.driver {
     }
 
     public class DxxLogger {
+        #region Properties
+
         public ObservableCollection<DxxLogInfo> LogList { get; } = new ObservableCollection<DxxLogInfo>();
+
+        #endregion
+
+        #region Private Fields
+
         private WeakReference<DispatcherObject> mDispatherSource;
         private Dispatcher Dispatcher => mDispatherSource?.GetValue()?.Dispatcher;
 
-        public void Initialize(DispatcherObject dispatcherSource) {
+        #endregion
+
+        #region Singleton
+
+        public static DxxLogger Instance { get; private set; }
+        public static void Initialize(DispatcherObject dispatcherSource) {
+            Instance = new DxxLogger(dispatcherSource);
+        }
+
+        private DxxLogger(DispatcherObject dispatcherSource) {
             mDispatherSource = new WeakReference<DispatcherObject>(dispatcherSource);
         }
 
-        public static DxxLogger Instance { get; } = new DxxLogger();
+        #endregion
 
-        private DxxLogger() {
-
-        }
+        #region Public Methods
 
         public void Error(string category, string msg) {
             Dispatcher.Invoke(() => {
@@ -85,6 +109,6 @@ namespace DxxBrowser.driver {
                 LogList.Add(new DxxLogInfo(DxxLogInfo.LogType.SUCCESS, category, msg));
             });
         }
-
+        #endregion
     }
 }

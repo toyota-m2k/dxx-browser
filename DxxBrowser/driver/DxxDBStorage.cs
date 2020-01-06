@@ -5,6 +5,9 @@ using System.IO;
 
 namespace DxxBrowser.driver {
     public class DxxDBStorage : IDxxStorageManager, IDxxNGList {
+        /**
+         * Transactionクラス
+         */
         public class Txn : IDisposable {
             private SQLiteTransaction mTxn;
 
@@ -29,32 +32,17 @@ namespace DxxBrowser.driver {
             }
         }
 
-        public static DxxDBStorage Instance { get; } = new DxxDBStorage();
+        #region Singleton
 
-        public string StoragePath { get; set; }
-        private SQLiteConnection mDB;
+        public static DxxDBStorage Instance { get; private set; }   // = new DxxDBStorage();
 
-        private enum DLStatus {
-            NONE = 0,
-            RESERVED = 1,
-            COMPLETED = 2,
+        public static void Initialize() {
+            Instance = new DxxDBStorage();
         }
 
-        class DBRecord {
-            public long ID { get; }
-            public string Url { get; }
-            public string Name { get;}
-            public string Path { get;}
-            public string Desc { get;}
-            public DLStatus Status { get; }
-            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status) {
-                ID = id;
-                Url = url;
-                Name = name;
-                Path = path;
-                Desc = desc;
-                Status = status;
-            }
+        public static void Terminate() {
+            Instance?.Dispose();
+            Instance = null;
         }
 
         private DxxDBStorage() {
@@ -84,9 +72,116 @@ namespace DxxBrowser.driver {
             mDB = null;
         }
 
+        #endregion
+
+
+        #region Public Properties
+
+        /**
+         * ファイルを保存するディレクトリ（DefaultDriverの設定）
+         */
+        public string StoragePath { get; set; }
+
+        #endregion
+
+        #region Public API's
+
+        /**
+         * トランザクションを開始する
+         */
         public Txn Transaction() {
             return new Txn(mDB.BeginTransaction());
         }
+
+        /**
+         * ダウンロードする
+         */
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            if (DxxNGList.Instance.IsNG(target.Url)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
+                onCompleted?.Invoke(false);
+                return;
+            }
+            var rec = Retrieve(target.Url);
+            if (rec != null) {
+                if (rec.Status == DLStatus.COMPLETED ||
+                     (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
+                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
+                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                    onCompleted?.Invoke(false);
+                    return;
+                }
+            } else {
+                rec = Reserve(target);
+                if (rec == null) {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
+                    onCompleted?.Invoke(false);
+                    return;
+                }
+            }
+            string fileName = createFileName(rec);
+            var path = System.IO.Path.Combine(StoragePath, fileName);
+            DxxDownloader.Instance.Download(target, path, (r) => {
+                if (r) {
+                    CompletePath(rec.ID, path);
+                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                    DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
+                } else {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
+                }
+                onCompleted?.Invoke(r);
+            });
+        }
+
+        /**
+         * 保存ファイルのパスを取得
+         */
+        public string GetSavedFile(Uri uri) {
+            var rec = Retrieve(uri.ToString());
+            if (null == rec) {
+                return null;
+            }
+            return File.Exists(rec.Path) ? rec.Path : null;
+        }
+
+        /**
+         * ダウンロード済みか？
+         */
+        public bool IsDownloaded(Uri uri) {
+            var rec = Retrieve(uri.ToString());
+            return rec?.Status == DLStatus.COMPLETED;
+        }
+
+
+        #endregion
+
+        #region Privates
+
+        private SQLiteConnection mDB;
+
+        private enum DLStatus {
+            NONE = 0,
+            RESERVED = 1,
+            COMPLETED = 2,
+        }
+
+        class DBRecord {
+            public long ID { get; }
+            public string Url { get; }
+            public string Name { get; }
+            public string Path { get; }
+            public string Desc { get; }
+            public DLStatus Status { get; }
+            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status) {
+                ID = id;
+                Url = url;
+                Name = name;
+                Path = path;
+                Desc = desc;
+                Status = status;
+            }
+        }
+
 
         private void executeSql(params string[] sqls) {
             using (var cmd = mDB.CreateCommand()) {
@@ -163,56 +258,7 @@ namespace DxxBrowser.driver {
             var name = System.IO.Path.GetFileNameWithoutExtension(rec.Name) ?? "noname";
             return $"{name}-{rec.ID}{ext}";
         }
-
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
-            if(DxxNGList.Instance.IsNG(target.Url)) {
-                DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
-                onCompleted?.Invoke(false);
-                return;
-            }
-            var rec = Retrieve(target.Url);
-            if(rec!=null) {
-                if ( rec.Status == DLStatus.COMPLETED || 
-                     (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
-                    DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
-                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
-                    onCompleted?.Invoke(false);
-                    return;
-                }
-            } else { 
-                rec = Reserve(target);
-                if (rec == null) {
-                    DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
-                    onCompleted?.Invoke(false);
-                    return;
-                }
-            }
-            string fileName = createFileName(rec);
-            var path = System.IO.Path.Combine(StoragePath, fileName);
-            DxxDownloader.Instance.Download(target, path, (r) => {
-                if (r) {
-                    CompletePath(rec.ID, path);
-                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
-                    DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
-                } else {
-                    DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
-                }
-                onCompleted?.Invoke(r);
-            });
-        }
-
-        public string GetSavedFile(Uri uri) {
-            var rec = Retrieve(uri.ToString());
-            if(null==rec) {
-                return null;
-            }
-            return File.Exists(rec.Path) ? rec.Path : null;
-        }
-
-        public bool IsDownloaded(Uri uri) {
-            var rec = Retrieve(uri.ToString());
-            return rec?.Status == DLStatus.COMPLETED;
-        }
+        #endregion
 
         #region IDxxNGList i/f
 

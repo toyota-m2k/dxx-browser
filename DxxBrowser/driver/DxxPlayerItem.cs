@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DxxBrowser.driver {
     public class DxxPlayItem : IDxxPlayItem {
@@ -23,9 +19,5 @@ namespace DxxBrowser.driver {
             }
             return new DxxPlayItem(target.Uri, desc);
         }
-
-        //public static DxxPlayItem FromUrl(string url) {
-        //    return new DxxPlayItem(new Uri(url));
-        //}
     }
 }

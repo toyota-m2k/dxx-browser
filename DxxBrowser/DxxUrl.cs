@@ -1,17 +1,16 @@
-﻿using DxxBrowser.driver;
+﻿using Common;
+using DxxBrowser.driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DxxBrowser {
     public class DxxUrl : DxxTargetInfo {
         public IDxxDriver Driver { get; }
 
-        //public DxxUrl(string url, IDxxDriver driver, string name, string description) : base(url, name, description) {
-        //    Driver = driver;
-        //}
         public DxxUrl(Uri uri, IDxxDriver driver, string name, string description) : base(uri, name, description) {
             Driver = driver;
         }
@@ -138,6 +137,13 @@ namespace DxxBrowser {
                 name = name.Substring(0, name.Length - 1) + ".html";
             }
             return name.Replace("/", "_").Replace("\\", "_");
+        }
+
+        public static string TrimText(string text) {
+            if(null==text) {
+                return "";
+            }
+            return Regex.Replace(text, @"\s+", " ").Trim();
         }
 
 

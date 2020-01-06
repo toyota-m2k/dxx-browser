@@ -1,33 +1,47 @@
-﻿using DxxBrowser.driver;
+﻿using Common;
+using DxxBrowser.driver;
 using DxxBrowser.driver.caribbean;
 using DxxBrowser.driver.dmm;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Xml;
 
-namespace DxxBrowser
-{
-    public class DxxDriverManager
+namespace DxxBrowser {
+    /**
+     * ダウンロードドライバーを統べる者
+     */
+    public class DxxDriverManager : IDisposable
     {
-        public static DxxDriverManager Instance { get; } = new DxxDriverManager();
-
-        List<IDxxDriver> mList;
-
+        public static DxxDriverManager Instance { get; private set; }
         public static IDxxDriver NOP = new NopDriver();
         public static IDxxDriver DEFAULT = new DefaultDriver();
 
+        private List<IDxxDriver> mList;
 
+        /**
+         * コンストラクタ
+         */
         private DxxDriverManager() {
             mList = new List<IDxxDriver>();
             mList.Add(new DmmDriver());
             mList.Add(new CaribbeanDriver());
         }
 
+        public static void Initialize(Window owner) {
+            DxxDBStorage.Initialize();
+            Instance = new DxxDriverManager();
+            Instance.LoadSettings(owner);
+        }
+
+        public static void Terminate() {
+            Instance.Dispose();
+        }
+
+        /**
+         * URLを処理できるドライバーを探す
+         */
         public IDxxDriver FindDriver(string url) {
             try {
                 if(string.IsNullOrEmpty(url)||!url.StartsWith("http")) {
@@ -41,44 +55,6 @@ namespace DxxBrowser
                 }
             } catch(Exception) {
                 return null;
-            }
-        }
-
-        //public DxxUrl FromUrl(string url) {
-        //    var driver = FindDriver(url);
-        //    if(null!=driver) {
-        //        return new DxxUrl(new Uri(url), driver);
-        //    } else {
-        //        return null;
-        //    }
-        //}
-
-        //public IDxxDriver CurrentDriver { get; private set; }
-
-        //public void UpdateCurrentDriver(IDxxDriver driver) {
-        //    if(null!=driver) {
-        //        CurrentDriver = driver;
-        //    }
-        //}
-
-        //public IDxxDriver UpdateCurrentDriverFor(string url) {
-        //    UpdateCurrentDriver(FindDriver(url));
-        //    return CurrentDriver;
-        //}
-
-        private const string SETTINGS_PATH = "DxxDriverSettings.xml";
-        private const string ROOT_NAME = "DxxSettings";
-
-        private XmlDocument getSettings() {
-            try {
-                var doc = new XmlDocument();
-                doc.Load(SETTINGS_PATH);
-                return doc;
-            } catch(Exception) {
-                var doc = new XmlDocument();
-                doc.AppendChild(doc.CreateProcessingInstruction("xml", "version=\"1.0\" encoding=\"utf-8\""));
-                doc.AppendChild(doc.CreateElement(ROOT_NAME));
-                return doc;
             }
         }
 
@@ -120,6 +96,26 @@ namespace DxxBrowser
             if(targetDriver.Setup(el as XmlElement, owner)) {
                 doc.Save(SETTINGS_PATH);
             }
+        }
+
+        private const string SETTINGS_PATH = "DxxDriverSettings.xml";
+        private const string ROOT_NAME = "DxxSettings";
+
+        private XmlDocument getSettings() {
+            try {
+                var doc = new XmlDocument();
+                doc.Load(SETTINGS_PATH);
+                return doc;
+            } catch (Exception) {
+                var doc = new XmlDocument();
+                doc.AppendChild(doc.CreateProcessingInstruction("xml", "version=\"1.0\" encoding=\"utf-8\""));
+                doc.AppendChild(doc.CreateElement(ROOT_NAME));
+                return doc;
+            }
+        }
+
+        public void Dispose() {
+            DxxDBStorage.Terminate();
         }
     }
 }

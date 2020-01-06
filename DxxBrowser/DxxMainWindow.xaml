@@ -10,7 +10,7 @@
         Closing="OnClosing"
         Title="Dxx Browser" Height="768" Width="1024">
     <Window.Resources>
-        <ResourceDictionary Source="DxxResource.xaml"/>
+        <ResourceDictionary Source="res/DxxResource.xaml"/>
     </Window.Resources>
     <Grid Background="White">
         <!-- 左右ペインの分割（スプリッター付き）-->
@@ -54,7 +54,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.Resources>
-                        <ResourceDictionary Source="DxxFoldingButton.xaml"/>
+                        <ResourceDictionary Source="res/DxxFoldingButton.xaml"/>
                     </Grid.Resources>
                     <ToggleButton Grid.Column="0" Style="{StaticResource FoldingButtonStyle}" IsChecked="{Binding ShowDownloadingList.Value, Mode=TwoWay}"/>
                     <TextBlock Grid.Column="1" Text="Downloading" VerticalAlignment="Center" Foreground="White" Margin="8,0"/>
@@ -110,13 +110,13 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.Resources>
-                        <ResourceDictionary Source="DxxFoldingButton.xaml"/>
+                        <ResourceDictionary Source="res/DxxFoldingButton.xaml"/>
                     </Grid.Resources>
                     <ToggleButton Grid.Column="0" Style="{StaticResource FoldingButtonStyle}" IsChecked="{Binding ShowTargetList.Value, Mode=TwoWay}"/>
                     <TextBlock Grid.Column="1" Text="Extracted List" VerticalAlignment="Center" Foreground="White" Margin="8,0"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <StackPanel.Resources>
-                            <ResourceDictionary Source="DxxSvgPath.xaml"/>
+                            <ResourceDictionary Source="res/DxxSvgPath.xaml"/>
                         </StackPanel.Resources>
                         <Button Command="{Binding DownloadByTargetList}" Content="{StaticResource PathDownload}" Style="{StaticResource PushButtonStyle}" IsEnabled="{Binding TargetList.Value.Count, Converter={StaticResource IntBoolConverter}}">
                             <ToolTipService.ToolTip>
@@ -153,13 +153,13 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid.Resources>
-                        <ResourceDictionary Source="DxxFoldingButton.xaml"/>
+                        <ResourceDictionary Source="res/DxxFoldingButton.xaml"/>
                     </Grid.Resources>
                     <ToggleButton Grid.Column="0" Style="{StaticResource FoldingButtonStyle}" IsChecked="{Binding ShowStatusList.Value, Mode=TwoWay}"/>
                     <TextBlock Grid.Column="1" Text="Status Log" VerticalAlignment="Center" Foreground="White" Margin="8,0"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <StackPanel.Resources>
-                            <ResourceDictionary Source="DxxSvgPath.xaml"/>
+                            <ResourceDictionary Source="res/DxxSvgPath.xaml"/>
                         </StackPanel.Resources>
                         <Button Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}" Command="{Binding ClearStatusCommand}" IsEnabled="{Binding StatusList.Value.Count, Converter={StaticResource IntBoolConverter}}">
                             <ToolTipService.ToolTip>

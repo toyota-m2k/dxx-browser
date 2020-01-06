@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
+﻿using Common;
+using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
 using Microsoft.Toolkit.Wpf.UI.Controls;
 using Reactive.Bindings;
 using System;
@@ -16,7 +17,7 @@ using System.Windows.Input;
 
 namespace DxxBrowser {
 #pragma warning disable CS0618 // 型またはメンバーが古い形式です
-    public class DxxWebViewHost : DxxViewModelBase {
+    public class DxxWebViewHost : MicViewModelBase {
         #region Properties
 
         public enum ErrorLevel {

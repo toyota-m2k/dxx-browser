@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using Common;
 
 namespace DxxBrowser.driver.dmm
 {

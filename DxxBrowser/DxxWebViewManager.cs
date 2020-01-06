@@ -91,8 +91,8 @@ namespace DxxBrowser {
             PrimaryWebView = null;
             WaitingSubContainers.Clear();
             Views = new Dictionary<WebView, IDxxWebViewContainer>();
-
-            foreach(var nv in oldViews) {
+            ViewCount = 0;
+            foreach (var nv in oldViews) {
                 PrepareBrowser(nv.Value);
             }
             oldViews.Clear();

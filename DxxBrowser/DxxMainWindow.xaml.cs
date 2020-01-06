@@ -1,4 +1,5 @@
-﻿using DxxBrowser.driver;
+﻿using Common;
+using DxxBrowser.driver;
 using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -15,7 +16,10 @@ using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace DxxBrowser {
-    public class DxxMainViewModel : DxxViewModelBase, IDisposable {
+    /**
+     * MainWindow のビューモデル
+     */
+    public class DxxMainViewModel : MicViewModelBase, IDisposable {
         #region Properties
         public ReactiveProperty<bool> IsDownloading { get; } = DxxDownloader.Instance.Busy.ToReactiveProperty();
 
@@ -104,18 +108,28 @@ namespace DxxBrowser {
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class DxxMainWindow : Window {
+        /**
+         * ビューモデル（DataContextにマップする）
+         */
         public DxxMainViewModel ViewModel {
             get => DataContext as DxxMainViewModel;
             private set { DataContext = value; }
         }
 
+        /**
+         * コンストラクタ
+         */
         public DxxMainWindow() {
-            DxxDownloader.Instance.Initialize(this);
-            DxxLogger.Instance.Initialize(this);
-            DxxDriverManager.Instance.LoadSettings(Window.GetWindow(this));
+            DxxActivityWatcher.Initialize();
+            DxxDownloader.Initialize(this);
+            DxxLogger.Initialize(this);
+            DxxDriverManager.Initialize(Window.GetWindow(this));
             ViewModel = new DxxMainViewModel(this);
             InitializeComponent();
         }
+        /**
+         * ビュー作成後の初期化
+         */
         private void OnLoaded(object sender, RoutedEventArgs e) {
             mainViewer.Initialize(true, ViewModel.Bookmarks, ViewModel.TargetList);
             subViewer.Initialize(false, ViewModel.Bookmarks, ViewModel.TargetList);
@@ -144,12 +158,18 @@ namespace DxxBrowser {
             this.Title = String.Format("{0}{5}(v{1}.{2}.{3}.{4})", version.ProductName, version.FileMajorPart, version.FileMinorPart, version.FileBuildPart, version.ProductPrivatePart,dbg);
         }
 
+        /**
+         * 後始末
+         */
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             ViewModel.Dispose();
             ViewModel.DownloadingList.Value.CollectionChanged -= OnListChanged<DxxDownloadingItem>;
             ViewModel.StatusList.Value.CollectionChanged -= OnListChanged<DxxLogInfo>;
         }
 
+        /**
+         * ダウンロードリスト、ステータスリストが更新（アイテム追加）されたときにリスト最下部までスクロールする。
+         */
         private void OnListChanged<T>(object sender, NotifyCollectionChangedEventArgs e) {
             if (e.Action == NotifyCollectionChangedAction.Add) {
                 var list = sender as ObservableCollection<T>;
@@ -164,21 +184,33 @@ namespace DxxBrowser {
             }
         }
 
+        /**
+         * アプリ終了時の処理
+         */
         private void OnClosing(object sender, CancelEventArgs e) {
             ViewModel.Bookmarks.Serialize();
             _ = TerminateAll();
-            while (DxxDownloader.Instance.IsBusy||DxxActivityWatcher.Instance.IsBusy) {
+            while (DxxDownloader.IsBusy||DxxActivityWatcher.IsBusy) {
                 MessageBox.Show("なんかやってるので終了できません。", "DXX Browser", MessageBoxButton.OK);
             }
         }
 
+        /**
+         * いろいろなものを終了・解放する
+         */
         private async Task TerminateAll() {
-            await DxxActivityWatcher.Instance.TerminateAsync(true);
-            await DxxDownloader.Instance.TerminateAsync(true);
+            await DxxActivityWatcher.TerminateAsync(true);
+            await DxxDownloader.TerminateAsync(true);
+            DxxDriverManager.Terminate();
             DxxPlayer.Terminate();
             DxxAnalysisWindow.Terminate();
         }
 
+        /**
+         * ダウンロードリストのアイテムのダブルクリックイベント
+         * - ダウンロード済みなら関連付け起動
+         * - エラーならダウンロードをリトライ
+         */
         private void OnDownloadedItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             var di = (sender as ListViewItem)?.Content as DxxDownloadingItem;
             if (di != null) {
@@ -204,6 +236,10 @@ namespace DxxBrowser {
             }
         }
 
+        /**
+         * ターゲットリストのアイテムをダブルクリック
+         * --> ダウンロード開始
+         */
         private async void OnTargetItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             var ti = (sender as ListViewItem)?.Content as DxxTargetInfo;
             if (ti != null) {

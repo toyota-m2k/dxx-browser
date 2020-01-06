@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAPICodePack.Dialogs;
+﻿using Common;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ namespace DxxBrowser.driver {
     /// DxxStorageFolderDialog.xaml の相互作用ロジック
     /// </summary>
     public partial class DxxStorageFolderDialog : Window {
-        public class DxxSettingsViewModel : DxxViewModelBase {
+        public class DxxSettingsViewModel : MicViewModelBase {
             public ReactiveProperty<string> Path { get; }
             public string DriverName { get; }
             public DxxSettingsViewModel(string driverName, string initialPath) {
@@ -44,6 +45,7 @@ namespace DxxBrowser.driver {
             using (var dlg = new CommonOpenFileDialog("Select Folder")) {
                 dlg.IsFolderPicker = true;
                 dlg.Multiselect = false;
+                dlg.RestoreDirectory = true;
                 if (dlg.ShowDialog(GetWindow(this)) == CommonFileDialogResult.Ok) {
                     ViewModel.Path.Value = dlg.FileName;
                 }

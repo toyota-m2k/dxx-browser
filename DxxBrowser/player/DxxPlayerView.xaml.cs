@@ -1,4 +1,5 @@
-﻿using DxxBrowser.driver;
+﻿using Common;
+using DxxBrowser.driver;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace DxxBrowser {
 
     public partial class DxxPlayerView : UserControl {
 
-        public class DxxPlayerViewModel : DxxViewModelBase, ITimelineOwnerPlayer {
+        public class DxxPlayerViewModel : MicViewModelBase, ITimelineOwnerPlayer {
             public double SeekPosition {
                 get {
                     return Player?.Run((player) => {

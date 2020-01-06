@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Common;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -7,19 +8,31 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reactive.Subjects;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
-    public class DxxDownloadingItem : DxxViewModelBase {
+    /**
+     * ViewModel
+     */
+    public class DxxDownloadingItem : MicViewModelBase {
+        #region Constants
+
         const string STATUS_BEGIN = "Downloading...";
         const string STATUS_ERROR = "Error";
         const string STATUS_CANCELLED = "Cancelled";
         const string STATUS_COMPLETED = "Completed";
 
+        private static Brush RunningColor = new SolidColorBrush(Color.FromRgb(0, 0, 255));
+        private static Brush ErrorColor = new SolidColorBrush(Color.FromRgb(216, 0, 0));
+        private static Brush CancelColor = new SolidColorBrush(Color.FromRgb(255, 128, 0));
+        private static Brush CompletedColor = new SolidColorBrush(Color.FromRgb(0, 192, 0));
+
+        /**
+         * Downloading Status
+         */
         public enum DownloadStatus {
             Downloading,
             Completed,
@@ -27,13 +40,9 @@ namespace DxxBrowser.driver {
             Error,
         }
 
-        private static Brush RunningColor = new SolidColorBrush(Color.FromRgb(0, 0, 255));
-        private static Brush ErrorColor = new SolidColorBrush(Color.FromRgb(216, 0, 0));
-        private static Brush CancelColor = new SolidColorBrush(Color.FromRgb(255, 128, 0));
-        private static Brush CompletedColor = new SolidColorBrush(Color.FromRgb(0, 192, 0));
+        #endregion
 
-
-        private DownloadStatus mStatus;
+        #region Properties
 
         public string Url { get; }
         public string Description { get; }
@@ -45,6 +54,7 @@ namespace DxxBrowser.driver {
             set => setProp(callerName(), ref mPercent, value, "PercentString");
         }
 
+        private DownloadStatus mStatus;
         public DownloadStatus Status {
             get => mStatus;
             set => setProp(callerName(), ref mStatus, value, "StatusString", "StatusColor");
@@ -90,6 +100,7 @@ namespace DxxBrowser.driver {
                 return $"{Math.Min(Percent,100)}%";
             }
         }
+        #endregion
 
         public DxxDownloadingItem(DxxTargetInfo target) {
             Url = target.Url;
@@ -100,30 +111,51 @@ namespace DxxBrowser.driver {
     }
 
     public class DxxDownloader {
-        HttpClient mHttpClient = new HttpClient() { Timeout = Timeout.InfiniteTimeSpan };
-        HashSet<string> mDownloading = new HashSet<string>();
-        Dictionary<string, CancellationTokenSource> mCancellationTokens = new Dictionary<string, CancellationTokenSource>();
-        bool mTerminated = false;
-        public ObservableCollection<DxxDownloadingItem> DownloadingStateList { get; } = new ObservableCollection<DxxDownloadingItem>();
+        #region Private Fields
 
-
-        public Subject<bool> Busy = new Subject<bool>();
-
-        event Action AllDownloadCompleted;
-
-        public static DxxDownloader Instance { get; } = new DxxDownloader();
-
+        private HttpClient mHttpClient = new HttpClient() { Timeout = Timeout.InfiniteTimeSpan };
+        private HashSet<string> mDownloading = new HashSet<string>();
+        private Dictionary<string, CancellationTokenSource> mCancellationTokens = new Dictionary<string, CancellationTokenSource>();
+        private bool mTerminated = false;
+        private event Action AllDownloadCompleted;
         private WeakReference<DispatcherObject> mDispatherSource;
         private Dispatcher Dispatcher => mDispatherSource?.GetValue()?.Dispatcher;
 
-        public void Initialize(DispatcherObject dispatcherSource) {
-            mDispatherSource = new WeakReference<DispatcherObject>(dispatcherSource);
+        #endregion
+
+        #region Properties
+
+        public ObservableCollection<DxxDownloadingItem> DownloadingStateList { get; } = new ObservableCollection<DxxDownloadingItem>();
+        public Subject<bool> Busy = new Subject<bool>();
+
+        #endregion
+
+        #region Singleton
+
+        public static DxxDownloader Instance { get; private set; } 
+
+        public static void Initialize(DispatcherObject dispatcherSource) {
+            Instance = new DxxDownloader(dispatcherSource);
         }
 
-        private DxxDownloader() {
+        public static async Task TerminateAsync(bool forceShutdown) {
+            await Instance.Terminate(true);
+            Instance = null;
+        }
+
+        public static bool IsBusy => Instance?._IsBusy ?? false;
+
+        private DxxDownloader(DispatcherObject dispatcherSource) {
+            mDispatherSource = new WeakReference<DispatcherObject>(dispatcherSource); 
             Busy.OnNext(false);
         }
 
+        #endregion
+
+        /**
+         * ターゲットをダウンロードするためにロックする。
+         * @return CancellationTokenSource  nullなら、ロックできなかった（すでにダウンロード中とか、ダウンロード済とか、終了要求受付後とか）
+         */
         private CancellationTokenSource LockUrl(DxxTargetInfo target) {
             return Dispatcher.Invoke(() => {
                 if (mTerminated) {
@@ -150,6 +182,9 @@ namespace DxxBrowser.driver {
             });
         }
 
+        /**
+         * ターゲットのロックを解除する
+         */
         private void UnlockUrl(string url, DxxDownloadingItem.DownloadStatus result) {
             Dispatcher.Invoke(() => {
                 mDownloading.Remove(url);
@@ -159,12 +194,19 @@ namespace DxxBrowser.driver {
                     t.Status = result;
                 }
                 if (mDownloading.Count == 0) {
+                    if(mTerminated) {
+                        mHttpClient?.Dispose();
+                        mHttpClient = null;
+                    }
                     AllDownloadCompleted?.Invoke();
                     Busy.OnNext(false);
                 }
             });
         }
 
+        /**
+         * ダウンロードの進捗情報を更新する
+         */
         private void UpdateDownloadingProgress(string url, long received, long total) {
             int percent = -1;
             if(total>0) {
@@ -181,7 +223,10 @@ namespace DxxBrowser.driver {
             });
         }
 
-        public bool IsBusy {
+        /**
+         * １つ以上のターゲットをダウンロード中か？
+         */
+        private bool _IsBusy {
             get {
                 return Dispatcher.Invoke(() => {
                     return mDownloading.Count > 0;
@@ -189,6 +234,9 @@ namespace DxxBrowser.driver {
             }
         }
 
+        /**
+         * urlをダウンロード中か？
+         */
         public bool IsDownloading(string url) {
             return Dispatcher.Invoke(() => {
                 return mDownloading.Contains(url);
@@ -200,7 +248,7 @@ namespace DxxBrowser.driver {
          * @param forceShutdown trueで呼ぶと、通信中のタスクをすべてキャンセルする。
          *                      false なら、通信中のタスクが完了するまで待つ。
          */
-        public async Task TerminateAsync(bool forceShutdown) {
+        private async Task Terminate(bool forceShutdown) {
             var tc = new TaskCompletionSource<object>();
             Action completed = () => {
                 tc.TrySetResult(null);
@@ -217,6 +265,8 @@ namespace DxxBrowser.driver {
                         DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelling: {DxxUrl.GetFileName(cts.Key)}");
                         cts.Value.Cancel();
                     }
+                    mHttpClient?.Dispose();
+                    mHttpClient = null;
                 }
                 return true;
             })) {
@@ -228,6 +278,9 @@ namespace DxxBrowser.driver {
             AllDownloadCompleted -= completed;
         }
 
+        /**
+         * すべてのダウンロードを中止する。
+         */
         public async Task CancelAllAsync() {
             var tc = new TaskCompletionSource<object>();
             Action completed = () => {
@@ -247,6 +300,9 @@ namespace DxxBrowser.driver {
             AllDownloadCompleted -= completed;
         }
 
+        /**
+         * urlで指定されたターゲットのダウンロードを中止する
+         */
         public void Cancel(string url) {
             if(string.IsNullOrEmpty(url)) {
                 return;
@@ -261,10 +317,15 @@ namespace DxxBrowser.driver {
             });
         }
 
-        const int BUFF_SIZE = 1024;
+        private const int BUFF_SIZE = 1024;
+        private const string LOG_CAT = "DL";
 
-        const string LOG_CAT = "DL";
-
+        /**
+         * ダウンロードを実行
+         * @param target    ターゲット
+         * @param filePath  保存ファイルのパス
+         * @param onCompleted ダウンロード完了時のコールバック
+         */
         public void Download(DxxTargetInfo target, string filePath, Action<bool> onCompleted=null) {
             var cts = LockUrl(target);
             if(null==cts) {

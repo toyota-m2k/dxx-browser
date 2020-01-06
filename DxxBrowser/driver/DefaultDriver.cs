@@ -51,8 +51,35 @@ namespace DxxBrowser.driver {
             }
             return false;
         }
+
         const string LOG_CAT = "DEF";
         public class SimpleLinkExtractor : IDxxLinkExtractor {
+            private string TryGetDescription(HtmlNode node, Uri uri) {
+                string r = DxxUrl.TrimText(node.InnerText);
+                if (!string.IsNullOrWhiteSpace(r)) {
+                    return r;
+                }
+                r = node.Attributes["alt"]?.Value;
+                if (null != r) {
+                    r = DxxUrl.TrimText(r);
+                    if (!string.IsNullOrWhiteSpace(r)) {
+                        return r;
+                    }
+                }
+                return null;
+            }
+
+            private DxxTargetInfo CreateTargetInfo(Uri baseUri, string url, HtmlNode node) {
+                Uri uri;
+                if(!Uri.TryCreate(baseUri, url, out uri)) {
+                    return null;
+                }
+                var name = DxxUrl.TrimName(DxxUrl.GetFileName(uri));
+                var desc = TryGetDescription(node, uri) ?? name;
+                return new DxxTargetInfo(uri, name, desc);
+            }
+
+
             public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
@@ -62,13 +89,12 @@ namespace DxxBrowser.driver {
                         cancellationToken.ThrowIfCancellationRequested();
                         var nodes1 = html.DocumentNode.SelectNodes("//a[contains(@href, '.mp') or contains(@href, '.wmv') or contains(@href,'.mov') or contains(@href,'.qt')]")
                                     ?.Select((v) => {
-                                        return Uri.TryCreate(urx.Uri, v.Attributes["href"].Value, out Uri r)
-                                                ? new DxxTargetInfo(r, DxxUrl.TrimName(DxxUrl.GetFileName(r)), "a/href") : null;
+                                        return CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v);
                                     })
                                     ?.Where((v) => v != null);
                         var nodes2 = html.DocumentNode.SelectNodes("//video")
                                     ?.Select((v) => {
-                                        return Uri.TryCreate(urx.Uri, v.Attributes["src"].Value, out Uri r) ? new DxxTargetInfo(r, DxxUrl.TrimName(DxxUrl.GetFileName(r)), "video/src") : null;
+                                        return CreateTargetInfo(urx.Uri, v.Attributes["src"].Value, v);
                                     })
                                     ?.Where((v) => v != null);
                         IList<DxxTargetInfo> result = null;

@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using Common;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace DxxBrowser {
     /// DxxFileDispositionDialog.xaml の相互作用ロジック
     /// </summary>
     public partial class DxxFileDispositionDialog : Window {
-        public class DxxFileDispositionViewModel : DxxViewModelBase {
+        public class DxxFileDispositionViewModel : MicViewModelBase {
             public ReactiveProperty<string> Message { get; }
             public string FilePath { get; set; }
 

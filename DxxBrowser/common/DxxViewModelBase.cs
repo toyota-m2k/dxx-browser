@@ -1,14 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DxxBrowser
-{
-    public class DxxViewModelBase : INotifyPropertyChanged, IDisposable {
+namespace Common {
+    /**
+     * IDisposable なプロパティをDisposeするかどうかを指定するためのアノテーションクラス
+     * 
+     * 使用例は、DxxViewModelBase#Dispose()を参照
+     */
+    public class Disposal : System.Attribute {
+        public bool ToBeDisposed { get; }
+        public Disposal(bool disposable = true) {
+            ToBeDisposed = disposable;
+        }
+    }
+
+    public class MicViewModelBase : INotifyPropertyChanged, IDisposable {
         #region INotifyPropertyChanged i/f
         //-----------------------------------------------------------------------------------------
 
@@ -51,6 +59,5 @@ namespace DxxBrowser
                 }
             }
         }
-
     }
 }

@@ -1,19 +1,25 @@
-﻿using HtmlAgilityPack;
-using Reactive.Bindings;
+﻿using Common;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace DxxBrowser {
-    public class DxxLink : DxxViewModelBase {
+    /**
+     * リンク情報
+     */
+    public class DxxLink {
+        /**
+         * タグ名 (a, video, frame, iframe)
+         */
         public string Name { get; }
+        /**
+         * URL (href, src)
+         */
         public string Value { get; }
-
-        //public ReactiveCommand CopyLinkUrl { get; } = new ReactiveCommand();
 
         public DxxLink(string name, string value) {
             Name = name;
@@ -136,13 +142,6 @@ namespace DxxBrowser {
 
         public HtmlAttributeCollection Attributes => Node?.Attributes;
 
-        //public void FormatRecursive(StringBuilder sb, HtmlNode node, int indent) {
-        //    FormatSingle(sb, node, indent);
-        //    foreach(var c in node.ChildNodes) {
-        //        FormatSingle(sb, c, indent + 1);
-        //    }
-        //}
-
         public void writeSpaces(StringBuilder sb, int indent) {
             for (int i = 0; i < indent; i++) {
                 sb.Append(" ");
@@ -205,7 +204,7 @@ namespace DxxBrowser {
             }
         }
 
-        string FormatText(string src, int indent) {
+        private string FormatText(string src, int indent) {
             if(src==null) {
                 return "";
             }

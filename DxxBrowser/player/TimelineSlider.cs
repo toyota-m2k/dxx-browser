@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using Common;
+using Reactive.Bindings;
 using System;
 using System.Diagnostics;
 using System.Reactive.Subjects;
@@ -16,7 +17,7 @@ namespace DxxBrowser {
         void Pause();
     }
 
-    public class TimelineViewModel : DxxViewModelBase {
+    public class TimelineViewModel : MicViewModelBase {
         public ReadOnlyReactiveProperty<bool> IsPlaying { get; set; }
 
         private WeakReference<Slider> mSlider;

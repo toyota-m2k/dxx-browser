@@ -9,7 +9,7 @@
         Unloaded="OnUnloaded"
         Title="{Binding DriverName}" Height="150" Width="400">
     <Window.Resources>
-        <ResourceDictionary Source="../DxxResource.xaml"/>
+        <ResourceDictionary Source="../res/DxxResource.xaml"/>
     </Window.Resources>
     <Grid VerticalAlignment="Center" Margin="10">
         <Grid.ColumnDefinitions>

@@ -7,7 +7,7 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DxxBrowser {
+namespace Common {
     public class CompoundObservable<T> : IObservable<T>, IDisposable {
         public delegate T GetValueProc();
         private IEnumerable<WeakReference<INotifyPropertyChanged>> Dependencies;

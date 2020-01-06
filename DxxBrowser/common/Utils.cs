@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
-namespace DxxBrowser
+namespace Common
 {
     public static class Utils {
         public static T GetValue<T>(this WeakReference<T> w) where T : class {

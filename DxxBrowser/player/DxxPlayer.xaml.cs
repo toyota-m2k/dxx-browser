@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Common;
 using DxxBrowser.driver;
 using Reactive.Bindings;
 
@@ -16,7 +17,7 @@ namespace DxxBrowser {
             InitializeComponent();
         }
 
-        private class SourceReserver : DxxViewModelBase, IDxxPlayList {
+        private class SourceReserver : MicViewModelBase, IDxxPlayList {
             //public ReactiveProperty<ObservableCollection<IDxxPlayItem>> PlayList { get; } = new ReactiveProperty<ObservableCollection<IDxxPlayItem>>(new ObservableCollection<IDxxPlayItem>());
             //public ReactiveProperty<int> CurrentIndex { get; } = new ReactiveProperty<int>(0);
 
