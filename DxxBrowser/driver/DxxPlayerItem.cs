@@ -9,13 +9,23 @@ namespace DxxBrowser.driver {
         private Uri Uri;
         public string SourceUrl => Uri.ToString();
         public string FilePath => DxxDriverManager.Instance.FindDriver(SourceUrl)?.StorageManager?.GetSavedFile(Uri);
+        public string Description { get; private set; }
 
-        public DxxPlayItem(Uri uri) {
+        private DxxPlayItem(Uri uri, string description) {
             Uri = uri;
+            Description = description;
         }
 
-        public static DxxPlayItem FromUrl(string url) {
-            return new DxxPlayItem(new Uri(url));
+        public static DxxPlayItem FromTarget(DxxTargetInfo target) {
+            var desc = target.Description;
+            if(string.IsNullOrWhiteSpace(desc)) {
+                desc = target.Name;
+            }
+            return new DxxPlayItem(target.Uri, desc);
         }
+
+        //public static DxxPlayItem FromUrl(string url) {
+        //    return new DxxPlayItem(new Uri(url));
+        //}
     }
 }

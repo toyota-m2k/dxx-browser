@@ -38,7 +38,7 @@ namespace DxxBrowser.driver {
             var path = GetPath(target.Uri);
             if (File.Exists(path)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {target.Name}");
-                DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
+                DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                 onCompleted?.Invoke(false);
                 return;
             }
@@ -50,7 +50,7 @@ namespace DxxBrowser.driver {
             DxxLogger.Instance.Comment(LOG_CAT, $"Start: {target.Name}");
             DxxDownloader.Instance.Download(target, path, (v)=> {
                 if(v) {
-                    DxxPlayer.PlayList.AddSource(new DxxPlayItem(target.Uri));
+                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
                 } else {
                     DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");

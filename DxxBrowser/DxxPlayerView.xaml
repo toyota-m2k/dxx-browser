@@ -14,13 +14,13 @@
 
     <Grid>
         <MediaElement x:Name="mMediaElement"
-                       LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
-                          VerticalAlignment="Center" HorizontalAlignment="Center"
-                          ScrubbingEnabled="True"
-                          MediaOpened="OnMediaOpened" 
-                          MediaEnded="OnMediaEnded" 
-                          MediaFailed="OnMediaFailed"
-                          />
+                      LoadedBehavior="Manual" UnloadedBehavior="Stop" Stretch="UniformToFill"
+                      VerticalAlignment="Center" HorizontalAlignment="Center"
+                      ScrubbingEnabled="True"
+                      MediaOpened="OnMediaOpened" 
+                      MediaEnded="OnMediaEnded" 
+                      MediaFailed="OnMediaFailed"
+                      />
 
         <Grid Name="mPanelBase" 
               Background="{StaticResource ControlPanelBG}" 
@@ -60,45 +60,25 @@
                     <Button IsEnabled="{Binding IsReady.Value}"
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource NegBoolVisibilityConverter}}"
                         Command="{Binding PlayCommand}"
-                        Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="再生"/>
-                        </ToolTipService.ToolTip>
-                    </Button>
+                        Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}"/>
                     <Button IsEnabled="{Binding IsReady.Value}" 
                         Visibility="{Binding IsPlaying.Value, Converter={StaticResource BoolVisibilityConverter}}"
                         Command="{Binding PauseCommand}"
-                        Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="停止"/>
-                        </ToolTipService.ToolTip>
-                    </Button>
+                        Content="{StaticResource PathPause}" Style="{StaticResource PushButtonStyle}" Margin="0,0,8,0"/>
                     <Button IsEnabled="{Binding HasPrev.Value}"
                         Command="{Binding GoBackCommand}"  
-                        Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="前の動画"/>
-                        </ToolTipService.ToolTip>
-                    </Button>
+                        Content="{StaticResource PathPrev}" Style="{StaticResource PushButtonStyle}"/>
                     <Button IsEnabled="{Binding HasNext.Value}"
                         Command="{Binding GoForwardCommand}"  
-                        Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="次の動画"/>
-                        </ToolTipService.ToolTip>
-                    </Button>
+                        Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
                     <Button IsEnabled="{Binding IsReady.Value}"
                         Command="{Binding TrashCommand}"  
-                        Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}">
-                        <ToolTipService.ToolTip>
-                            <ToolTip Content="削除してNGリストに登録"/>
-                        </ToolTipService.ToolTip>
-                    </Button>
+                        Content="{StaticResource PathTrash}" Style="{StaticResource PushButtonStyle}"/>
                 </StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
-                    <TextBlock Text="{Binding PlayingIndex.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding PlayList.CurrentPos.Value}" Foreground="White"/>
                     <TextBlock Text=" / " Foreground="White"/>
-                    <TextBlock Text="{Binding TotalCount.Value}" Foreground="White"/>
+                    <TextBlock Text="{Binding PlayList.TotalCount.Value}" Foreground="White"/>
                 </StackPanel>
                 <local:TimelineSlider 
                     Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
