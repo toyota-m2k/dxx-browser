@@ -502,6 +502,7 @@ namespace DxxBrowser.driver {
                         dlTask.ItemInfo.Percent = -1;
                         ActiveTasks.Remove(dlTask);
                         Queue.Enqueue(dlTask);
+                        dlTask.ItemInfo.Status = DxxDownloadingItem.DownloadStatus.Retrying;
                         return;
                     }
                 }

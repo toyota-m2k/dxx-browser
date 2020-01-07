@@ -62,7 +62,7 @@ namespace DxxBrowser {
         //    return s.Replace("/", "_").Replace("\\", "_");
         //}
 
-        private Uri ensureUri(string url) {
+        public Uri EnsureUri(string url) {
             if(url.StartsWith("http")) {
                 return new Uri(url);
             }
@@ -75,7 +75,7 @@ namespace DxxBrowser {
 
         private void InitializeCommands() {
             BeginAnalysis.Subscribe((v) => {
-                BaseUrl.Value = v;
+                BaseUrl.Value = EnsureUri(v)?.ToString();
                 Load();
             });
 
@@ -85,11 +85,21 @@ namespace DxxBrowser {
 
             CopyLinkUrl.Subscribe((v) => {
                 Debug.WriteLine(v.Value);
-                Clipboard.SetData(DataFormats.Text, v.Value);
+                var url = EnsureUri(v.Value)?.ToString();
+                if (url != null) {
+                    Clipboard.SetData(DataFormats.Text, url);
+                }
             });
             ExecuteLinkUrl.Subscribe((v) => {
                 Debug.WriteLine(v);
-                Process.Start(v.Value);
+                var url = EnsureUri(v.Value)?.ToString();
+                if(url!=null) {
+                    try {
+                        System.Diagnostics.Process.Start(url);
+                    } catch (Exception ex) {
+                        Debug.WriteLine(ex.ToString());
+                    }
+                }
             });
             AnalizeLinkUrl.Subscribe((v) => {
                 Debug.WriteLine(v);
@@ -97,12 +107,15 @@ namespace DxxBrowser {
             });
             AnalizeNewLinkUrl.Subscribe((v) => {
                 Debug.WriteLine(v);
-                var aw = new DxxAnalysisWindow(v.Value);
-                aw.Show();
+                var url = EnsureUri(v.Value)?.ToString();
+                if (url != null) {
+                    var aw = new DxxAnalysisWindow(url);
+                    aw.Show();
+                }
             });
             DownloadLinkUrl.Subscribe((v) => {
                 using (var dlg = new CommonSaveFileDialog("Download to file.")) {
-                    var uri = ensureUri(v.Value);
+                    var uri = EnsureUri(v.Value);
                     if (uri != null) {
                         var ti = new DxxTargetInfo(uri, DxxUrl.GetFileName(uri), "");
                         dlg.OverwritePrompt = true;
@@ -168,6 +181,9 @@ namespace DxxBrowser {
         public static string LOG_CAT = "ANALYZER";
 
         private async void Load() {
+            if(string.IsNullOrWhiteSpace(BaseUrl.Value)) {
+                return;
+            }
             DocumentAvailable.Value = false;
             try {
                 Nodes.Value = null;
@@ -244,8 +260,7 @@ namespace DxxBrowser {
             var v = (sender as ListViewItem)?.Content as DxxLink;
 
             if(v !=null) {
-                Debug.WriteLine(v.Value);
-                System.Diagnostics.Process.Start(v.Value);
+                ViewModel.ExecuteLinkUrl.Execute(v);
             }
         }
 
