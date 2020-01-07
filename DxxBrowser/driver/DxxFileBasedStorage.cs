@@ -45,7 +45,7 @@ namespace DxxBrowser.driver {
                 return;
             }
             DxxLogger.Instance.Comment(LOG_CAT, $"Start: {target.Name}");
-            DxxDownloader.Instance.Download(target, path, (v)=> {
+            DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (v)=> {
                 if(v) {
                     DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");

@@ -121,7 +121,7 @@ namespace DxxBrowser.driver {
             }
             string fileName = createFileName(rec);
             var path = System.IO.Path.Combine(StoragePath, fileName);
-            DxxDownloader.Instance.Download(target, path, (r) => {
+            DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);
                     DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));

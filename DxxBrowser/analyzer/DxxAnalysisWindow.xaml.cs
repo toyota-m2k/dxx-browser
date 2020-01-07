@@ -109,7 +109,7 @@ namespace DxxBrowser {
                         dlg.DefaultFileName = DxxUrl.TrimName(ti.Name);
                         dlg.RestoreDirectory = true;
                         if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
-                            DxxDownloader.Instance.Download(ti, dlg.FileName, (f) => {
+                            DxxDownloader.Instance.Reserve(ti, dlg.FileName, 0, (f) => {
                                 Owner.Dispatcher.InvokeAsync(() => {
                                     if (f) {
                                         DxxFileDispositionDialog.Show(dlg.FileName, Owner);

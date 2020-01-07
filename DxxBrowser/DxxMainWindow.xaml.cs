@@ -66,7 +66,7 @@ namespace DxxBrowser {
 
             CancellAllCommand.Subscribe(() => {
                 DxxActivityWatcher.Instance.CancelAll();
-                _ = DxxDownloader.Instance.CancelAllAsync();
+                DxxDownloader.Instance.CancelAll();
             });
             ClearDownloadingListCommand.Subscribe(() => {
                 DownloadingList.Value.Clear();
@@ -200,7 +200,7 @@ namespace DxxBrowser {
          */
         private async Task TerminateAll() {
             await DxxActivityWatcher.TerminateAsync(true);
-            await DxxDownloader.TerminateAsync(true);
+            await DxxDownloader.TerminateAsync();
             DxxDriverManager.Terminate();
             DxxPlayer.Terminate();
             DxxAnalysisWindow.Terminate();
