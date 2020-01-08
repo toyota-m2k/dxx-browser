@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Xml;
@@ -64,19 +65,52 @@ namespace DxxBrowser.driver.heizo {
         private const string LOG_CAT = "HYZ";
 
         private class Extractor : IDxxLinkExtractor {
+
+            readonly Regex reg = new Regex("title\\s*=\\s*\"(?<d>.*)\"");
+            string TryGetDescFromInnerHtml(string html) {
+                var v = reg.Match(html);
+                if(v.Success) {
+                    var d = v.Groups["d"]?.Value;
+                    if(d!=null) {
+                        return SafeDescription(d);
+                    }
+                }
+                return null;
+            }
             /**
              * コンテナ用のTargetInfoを作成する
              */
             private DxxTargetInfo CreateContainerInfo(Uri baseUri, string url, HtmlNode node) {
                 if(Uri.TryCreate(baseUri, url, out var uri)) {
-                    var desc = DxxUrl.TrimText(node.InnerText);
+                    if(!IsContainer(new DxxUriEx(uri))) {
+                        return null;
+                    }
+                    var desc = SafeDescription(node.InnerText);
                     if(string.IsNullOrWhiteSpace(desc)) {
-                        GetIndexStringFromUrl(url);
+                        desc = TryGetDescFromInnerHtml(node.InnerHtml);
+                        if (string.IsNullOrWhiteSpace(desc)) {
+                            desc = GetIndexStringFromUrl(url);
+                        }
                     }
                     var name = DxxUrl.TrimName(DxxUrl.GetFileName(uri));
                     return new DxxTargetInfo(uri, name, desc);
                 }
                 return null;
+            }
+            //           <a name = 他人妻味～疼く妖艶エロボティ～&nbsp;&lt;a href = &quot; javascript:;&quot; onclick=&quot;linktoDetail(&#39;1184&#39;)&quot; &gt;詳細ページ&lt;/a&gt; rel=lightbox[external 704 396] href=//sample.heyzo.com/contents/3000/1184/sample.mp4 class=sampleMovie style=font-size: 80%;>
+            //サンプル動画
+            //    </a>
+            static readonly string[] DescDelimiter = new string[] { "&nbsp", "&lt", "&quot" };
+
+            private static string SafeDescription(string src) {
+                string result = src;
+                var s = src.Split(DescDelimiter, StringSplitOptions.None);
+                if(s.Count()>1) {
+                    result = s[0];
+                }
+                result = DxxUrl.TrimText(result);
+                result = Regex.Replace(result, "[\'\"]+", "");
+                return result;
             }
 
             /**
@@ -84,7 +118,7 @@ namespace DxxBrowser.driver.heizo {
              */
             private DxxTargetInfo CreateTargetInfo(Uri baseUri, string url, HtmlNode node) {
                 if (Uri.TryCreate(baseUri, url, out var uri)) {
-                    var desc = DxxUrl.TrimText(node.Attributes["name"].Value);
+                    var desc = SafeDescription(node.Attributes["name"].Value);
                     if (string.IsNullOrWhiteSpace(desc)) {
                         GetIndexStringFromUrl(url);
                     }
@@ -132,7 +166,9 @@ namespace DxxBrowser.driver.heizo {
                     DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                     var web = new HtmlWeb();
                     var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                    return html.DocumentNode.SelectNodes("//a[contains(@href, '/moviepages/') or contains(@href,'/listpages')]")?
+                    //var xpath = "//a[contains(@href, '/moviepages/') or contains(@href,'/listpages')]";
+                    var xpath = "//a[contains(@href, '/moviepages/')]";
+                    return html.DocumentNode.SelectNodes(xpath)?
                                     .Distinct(mAnchorNodeComparator)?
                                     .Select((v) => CreateContainerInfo(urx.Uri, v.Attributes["href"].Value, v))?
                                     .Where((v) => v != null)?
@@ -170,8 +206,8 @@ namespace DxxBrowser.driver.heizo {
                 if (!urx.Uri.Host.Contains("heyzo.com")) {
                     return false;
                 }
-                //return urx.Url.Contains("/listpages/");
-                return true;
+                return urx.Url.Contains("/listpages/");
+                //return true;
             }
 
             public bool IsTarget(DxxUriEx urx) {

@@ -142,7 +142,7 @@ namespace DxxBrowser {
 
         public HtmlAttributeCollection Attributes => Node?.Attributes;
 
-        public void writeSpaces(StringBuilder sb, int indent) {
+        private static void writeSpaces(StringBuilder sb, int indent) {
             for (int i = 0; i < indent; i++) {
                 sb.Append(" ");
             }
@@ -204,7 +204,7 @@ namespace DxxBrowser {
             }
         }
 
-        private string FormatText(string src, int indent) {
+        public static string FormatText(string src, int indent) {
             if(src==null) {
                 return "";
             }
