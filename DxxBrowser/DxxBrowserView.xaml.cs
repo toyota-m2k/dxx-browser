@@ -1,20 +1,8 @@
 ﻿using Microsoft.Toolkit.Wpf.UI.Controls;
 using Reactive.Bindings;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace DxxBrowser {
     /// <summary>
@@ -43,10 +31,23 @@ namespace DxxBrowser {
             naviBar.ViewModel.Dispose();
         }
 
-        public void OnWebViewLoaded(WebView wv) {
-            browserHostGrid.Children.Clear();
+        #pragma warning disable CS0618 // 型またはメンバーが古い形式です
+
+        public void AttachWebView(WebView wv) {
             browserHostGrid.Children.Add(wv);
             naviBar.ViewModel.SetBrowser(wv);
         }
+
+        public WebView DetachWebView() {
+            if (browserHostGrid.Children.Count > 0) {
+                var r = browserHostGrid.Children[0] as WebView;
+                browserHostGrid.Children.Clear();
+                naviBar.ViewModel.ResetBrowser();
+                return r;
+            }
+            return null;
+        }
+
+        #pragma warning restore CS0618 // 型またはメンバーが古い形式です
     }
 }

@@ -12,7 +12,8 @@ namespace DxxBrowser {
     public class DxxWebViewManager {
 #pragma warning disable CS0618 // 型またはメンバーが古い形式です
         public interface IDxxWebViewContainer {
-            void OnWebViewLoaded(WebView wv);
+            void AttachWebView(WebView wv);
+            WebView DetachWebView();
         }
 
         private Dictionary<WebView, IDxxWebViewContainer> Views = new Dictionary<WebView, IDxxWebViewContainer>();
@@ -31,11 +32,11 @@ namespace DxxBrowser {
             if(ViewCount==0) {
                 ViewCount = 1;
                 var wv = CreatePrimaryBrowser(host);
-                host.OnWebViewLoaded(wv);
+                host.AttachWebView(wv);
             } else {
                 if(PrimaryWebView!=null) {
                     var wv = CreateSecondaryBrowser(host);
-                    host.OnWebViewLoaded(wv);
+                    host.AttachWebView(wv);
                 } else {
                     WaitingSubContainers.Add(host);
                 }
@@ -45,6 +46,8 @@ namespace DxxBrowser {
         private WebView CreatePrimaryBrowser(IDxxWebViewContainer host) {
             Debug.Assert(PrimaryWebView == null);
             var wv = new WebView();
+            wv.BeginInit();
+            wv.EndInit();
             wv.IsScriptNotifyAllowed = true;
             Views.Add(wv, host);
             wv.Loaded += OnWebViewLoaded;
@@ -55,6 +58,8 @@ namespace DxxBrowser {
         private WebView CreateSecondaryBrowser(IDxxWebViewContainer host) {
             Debug.Assert(PrimaryWebView != null);
             var wv = new WebView(PrimaryWebView.Process);
+            wv.BeginInit();
+            wv.EndInit();
             wv.IsScriptNotifyAllowed = true;
             Views.Add(wv, host);
             wv.Unloaded += OnWebViewUnloaded;
@@ -68,7 +73,7 @@ namespace DxxBrowser {
                 PrimaryWebView = wv;
                 wv.Process.ProcessExited += OnWebViewProcessExited;
                 foreach (var h in WaitingSubContainers) {
-                    h.OnWebViewLoaded(CreateSecondaryBrowser(h));
+                    h.AttachWebView(CreateSecondaryBrowser(h));
                 }
                 WaitingSubContainers.Clear();
             }
@@ -93,6 +98,11 @@ namespace DxxBrowser {
             Views = new Dictionary<WebView, IDxxWebViewContainer>();
             ViewCount = 0;
             foreach (var nv in oldViews) {
+                try {
+                    nv.Value.DetachWebView()?.Close();
+                } catch (Exception ex) {
+                    Debug.WriteLine(ex.ToString());
+                }
                 PrepareBrowser(nv.Value);
             }
             oldViews.Clear();

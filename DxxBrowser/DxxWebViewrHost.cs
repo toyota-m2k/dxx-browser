@@ -229,7 +229,7 @@ namespace DxxBrowser {
             //wv.Process.ProcessExited += WebView_ProcessExited;
         }
 
-        private void ResetBrowser() {
+        public void ResetBrowser() {
             WebView wv = Browser;
             if (null == wv) {
                 return;
