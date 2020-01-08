@@ -11,7 +11,7 @@
              Unloaded="OnUnloaded"
              >
     <UserControl.Resources>
-        <ResourceDictionary Source="res/DxxResource.xaml"/>
+        <ResourceDictionary Source="../res/DxxResource.xaml"/>
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -39,7 +39,7 @@
               Background="{StaticResource DialogBG}"
               Visibility="{Binding HasFrameLink.Value, Converter={StaticResource BoolVisibilityConverter}}">
             <Grid.Resources>
-                <ResourceDictionary Source="res/DxxFoldingButton.xaml"/>
+                <ResourceDictionary Source="../res/DxxFoldingButton.xaml"/>
             </Grid.Resources>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

@@ -77,10 +77,10 @@
       <DependentUpon>DxxAnalysisWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="DxxBookmark.cs" />
-    <Compile Include="DxxBrowserView.xaml.cs">
+    <Compile Include="browser\DxxBrowserView.xaml.cs">
       <DependentUpon>DxxBrowserView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxNaviBar.xaml.cs">
+    <Compile Include="browser\DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
     <Compile Include="player\DxxPlayer.xaml.cs">
@@ -89,8 +89,8 @@
     <Compile Include="player\DxxPlayerView.xaml.cs">
       <DependentUpon>DxxPlayerView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxWebViewManager.cs" />
-    <Compile Include="DxxWebViewrHost.cs" />
+    <Compile Include="browser\DxxWebViewManager.cs" />
+    <Compile Include="browser\DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
     <Compile Include="analyzer\DxxFileDispositionDialog.xaml.cs">
@@ -110,11 +110,11 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxBrowserView.xaml">
+    <Page Include="browser\DxxBrowserView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxNaviBar.xaml">
+    <Page Include="browser\DxxNaviBar.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

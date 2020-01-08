@@ -89,6 +89,21 @@ namespace DxxBrowser {
             }
         }
 
+        private void CloseWebView(WebView webView) {
+            if (null != webView) {
+                try {
+                    webView.Process.Terminate();
+                } catch (Exception e) {
+                    Debug.WriteLine(e.ToString());
+                }
+                try {
+                    webView.Close();
+                } catch (Exception e) {
+                    Debug.WriteLine(e.ToString());
+                }
+            }
+        }
+
         private void OnWebViewProcessExited(object sender, object e) {
             (sender as WebViewControlProcess).ProcessExited -= OnWebViewProcessExited;
 
@@ -98,11 +113,9 @@ namespace DxxBrowser {
             Views = new Dictionary<WebView, IDxxWebViewContainer>();
             ViewCount = 0;
             foreach (var nv in oldViews) {
-                try {
-                    nv.Value.DetachWebView()?.Close();
-                } catch (Exception ex) {
-                    Debug.WriteLine(ex.ToString());
-                }
+                CloseWebView(nv.Key);
+            }
+            foreach (var nv in oldViews) {
                 PrepareBrowser(nv.Value);
             }
             oldViews.Clear();
