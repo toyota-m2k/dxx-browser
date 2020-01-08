@@ -24,9 +24,9 @@ namespace DxxBrowser.driver.dmm
 
         public bool HasSettings => true;
 
-        public IDxxLinkExtractor LinkExtractor { get; private set; }
+        public IDxxLinkExtractor LinkExtractor { get; }
 
-        public IDxxStorageManager StorageManager { get; private set; }
+        public IDxxStorageManager StorageManager { get; }
 
         private const string KEY_STORAGE_PATH = "StoragePath";
 
@@ -66,43 +66,6 @@ namespace DxxBrowser.driver.dmm
             LinkExtractor = new Extractor(this);
             StorageManager = new DxxFileBasedStorage(this);
         }
-
-        //class Storage : IDxxStorageManager {
-        //    WeakReference<DmmDriver> mDriver;
-        //    DmmDriver Driver => mDriver?.GetValue();
-
-        //    public Storage(DmmDriver driver) {
-        //        mDriver = new WeakReference<DmmDriver>(driver);
-        //    }
-
-        //    public void Download(Uri uri, string description, Action<bool> onCompleted) {
-        //        if(!Driver.LinkExtractor.IsTarget(uri)) {
-        //            onCompleted?.Invoke(false);
-        //            return;
-        //        }
-        //        var path = GetPath(uri);
-        //        if(File.Exists(path)) {
-        //            onCompleted?.Invoke(false);
-        //            return;
-        //        }
-        //        DxxDownloader.Instance.Download(uri, path, description, onCompleted);
-        //    }
-
-        //    private string GetPath(Uri uri) {
-        //        var filename = DxxUrl.GetFileName(uri);
-        //        return Path.Combine(Driver.StoragePath, filename);
-        //    }
-
-        //    public string GetSavedFile(Uri uri) {
-        //        var path = GetPath(uri);
-        //        return File.Exists(path) ? path : null;
-        //    }
-
-        //    public bool IsDownloaded(Uri uri) {
-        //        var path = GetPath(uri);
-        //        return File.Exists(path);
-        //    }
-        //}
 
         class Extractor : IDxxLinkExtractor {
             WeakReference<DmmDriver> mDriver;

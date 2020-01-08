@@ -2,6 +2,7 @@
 using DxxBrowser.driver;
 using DxxBrowser.driver.caribbean;
 using DxxBrowser.driver.dmm;
+using DxxBrowser.driver.heizo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,7 @@ namespace DxxBrowser {
             mList = new List<IDxxDriver>();
             mList.Add(new DmmDriver());
             mList.Add(new CaribbeanDriver());
+            mList.Add(new HeyzoDriver());
         }
 
         public static void Initialize(Window owner) {

@@ -94,9 +94,21 @@ namespace DxxBrowser.driver {
         }
 
         /**
-         * ダウンロードする
+         * ダウンロードする IDxxStorageManager i/f
          */
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+            Download(target, StoragePath, onCompleted);
+        }
+
+        /**
+         * ダウンロードする
+         * 保存フォルダを指定できるバージョン(DefaultDriver以外で利用）
+         */
+        public void Download(DxxTargetInfo target, string storagePath, Action<bool> onCompleted) {
+            if(storagePath==null) {
+                storagePath = StoragePath;
+            }
+
             if (DxxNGList.Instance.IsNG(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
                 onCompleted?.Invoke(false);
@@ -120,7 +132,7 @@ namespace DxxBrowser.driver {
                 }
             }
             string fileName = createFileName(rec);
-            var path = System.IO.Path.Combine(StoragePath, fileName);
+            var path = System.IO.Path.Combine(storagePath, fileName);
             DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);

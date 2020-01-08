@@ -72,6 +72,7 @@
     <Compile Include="driver\DxxStorageFolderDialog.xaml.cs">
       <DependentUpon>DxxStorageFolderDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="driver\heizo\HeyzoDriver.cs" />
     <Compile Include="driver\NopDriver.cs" />
     <Compile Include="analyzer\DxxAnalysisWindow.xaml.cs">
       <DependentUpon>DxxAnalysisWindow.xaml</DependentUpon>
