@@ -187,11 +187,35 @@ namespace DxxBrowser.driver.heizo {
                     DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                     var web = new HtmlWeb();
                     var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                    return html.DocumentNode.SelectNodes("//a[contains(@href, '.mp') or contains(@href, '.wmv') or contains(@href,'.mov') or contains(@href,'.qt')]")?
+                    var mp4s = html.DocumentNode.SelectNodes("//a[contains(@href, '.mp') or contains(@href, '.wmv') or contains(@href,'.mov') or contains(@href,'.qt')]")?
                                     .Distinct(mAnchorNodeComparator)?
                                     .Select((v) => CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v))?
-                                    .Where((v) => v != null)?
-                                    .ToList();
+                                    .Where((v) => v != null);
+                    var scripts = html.DocumentNode.SelectNodes(".//script[contains(text(),'emvideo')]");
+                    IEnumerable<DxxTargetInfo> embedded = null;
+                    if(null!= scripts) {
+                        embedded = scripts.Select((v) => {
+                            var regex = new Regex("(?<=var\\s+emvideo\\s*=\\s*[\"\'])(?<path>.*\\.mp4)");
+                            var m = regex.Match(v.InnerText);
+                            if(m.Success) {
+                                var emvideo = m.Groups["path"].Value;
+                                if(Uri.TryCreate(urx.Uri, emvideo, out var uri)) {
+                                    var desc = SafeDescription(html.DocumentNode.SelectSingleNode(".//title").InnerText);
+                                    var name = DxxUrl.TrimName(DxxUrl.GetFileName(uri));
+                                    return new DxxTargetInfo(uri, name, desc);
+                                }
+                            }
+                            return null;
+                        }).Where((v)=>v!=null);
+                        if(null!=embedded) {
+                            if(mp4s==null) {
+                                mp4s = embedded;
+                            } else {
+                                mp4s = mp4s.Concat(embedded);
+                            }
+                        }
+                    }
+                    return mp4s?.ToList();
                 });
             }
 
