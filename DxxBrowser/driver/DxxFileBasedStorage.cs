@@ -23,22 +23,36 @@ namespace DxxBrowser.driver {
         protected virtual string LOG_CAT => "FileStorage";
 
         public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+            var path = GetPath(target.Uri);
+            if (File.Exists(path)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (register db): {target.Name} {target.Description}");
+                DxxDBStorage.Instance.RegisterAsCompleted(target, path);
+                DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                onCompleted?.Invoke(false);
+                return;
+            }
+
             if (!Driver.LinkExtractor.IsTarget(target)) {
                 onCompleted?.Invoke(false);
                 return;
             }
+
+            // ダウンロードは DB Storage に任せる
+            DxxDBStorage.Instance.Download(target, Driver.StoragePath, onCompleted);
+
+#if false
             if (DxxNGList.Instance.IsNG(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
                 onCompleted?.Invoke(false);
                 return;
             }
-            var path = GetPath(target.Uri);
-            if (File.Exists(path)) {
-                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {target.Name}");
+            if(DxxDBStorage.Instance.IsDownloaded(target.Uri)) {
+                DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloaded): {target.Name} {target.Description}");
                 DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                 onCompleted?.Invoke(false);
                 return;
             }
+
             if(DxxDownloader.Instance.IsDownloading(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (already downloading): {target.Name}");
                 onCompleted?.Invoke(false);
@@ -54,6 +68,7 @@ namespace DxxBrowser.driver {
                 }
                 onCompleted?.Invoke(v);
             });
+#endif
         }
 
         public string GetSavedFile(Uri uri) {

@@ -1,0 +1,122 @@
+﻿<Window x:Class="DxxBrowser.DxxDBViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DxxBrowser"
+        mc:Ignorable="d"
+        Title="Dxx DB Viewer" Height="450" Width="800">
+    <Window.Resources>
+        <ResourceDictionary Source="res/DxxResource.xaml"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>      <!-- Toolbar -->
+            <RowDefinition Height="*"/>         <!-- List -->
+            <RowDefinition Height="Auto"/>      <!-- StatusBar -->
+        </Grid.RowDefinitions>
+        <Grid.Resources>
+            <Style x:Key="StatusIconStyle" TargetType="Path">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Status}" Value="NONE">
+                        <Setter Property="Data" Value="M21.5,10.8L13.2,2.5C12.5,1.8 11.5,1.8 10.8,2.5L2.5,10.8C1.8,11.5 1.8,12.5 2.5,13.2L10.8,21.5C11.5,22.2 12.5,22.2 13.2,21.5L21.5,13.2C22.1,12.5 22.1,11.5 21.5,10.8M12.5,17H11V15.5H12.5V17M14.3,11.8C13.9,12.3 13.2,12.6 12.9,13.1C12.6,13.5 12.6,14 12.6,14.5H11C11,13.7 11,13 11.3,12.5C11.6,12 12.3,11.7 12.7,11.4C13.9,10.3 13.6,8.7 11.9,8.6C11.1,8.6 10.4,9.3 10.4,10.1H9C9,8.4 10.3,7.1 12,7.1C14.7,7.1 15.9,9.8 14.3,11.8Z"/>
+                        <Setter Property="Fill" Value="SlateGray"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=Status}" Value="RESERVED">
+                        <Setter Property="Data" Value="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/>
+                        <Setter Property="Fill" Value="Orange"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=Rating}" Value="COMPLETED">
+                        <Setter Property="Data" Value="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                        <Setter Property="Fill" Value="GreenYellow"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=Rating}" Value="FATAL_ERROR">
+                        <Setter Property="Data" Value="M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M6.76,8.82L7.82,7.76L8.88,8.82L9.94,7.76L11,8.82L9.94,9.88L11,10.94L9.94,12L8.88,10.94L7.82,12L6.76,10.94L7.82,9.88L6.76,8.82M6.89,17.5C7.69,15.46 9.67,14 12,14C14.33,14 16.31,15.46 17.11,17.5H6.89M17.24,10.94L16.18,12L15.12,10.94L14.06,12L13,10.94L14.06,9.88L13,8.82L14.06,7.76L15.12,8.82L16.18,7.76L17.24,8.82L16.18,9.88L17.24,10.94Z"/>
+                        <Setter Property="Fill" Value="Red"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
+        <!-- Toolbar -->
+        <StackPanel 
+            Grid.Row="0"
+            Background="{StaticResource DialogBG}" Orientation="Horizontal" HorizontalAlignment="Stretch">
+            <Button Content="hoge"/>
+        </StackPanel>
+        
+        <!-- list -->
+        <ListView Grid.Row="1" x:Name="mListView" ItemsSource="{Binding}" 
+                  GridViewColumnHeader.Click="OnHeaderClick" 
+                  SelectionChanged="OnFileItemSelectionChanged">
+            <ListView.Resources>
+                <DataTemplate x:Key="SortHeaderTemplate">
+                    <DockPanel>
+                        <Image Width="10" Height="10" DockPanel.Dock="Right" Margin="5,0,0,0">
+                            <Image.Style>
+                                <Style>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource AncestorType=GridViewColumnHeader}}" Value="asc">
+                                            <Setter Property="Image.Source" Value="{StaticResource AscImageSource}"/>
+                                            <Setter Property="Image.Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource AncestorType=GridViewColumnHeader}}" Value="desc">
+                                            <Setter Property="Image.Source" Value="{StaticResource DescImageSource}"/>
+                                            <Setter Property="Image.Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource AncestorType=GridViewColumnHeader}}" Value="">
+                                            <Setter Property="Image.Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <TextBlock Foreground="DarkBlue">
+                            <TextBlock.Text>
+                                <Binding/>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </DockPanel>
+                </DataTemplate>
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <EventSetter Event="MouseDoubleClick" Handler="OnListItemDoubleClick"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <!--<Setter Property="ContextMenu">
+                        <Setter.Value>
+                            <ContextMenu Background="WhiteSmoke">
+                                <MenuItem Header="Edit or Create Trimming (_E)" InputGestureText="Ctrl+E" Command="{x:Static local:MainWindow.CreateTrimming}"/>
+                                <MenuItem Header="Apply Existing Trimming (_J)" InputGestureText="Ctrl+J" Command="{x:Static local:MainWindow.ApplyTrimming}"/>
+                                <MenuItem Header="Reset Play Counter (_N)" InputGestureText="Ctrl+N" Command="{x:Static local:MainWindow.ResetCounter}"/>
+                                <MenuItem Header="Delete Files (_D)" InputGestureText="Ctrl+D" Command="{x:Static local:MainWindow.DeleteFiles}"/>
+                            </ContextMenu>
+                        </Setter.Value>
+                    </Setter>-->
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="ID" Width="50" DisplayMemberBinding="{Binding ID}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Status" Width="40" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Viewbox Width="20" Height="20">
+                                    <Canvas Width="24" Height="24">
+                                        <Path Style="{StaticResource StatusIconStyle}"/>
+                                    </Canvas>
+                                </Viewbox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="URL" Width="200" DisplayMemberBinding="{Binding Url}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Path" Width="200" DisplayMemberBinding="{Binding Path}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Name" Width="100" DisplayMemberBinding="{Binding Name}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Desc" Width="300" DisplayMemberBinding="{Binding Desc}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+
+    </Grid>
+</Window>

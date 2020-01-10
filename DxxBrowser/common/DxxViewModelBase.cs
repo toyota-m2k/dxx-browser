@@ -16,7 +16,7 @@ namespace Common {
         }
     }
 
-    public class MicViewModelBase : INotifyPropertyChanged, IDisposable {
+    public class MicPropertyChangeNotifier : INotifyPropertyChanged {
         #region INotifyPropertyChanged i/f
         //-----------------------------------------------------------------------------------------
 
@@ -41,6 +41,9 @@ namespace Common {
         }
 
         #endregion
+    }
+
+    public class MicViewModelBase : MicPropertyChangeNotifier, INotifyPropertyChanged, IDisposable {
 
         /**
          * Disposable な プロパティをすべてDisposeする。
@@ -58,6 +61,18 @@ namespace Common {
                     }
                 }
             }
+        }
+    }
+
+    public class MicViewModelBase<T> : MicViewModelBase, INotifyPropertyChanged, IDisposable where T : class {
+        private WeakReference<T> mOwner;
+        public T Owner {
+            get => mOwner?.GetValue();
+            set => mOwner = ( value == null ) ? null : new WeakReference<T>(value);
+        }
+
+        public MicViewModelBase(T owner=null ) {
+            Owner = owner;
         }
     }
 }

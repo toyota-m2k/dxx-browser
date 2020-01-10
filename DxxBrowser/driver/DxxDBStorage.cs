@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Common;
+using System;
+using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
@@ -171,19 +173,29 @@ namespace DxxBrowser.driver {
 
         private SQLiteConnection mDB;
 
-        private enum DLStatus {
+        public enum DLStatus {
             NONE = 0,
             RESERVED = 1,
             COMPLETED = 2,
+            FATAL_ERROR = 3,
         }
 
-        class DBRecord {
+        public class DBRecord : MicPropertyChangeNotifier {
             public long ID { get; }
             public string Url { get; }
             public string Name { get; }
-            public string Path { get; }
             public string Desc { get; }
-            public DLStatus Status { get; }
+
+            private string mPath = null;
+            public string Path {
+                get => mPath;
+                set => setProp(callerName(), ref mPath, value);
+            }
+            private DLStatus mStatus;
+            public DLStatus Status {
+                get => mStatus;
+                set => setProp(callerName(), ref mStatus, value);
+            }
             public DBRecord(long id, string url, string name, string path, string desc, DLStatus status) {
                 ID = id;
                 Url = url;
@@ -225,6 +237,22 @@ namespace DxxBrowser.driver {
             }
         }
 
+        public IEnumerable<DBRecord> ListAll() {
+            using (var cmd = mDB.CreateCommand()) {
+                cmd.CommandText = $"SELECT * FROM t_storage";
+                using (var reader = cmd.ExecuteReader()) {
+                    if (reader.Read()) {
+                        yield return new DBRecord(Convert.ToInt64(reader["id"]),
+                            Convert.ToString(reader["url"]),
+                            Convert.ToString(reader["name"]),
+                            Convert.ToString(reader["path"]),
+                            Convert.ToString(reader["desc"]),
+                            (DLStatus)Convert.ToInt32(reader["status"]));
+                    }
+                }
+            }
+        }
+
         private DBRecord Reserve(DxxTargetInfo target) {
             try {
                 var url = target.Url;
@@ -248,6 +276,34 @@ namespace DxxBrowser.driver {
                 Debug.WriteLine(e.StackTrace);
             }
             return null;
+        }
+
+        /**
+         * FileBasedStorageから登録する（移行用）
+         */
+        public bool RegisterAsCompleted(DxxTargetInfo target, string path) {
+            try {
+                var url = target.Url;
+                if (string.IsNullOrEmpty(url)) {
+                    return false;
+                }
+                var name = DxxUrl.TrimName(target.Name);
+                if (string.IsNullOrEmpty(name)) {
+                    name = DxxUrl.TrimName(DxxUrl.GetFileName(url));
+                    if (string.IsNullOrEmpty(name)) {
+                        name = "untitled";
+                    }
+                }
+                using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}')";
+                    if (1 == cmd.ExecuteNonQuery()) {
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                Debug.WriteLine(e.StackTrace);
+            }
+            return false;
         }
 
         protected virtual string LOG_CAT => "DBS";

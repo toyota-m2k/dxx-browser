@@ -84,6 +84,9 @@
     <Compile Include="browser\DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DxxDBViewerWindow.xaml.cs">
+      <DependentUpon>DxxDBViewerWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="player\DxxPlayer.xaml.cs">
       <DependentUpon>DxxPlayer.xaml</DependentUpon>
     </Compile>
@@ -120,6 +123,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="analyzer\DxxFileDispositionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DxxDBViewerWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -218,6 +225,8 @@
   <ItemGroup>
     <Resource Include="res\dxxbrowser.ico" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="dbviewer\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
