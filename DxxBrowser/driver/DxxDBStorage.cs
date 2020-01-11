@@ -58,7 +58,9 @@ namespace DxxBrowser.driver {
                     name TEXT NOT NULL,
                     path TEXT NOT NULL,
                     status INTEGER NOT NULL,
-                    desc TEXT
+                    desc TEXT,
+                    driver TEXT,
+                    flags INTEGER DEFAULT '0'
                 )",
                 @"CREATE TABLE IF NOT EXISTS t_ng (
                     id INTEGER NOT NULL PRIMARY KEY,
@@ -82,7 +84,7 @@ namespace DxxBrowser.driver {
         /**
          * ファイルを保存するディレクトリ（DefaultDriverの設定）
          */
-        public string StoragePath { get; set; }
+        //public string StoragePath { get; set; }
 
         #endregion
 
@@ -98,18 +100,16 @@ namespace DxxBrowser.driver {
         /**
          * ダウンロードする IDxxStorageManager i/f
          */
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
-            Download(target, StoragePath, onCompleted);
-        }
+        //public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+        //    Download(target, StoragePath, onCompleted);
+        //}
 
         /**
          * ダウンロードする
          * 保存フォルダを指定できるバージョン(DefaultDriver以外で利用）
          */
-        public void Download(DxxTargetInfo target, string storagePath, Action<bool> onCompleted) {
-            if(storagePath==null) {
-                storagePath = StoragePath;
-            }
+        public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
+            var storagePath = driver.StoragePath;
 
             if (DxxNGList.Instance.IsNG(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
@@ -126,7 +126,7 @@ namespace DxxBrowser.driver {
                     return;
                 }
             } else {
-                rec = Reserve(target);
+                rec = Reserve(target, driver.Name, 0);
                 if (rec == null) {
                     DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
                     onCompleted?.Invoke(false);
@@ -185,6 +185,7 @@ namespace DxxBrowser.driver {
             public string Url { get; }
             public string Name { get; }
             public string Desc { get; }
+            public string Driver { get; set; }
 
             private string mPath = null;
             public string Path {
@@ -196,13 +197,23 @@ namespace DxxBrowser.driver {
                 get => mStatus;
                 set => setProp(callerName(), ref mStatus, value);
             }
-            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status) {
+
+            private long mFlags = 0;
+            public long Flags {
+                get => mFlags;
+                set => setProp(callerName(), ref mFlags, value);
+            }
+
+
+            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status, string driver, long flags) {
                 ID = id;
                 Url = url;
                 Name = name;
                 Path = path;
                 Desc = desc;
-                Status = status;
+                mStatus = status;
+                Driver = driver;
+                mFlags = flags;
             }
         }
 
@@ -223,12 +234,15 @@ namespace DxxBrowser.driver {
                     cmd.CommandText = $"SELECT * FROM t_storage WHERE url='{url}'";
                     using (var reader = cmd.ExecuteReader()) {
                         if (reader.Read()) {
-                            return new DBRecord(Convert.ToInt64(reader["id"]),
-                                Convert.ToString(reader["url"]),
-                                Convert.ToString(reader["name"]),
-                                Convert.ToString(reader["path"]),
-                                Convert.ToString(reader["desc"]),
-                                (DLStatus)Convert.ToInt32(reader["status"]));
+                            return new DBRecord(AsLong(reader["id"]),
+                                AsString(reader["url"]),
+                                AsString(reader["name"]),
+                                AsString(reader["path"]),
+                                AsString(reader["desc"]),
+                                (DLStatus)AsLong(reader["status"]),
+                                AsString(reader["driver"]),
+                                AsLong(reader["flags"])
+                                );
                         }
                     }
                 } catch (Exception) {
@@ -237,23 +251,39 @@ namespace DxxBrowser.driver {
             }
         }
 
+        private static string AsString(object obj) {
+            if(obj!=null&&obj!=DBNull.Value) {
+                return Convert.ToString(obj);
+            }
+            return "";
+        }
+        private long AsLong(object obj) {
+            if (obj != null && obj != DBNull.Value) {
+                return Convert.ToInt64(obj);
+            }
+            return 0;
+        }
+
         public IEnumerable<DBRecord> ListAll() {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"SELECT * FROM t_storage";
                 using (var reader = cmd.ExecuteReader()) {
-                    if (reader.Read()) {
-                        yield return new DBRecord(Convert.ToInt64(reader["id"]),
-                            Convert.ToString(reader["url"]),
-                            Convert.ToString(reader["name"]),
-                            Convert.ToString(reader["path"]),
-                            Convert.ToString(reader["desc"]),
-                            (DLStatus)Convert.ToInt32(reader["status"]));
+                    while (reader.Read()) {
+                        yield return new DBRecord(AsLong(reader["id"]),
+                            AsString(reader["url"]),
+                            AsString(reader["name"]),
+                            AsString(reader["path"]),
+                            AsString(reader["desc"]),
+                            (DLStatus)AsLong(reader["status"]),
+                            AsString(reader["driver"]),
+                            AsLong(reader["flags"])
+                            );
                     }
                 }
             }
         }
 
-        private DBRecord Reserve(DxxTargetInfo target) {
+        private DBRecord Reserve(DxxTargetInfo target, string driverName, int flags=0) {
             try {
                 var url = target.Url;
                 if (string.IsNullOrEmpty(url)) {
@@ -267,7 +297,7 @@ namespace DxxBrowser.driver {
                     }
                 }
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc) VALUES('{url}','{name}','',{(int)DLStatus.RESERVED},'{target.Description}')";
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','',{(int)DLStatus.RESERVED},'{target.Description}','{driverName}','{flags}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         return Retrieve(url);
                     }
@@ -281,7 +311,7 @@ namespace DxxBrowser.driver {
         /**
          * FileBasedStorageから登録する（移行用）
          */
-        public bool RegisterAsCompleted(DxxTargetInfo target, string path) {
+        public bool RegisterAsCompleted(DxxTargetInfo target, string path, string driverName, int flags=0) {
             try {
                 var url = target.Url;
                 if (string.IsNullOrEmpty(url)) {
@@ -295,7 +325,7 @@ namespace DxxBrowser.driver {
                     }
                 }
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}')";
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}','{driverName}','{flags}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         return true;
                     }
@@ -305,6 +335,26 @@ namespace DxxBrowser.driver {
             }
             return false;
         }
+
+        public bool UpdateFlags(long id, long flags) {
+            using (var cmd = mDB.CreateCommand()) {
+                cmd.CommandText = $"UPDATE t_storage SET flags='{flags}' WHERE id={id}";
+                if (1 == cmd.ExecuteNonQuery()) {
+                    return true;
+                }
+            }
+            return false;
+
+        }
+        //public bool ComplementRecord(long id, string driver, long flags) {
+        //    using (var cmd = mDB.CreateCommand()) {
+        //        cmd.CommandText = $"UPDATE t_storage SET flags='{flags}', driver='{driver}' WHERE id={id}";
+        //        if (1 == cmd.ExecuteNonQuery()) {
+        //            return true;
+        //        }
+        //    }
+        //    return false;
+        //}
 
         protected virtual string LOG_CAT => "DBS";
 
@@ -366,7 +416,7 @@ namespace DxxBrowser.driver {
                     cmd.CommandText = $"SELECT * FROM t_ng WHERE url='{url}'";
                     using (var reader = cmd.ExecuteReader()) {
                         if (reader.Read()) {
-                            return Convert.ToInt64(reader["ignore"]) == 0;
+                            return AsLong(reader["ignore"]) == 0;
                         }
                     }
                 } catch (Exception e) {

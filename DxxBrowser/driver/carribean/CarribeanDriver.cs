@@ -12,7 +12,7 @@ using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver.caribbean {
-    public class CaribbeanDriver : IDxxFileBasedDriver {
+    public class CaribbeanDriver : IDxxDriver {
         public string Name => "Caribbean";
 
         public string ID => "caribbeanFileBasedDriver";
@@ -62,6 +62,10 @@ namespace DxxBrowser.driver.caribbean {
                 return true;
             }
             return false;
+        }
+
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            StorageManager.Download(target, this, onCompleted);
         }
 
         public CaribbeanDriver() {
@@ -224,7 +228,7 @@ namespace DxxBrowser.driver.caribbean {
         }
 
         class Storage : DxxFileBasedStorage {
-            public Storage(IDxxFileBasedDriver driver) : base(driver) {
+            public Storage(IDxxDriver driver) : base(driver) {
 
             }
             protected override string LOG_CAT => "CRB";

@@ -16,6 +16,12 @@ namespace DxxBrowser.driver {
 
         public IDxxStorageManager StorageManager { get; } = new Storage();
 
+        public string StoragePath { get; } = null;
+
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+            onCompleted?.Invoke(false);
+        }
+
         public bool HasSettings => false;
 
         public bool IsSupported(string url) {
@@ -39,7 +45,7 @@ namespace DxxBrowser.driver {
         }
 
         class Storage : IDxxStorageManager {
-            public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+            public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
                 onCompleted?.Invoke(false);
             }
 

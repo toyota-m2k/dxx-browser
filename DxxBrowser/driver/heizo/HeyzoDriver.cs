@@ -25,12 +25,12 @@ namespace DxxBrowser.driver.heizo {
         private const string KEY_STORAGE_PATH = "StoragePath";
 
         public bool LoadSettins(XmlElement settings) {
-            Storage.StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
+            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
             return true;
         }
 
         public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, Storage.StoragePath);
+            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
             return true;
         }
 
@@ -45,10 +45,10 @@ namespace DxxBrowser.driver.heizo {
         }
 
         public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, Storage.StoragePath);
+            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
             dlg.Owner = owner;
             if (dlg.ShowDialog() ?? false) {
-                Storage.StoragePath = dlg.Path;
+                StoragePath = dlg.Path;
                 if (null != settings) {
                     SaveSettings(settings);
                 }
@@ -57,12 +57,18 @@ namespace DxxBrowser.driver.heizo {
             return false;
         }
 
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            StorageManager.Download(target, this, onCompleted);
+        }
+
         #endregion
 
         public HeyzoDriver() {
         }
 
         private const string LOG_CAT = "HYZ";
+
+        public string StoragePath { get; set; } = null;
 
         private class Extractor : IDxxLinkExtractor {
 
@@ -240,10 +246,9 @@ namespace DxxBrowser.driver.heizo {
         }
 
         private class Storage : IDxxStorageManager {
-            public static string StoragePath { get; set; } = null;
 
-            public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
-                DxxDBStorage.Instance.Download(target, StoragePath, onCompleted);
+            public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted = null) {
+                DxxDBStorage.Instance.Download(target, driver, onCompleted);
             }
 
             public string GetSavedFile(Uri url) {

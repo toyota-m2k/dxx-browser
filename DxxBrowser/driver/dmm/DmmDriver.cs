@@ -15,7 +15,7 @@ using Common;
 
 namespace DxxBrowser.driver.dmm
 {
-    public class DmmDriver : IDxxFileBasedDriver {
+    public class DmmDriver : IDxxDriver {
         public string StoragePath { get; set; }
 
         public string Name => "DMM";
@@ -60,6 +60,10 @@ namespace DxxBrowser.driver.dmm
                 return true;
             }
             return false;
+        }
+
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            StorageManager.Download(target, this, onCompleted);
         }
 
         public DmmDriver() {

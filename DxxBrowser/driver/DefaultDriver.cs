@@ -19,6 +19,12 @@ namespace DxxBrowser.driver {
 
         public IDxxStorageManager StorageManager => DxxDBStorage.Instance;
 
+        public string StoragePath { get; private set; }
+
+        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+            StorageManager.Download(target, this, onCompleted);
+        }
+
         public string GetNameFromUri(Uri uri, string defName = "") {
             return DxxUrl.TrimName(DxxUrl.GetFileName(uri));
         }
@@ -30,20 +36,20 @@ namespace DxxBrowser.driver {
         private const string KEY_STORAGE_PATH = "StoragePath";
 
         public bool LoadSettins(XmlElement settings) {
-            DxxDBStorage.Instance.StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
+            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
             return true;
         }
 
         public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, DxxDBStorage.Instance.StoragePath);
+            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
             return true;
         }
 
         public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, DxxDBStorage.Instance.StoragePath);
+            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
             dlg.Owner = owner;
             if (dlg.ShowDialog() ?? false) {
-                DxxDBStorage.Instance.StoragePath = dlg.Path;
+                StoragePath = dlg.Path;
                 if (null != settings) {
                     SaveSettings(settings);
                 }

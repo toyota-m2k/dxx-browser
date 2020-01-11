@@ -47,6 +47,7 @@ namespace DxxBrowser {
         public ReactiveCommand DownloadByTargetList { get; } = new ReactiveCommand();
         public ReactiveCommand CancellAllCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ShowPlayerCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ShowDBViewerCommand { get; } = new ReactiveCommand();
 
         public ReactiveCommand ClearStatusCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ClearDownloadingListCommand { get; } = new ReactiveCommand();
@@ -76,6 +77,9 @@ namespace DxxBrowser {
             });
             ShowPlayerCommand.Subscribe(() => {
                 DxxPlayer.ShowPlayer(OwnerWindow);
+            });
+            ShowDBViewerCommand.Subscribe(() => {
+                DxxDBViewerWindow.ShowWindow(OwnerWindow);
             });
         }
 
@@ -124,6 +128,15 @@ namespace DxxBrowser {
             DxxDownloader.Initialize(this);
             DxxLogger.Initialize(this);
             DxxDriverManager.Initialize(Window.GetWindow(this));
+
+            //using (DxxDBStorage.Instance.Transaction()) {
+            //    var list = DxxDBStorage.Instance.ListAll();
+            //    foreach (var rec in list) {
+            //        DxxDBStorage.Instance.ComplementRecord(rec.ID, DxxDriverManager.Instance.FindDriver(rec.Url)?.Name ?? "UAV", 0);
+            //    }
+            //}
+
+
             ViewModel = new DxxMainViewModel(this);
             InitializeComponent();
         }

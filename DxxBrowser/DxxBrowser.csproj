@@ -61,6 +61,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="common\CompoundProperty.cs" />
+    <Compile Include="common\WinPlacement.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
     <Compile Include="driver\DefaultDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
@@ -84,9 +85,10 @@
     <Compile Include="browser\DxxNaviBar.xaml.cs">
       <DependentUpon>DxxNaviBar.xaml</DependentUpon>
     </Compile>
-    <Compile Include="DxxDBViewerWindow.xaml.cs">
+    <Compile Include="dbviewer\DxxDBViewerWindow.xaml.cs">
       <DependentUpon>DxxDBViewerWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DxxGlobal.cs" />
     <Compile Include="player\DxxPlayer.xaml.cs">
       <DependentUpon>DxxPlayer.xaml</DependentUpon>
     </Compile>
@@ -126,7 +128,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="DxxDBViewerWindow.xaml">
+    <Page Include="dbviewer\DxxDBViewerWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -225,8 +227,6 @@
   <ItemGroup>
     <Resource Include="res\dxxbrowser.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="dbviewer\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

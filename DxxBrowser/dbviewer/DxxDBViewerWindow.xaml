@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Dxx DB Viewer" Height="450" Width="800">
     <Window.Resources>
-        <ResourceDictionary Source="res/DxxResource.xaml"/>
+        <ResourceDictionary Source="../res/DxxResource.xaml"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -26,11 +26,11 @@
                         <Setter Property="Data" Value="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/>
                         <Setter Property="Fill" Value="Orange"/>
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding Path=Rating}" Value="COMPLETED">
+                    <DataTrigger Binding="{Binding Path=Status}" Value="COMPLETED">
                         <Setter Property="Data" Value="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
                         <Setter Property="Fill" Value="GreenYellow"/>
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding Path=Rating}" Value="FATAL_ERROR">
+                    <DataTrigger Binding="{Binding Path=Status}" Value="FATAL_ERROR">
                         <Setter Property="Data" Value="M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M6.76,8.82L7.82,7.76L8.88,8.82L9.94,7.76L11,8.82L9.94,9.88L11,10.94L9.94,12L8.88,10.94L7.82,12L6.76,10.94L7.82,9.88L6.76,8.82M6.89,17.5C7.69,15.46 9.67,14 12,14C14.33,14 16.31,15.46 17.11,17.5H6.89M17.24,10.94L16.18,12L15.12,10.94L14.06,12L13,10.94L14.06,9.88L13,8.82L14.06,7.76L15.12,8.82L16.18,7.76L17.24,8.82L16.18,9.88L17.24,10.94Z"/>
                         <Setter Property="Fill" Value="Red"/>
                     </DataTrigger>
@@ -46,7 +46,7 @@
         </StackPanel>
         
         <!-- list -->
-        <ListView Grid.Row="1" x:Name="mListView" ItemsSource="{Binding}" 
+        <ListView Grid.Row="1" x:Name="mListView" ItemsSource="{Binding List.Value}" 
                   GridViewColumnHeader.Click="OnHeaderClick" 
                   SelectionChanged="OnFileItemSelectionChanged">
             <ListView.Resources>

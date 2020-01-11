@@ -67,6 +67,11 @@
                                 <ToolTip Content="動画プレーヤーを表示"/>
                             </ToolTipService.ToolTip>
                         </Button>
+                        <Button Command="{Binding ShowDBViewerCommand}" Content="{StaticResource PathDB}" Style="{StaticResource PushButtonStyle}">
+                            <ToolTipService.ToolTip>
+                                <ToolTip Content="DBビューアを表示"/>
+                            </ToolTipService.ToolTip>
+                        </Button>
                         <Button Command="{Binding CancellAllCommand}" Content="{StaticResource PathCancel}" Style="{StaticResource PushButtonStyle}" IsEnabled="{Binding IsDownloading.Value}">
                             <ToolTipService.ToolTip>
                                 <ToolTip Content="すべてのダウンロードをキャンセル"/>

@@ -10,7 +10,7 @@ namespace DxxBrowser
     {
         bool IsDownloaded(Uri url);
 
-        void Download(DxxTargetInfo target, Action<bool> onCompleted=null);
+        void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted=null);
 
         string GetSavedFile(Uri url);
     }

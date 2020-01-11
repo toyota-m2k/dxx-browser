@@ -3,16 +3,12 @@ using System;
 using System.IO;
 
 namespace DxxBrowser.driver {
-    public interface IDxxFileBasedDriver : IDxxDriver {
-        string StoragePath { get; }
-    }
-
     public class DxxFileBasedStorage : IDxxStorageManager {
-        WeakReference<IDxxFileBasedDriver> mDriver;
-        protected IDxxFileBasedDriver Driver => mDriver?.GetValue();
+        WeakReference<IDxxDriver> mDriver;
+        protected IDxxDriver Driver => mDriver?.GetValue();
 
-        public DxxFileBasedStorage(IDxxFileBasedDriver driver) {
-            mDriver = new WeakReference<IDxxFileBasedDriver>(driver);
+        public DxxFileBasedStorage(IDxxDriver driver) {
+            mDriver = new WeakReference<IDxxDriver>(driver);
         }
 
         protected virtual string GetPath(Uri uri) {
@@ -22,11 +18,11 @@ namespace DxxBrowser.driver {
 
         protected virtual string LOG_CAT => "FileStorage";
 
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted) {
+        public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
             var path = GetPath(target.Uri);
             if (File.Exists(path)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (register db): {target.Name} {target.Description}");
-                DxxDBStorage.Instance.RegisterAsCompleted(target, path);
+                DxxDBStorage.Instance.RegisterAsCompleted(target, path, Driver.Name);
                 DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                 onCompleted?.Invoke(false);
                 return;
@@ -38,7 +34,7 @@ namespace DxxBrowser.driver {
             }
 
             // ダウンロードは DB Storage に任せる
-            DxxDBStorage.Instance.Download(target, Driver.StoragePath, onCompleted);
+            DxxDBStorage.Instance.Download(target, driver, onCompleted);
 
 #if false
             if (DxxNGList.Instance.IsNG(target.Url)) {

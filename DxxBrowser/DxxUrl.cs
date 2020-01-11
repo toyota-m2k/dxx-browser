@@ -68,7 +68,7 @@ namespace DxxBrowser {
                         var driver = DxxDriverManager.Instance.FindDriver(t.Url);
                         if (driver != null) {
                             if (driver.LinkExtractor.IsTarget(t)) {
-                                driver.StorageManager.Download(t);
+                                driver.Download(t);
                             } else {
                                 var du = new DxxUrl(t, driver);
                                 var cnt = await du.TryGetTargetContainers();
@@ -99,7 +99,7 @@ namespace DxxBrowser {
         public async Task<bool> Download() {
             bool result = false;
             if (Driver.LinkExtractor.IsTarget(this)) {
-                Driver.StorageManager.Download(new DxxTargetInfo(Url, Name, Description));
+                Driver.Download(new DxxTargetInfo(Url, Name, Description));
                 result = true;
             } else {
                 var containers = await TryGetTargetContainers();
