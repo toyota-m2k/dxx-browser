@@ -62,7 +62,7 @@ namespace DxxBrowser {
              * ターゲットリスト内のアイテムをすべてDL開始
              */
             DownloadByTargetList.Subscribe(() => {
-                DxxUrl.DownloadTargets(TargetList.Value);
+                DxxDriverManager.Instance.Download(TargetList.Value);
             });
 
             CancellAllCommand.Subscribe(() => {
@@ -240,11 +240,7 @@ namespace DxxBrowser {
                     }
                 } else if (di.Status != DxxDownloadingItem.DownloadStatus.Downloading) {
                     // retry
-                    var driver = DxxDriverManager.Instance.FindDriver(di.Url);
-                    if (driver != null) {
-                        var dxxUrl = new DxxUrl(new Uri(di.Url), driver, di.Name, di.Description);
-                        _ = dxxUrl.Download();
-                    }
+                    DxxDriverManager.Instance.Download(di.Url, di.Name, di.Description);
                 }
             }
         }
@@ -253,14 +249,10 @@ namespace DxxBrowser {
          * ターゲットリストのアイテムをダブルクリック
          * --> ダウンロード開始
          */
-        private async void OnTargetItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
+        private void OnTargetItemActivate(object sender, System.Windows.Input.MouseButtonEventArgs e) {
             var ti = (sender as ListViewItem)?.Content as DxxTargetInfo;
             if (ti != null) {
-                var driver = DxxDriverManager.Instance.FindDriver(ti.Url);
-                if (driver != null) {
-                    var dxxUrl = new DxxUrl(ti, driver);
-                    await dxxUrl.Download();
-                }
+                DxxDriverManager.Instance.Download(ti.Url, ti.Name, ti.Description);
             }
         }
     }

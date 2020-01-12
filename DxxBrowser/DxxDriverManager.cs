@@ -6,6 +6,7 @@ using DxxBrowser.driver.heizo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Xml;
 
@@ -118,6 +119,72 @@ namespace DxxBrowser {
 
         public void Dispose() {
             DxxDBStorage.Terminate();
+        }
+
+        const string LOG_CAT = "DDM";
+
+        public async void Download(IEnumerable<DxxTargetInfo> targets) {
+            if (Utils.IsNullOrEmpty(targets)) {
+                return;
+            }
+
+            await DxxActivityWatcher.Instance.Execute<object>(async (cancellationToken) => {
+                try {
+                    foreach (var t in targets) {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var driver = DxxDriverManager.Instance.FindDriver(t.Url);
+                        if (driver != null) {
+                            if (driver.LinkExtractor.IsTarget(t)) {
+                                driver.Download(t);
+                            } else {
+                                var du = new DxxUrl(t, driver);
+                                var cnt = await driver.LinkExtractor.ExtractContainerList(du);
+                                if (cnt != null && cnt.Count > 0) {
+                                    DxxLogger.Instance.Comment(LOG_CAT, $"{cnt.Count} containers in {du.FileName}");
+                                    Download(cnt);
+                                }
+                                var tgt = await driver.LinkExtractor.ExtractTargets(du);
+                                if (tgt != null && tgt.Count > 0) {
+                                    DxxLogger.Instance.Comment(LOG_CAT, $"{tgt.Count} targets in {du.FileName}");
+                                    Download(tgt);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    if (e is OperationCanceledException) {
+                        DxxLogger.Instance.Cancel(LOG_CAT, "Download Cancelled.");
+                    } else {
+                        DxxLogger.Instance.Error(LOG_CAT, $"Download Error: {e.Message}");
+                    }
+                }
+                return null;
+            }, null);
+        }
+
+        /**
+         * URL（target|container|containerList) から、target(Video) をダウンロードする。
+         */
+        public async void Download(string url, string name, string desc) {
+            var driver = FindDriver(url);
+            if(null!=driver) {
+                var urx = new DxxUriEx(url);
+                if (null == name) {
+                    name = driver.GetNameFromUri(urx.Uri, "noname");
+                }
+                if (driver.LinkExtractor.IsTarget(urx)) {
+                    driver.Download(new DxxTargetInfo(url, name, desc));
+                } else {
+                    var containers = await driver.LinkExtractor.ExtractContainerList(urx);
+                    if (!Utils.IsNullOrEmpty(containers)) {
+                        Download(containers);
+                    }
+                    var targets = await driver.LinkExtractor.ExtractTargets(urx);
+                    if (!Utils.IsNullOrEmpty(targets)) {
+                        Download(targets);
+                    }
+                }
+            }
         }
     }
 }

@@ -120,6 +120,9 @@ namespace DxxBrowser.driver {
             if (rec != null) {
                 if (rec.Status == DLStatus.COMPLETED ||
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
+                    if(rec.Desc!="サンプル動画" && rec.Desc!=target.Description) {
+                        UpdateDescription(rec.ID, target.Description);
+                    }
                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
                     DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                     onCompleted?.Invoke(false);
@@ -283,6 +286,25 @@ namespace DxxBrowser.driver {
             }
         }
 
+        public IEnumerable<DBRecord> ListForRetry() {
+            using (var cmd = mDB.CreateCommand()) {
+                cmd.CommandText = $"SELECT * FROM t_storage WHERE status='{(int)DLStatus.RESERVED}'";
+                using (var reader = cmd.ExecuteReader()) {
+                    while (reader.Read()) {
+                        yield return new DBRecord(AsLong(reader["id"]),
+                            AsString(reader["url"]),
+                            AsString(reader["name"]),
+                            AsString(reader["path"]),
+                            AsString(reader["desc"]),
+                            (DLStatus)AsLong(reader["status"]),
+                            AsString(reader["driver"]),
+                            AsLong(reader["flags"])
+                            );
+                    }
+                }
+            }
+        }
+
         private DBRecord Reserve(DxxTargetInfo target, string driverName, int flags=0) {
             try {
                 var url = target.Url;
@@ -344,8 +366,19 @@ namespace DxxBrowser.driver {
                 }
             }
             return false;
-
         }
+
+        public bool UpdateDescription(long id, string desc) {
+            using (var cmd = mDB.CreateCommand()) {
+                cmd.CommandText = $"UPDATE t_storage SET desc='{desc}' WHERE id={id}";
+                if (1 == cmd.ExecuteNonQuery()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
         //public bool ComplementRecord(long id, string driver, long flags) {
         //    using (var cmd = mDB.CreateCommand()) {
         //        cmd.CommandText = $"UPDATE t_storage SET flags='{flags}', driver='{driver}' WHERE id={id}";

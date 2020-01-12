@@ -105,11 +105,11 @@ namespace DxxBrowser {
         public ReactiveCommand<string> CopyCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand<string> FrameSelectCommand { get; } = new ReactiveCommand<string>();
 
-        private DxxUrl CreateDxxUrl() {
-            var driver = Driver.Value;
-            var uri = new Uri(Url.Value);
-            return new DxxUrl(uri, driver, driver.GetNameFromUri(uri, "link"), IsMain ? "from main" : "from sub");
-        }
+        //private DxxUrl CreateDxxUrl() {
+        //    var driver = Driver.Value;
+        //    var uri = new Uri(Url.Value);
+        //    return new DxxUrl(uri, driver, driver.GetNameFromUri(uri, "link"), IsMain ? "from main" : "from sub");
+        //}
 
         private void InitializeCommands() {
             GoBackCommand.Subscribe(() => {
@@ -153,15 +153,16 @@ namespace DxxBrowser {
             CopyCommand.Subscribe((v) => {
                 Clipboard.SetData(DataFormats.Text, v);
             });
-            DownloadCommand.Subscribe(async () => {
+            DownloadCommand.Subscribe(() => {
                 if(IsTarget.Value || IsContainer.Value) {
-                    await CreateDxxUrl().Download();
+                    DxxDriverManager.Instance.Download(Url.Value, null, "");
                 }
             });
             ListingCommand.Subscribe(async () => {
                 if (IsContainerList.Value) {
-                    var dxxUrl = CreateDxxUrl();
-                    var targets = await dxxUrl.TryGetTargetContainers();
+                    var uri = new Uri(Url.Value);
+                    var dxxUrl = new DxxUrl(uri, Driver.Value, Driver.Value.GetNameFromUri(uri), "");
+                    var targets = await Driver.Value.LinkExtractor.ExtractTargets(dxxUrl);
                     if (targets != null && targets.Count > 0) {
                         TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
                     } else {
@@ -432,7 +433,7 @@ namespace DxxBrowser {
                         if (IsMain) {
                             MainViewBeginAutoDownload.OnNext(du);
                         }
-                        _ = du.Download();
+                        DxxDriverManager.Instance.Download(e.Uri.ToString(), null, "");
                         e.Cancel = true;
                         return;
                     }

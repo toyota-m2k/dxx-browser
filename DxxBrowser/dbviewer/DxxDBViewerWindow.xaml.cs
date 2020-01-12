@@ -24,12 +24,48 @@ namespace DxxBrowser
     /// </summary>
     public partial class DxxDBViewerWindow : Window
     {
-        class DBViewModel : MicViewModelBase {
+        class DBViewModel : MicViewModelBase<DxxDBViewerWindow> {
             public ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>> List { get; } = new ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>>();
+            public ReactiveCommand RefreshCommand { get; } = new ReactiveCommand();
+            public ReactiveCommand RetryDownloadCommand { get; } = new ReactiveCommand();
 
-            public DBViewModel() {
-                List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(DxxDBStorage.Instance.ListAll());
+            public void Sort(SortInfo next, bool force = false) {
+                if (next == null) {
+                    return;
+                }
+                var prev = DxxGlobal.Instance.SortInfo;
+                if (!force && prev == next) {
+                    return;
+                }
+                DxxGlobal.Instance.SortInfo = next;
+                if (!force && prev.Key == next.Key) {
+                    if (prev.Order != next.Order) {
+                        List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(List.Value.Reverse());
+                    }
+                } else {
+                    var cmp = new RecordComparer(next);
+                    List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(List.Value.OrderBy((v) => v, cmp));
+                }
+                Owner.UpdateColumnHeaderOnSort(next);
             }
+
+            public DBViewModel(DxxDBViewerWindow owner) : base(owner) {
+                RefreshCommand.Subscribe(() => {
+                    List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(DxxDBStorage.Instance.ListAll());
+                    Sort(DxxGlobal.Instance.SortInfo, true);
+                });
+                RetryDownloadCommand.Subscribe(RetryDownload);
+                RefreshCommand.Execute();
+            }
+
+            private void RetryDownload() {
+                var list = DxxDBStorage.Instance.ListForRetry().Select((v) => {
+                    return new DxxTargetInfo(v.Url, v.Name, v.Desc);
+                });
+                DxxDriverManager.Instance.Download(list);
+            }
+
+
         }
 
         DBViewModel ViewModel {
@@ -38,7 +74,7 @@ namespace DxxBrowser
         }
 
         public DxxDBViewerWindow() {
-            ViewModel = new DBViewModel();
+            ViewModel = new DBViewModel(this);
             InitializeComponent();
         }
 
@@ -102,7 +138,7 @@ namespace DxxBrowser
             if (prev.Key == key) {
                 next.Order = prev.Order == SortOrder.ASCENDING ? SortOrder.DESCENDING : SortOrder.ASCENDING;
             }
-            ExecSort(next);
+            ViewModel.Sort(next);
         }
 
         private class RecordComparer : IComparer<DxxDBStorage.DBRecord> {
@@ -173,25 +209,7 @@ namespace DxxBrowser
             }
         }
 
-        private void ExecSort(SortInfo next, bool force = false) {
-            if (next == null) {
-                return;
-            }
-            var prev = DxxGlobal.Instance.SortInfo;
-            if (!force && prev == next) {
-                return;
-            }
-            DxxGlobal.Instance.SortInfo = next;
-            if (!force && prev.Key == next.Key) {
-                if (prev.Order != next.Order) {
-                    ViewModel.List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(ViewModel.List.Value.Reverse());
-                }
-            } else {
-                var cmp = new RecordComparer(next);
-                ViewModel.List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(ViewModel.List.Value.OrderBy((v) => v, cmp));
-            }
-            UpdateColumnHeaderOnSort(next);
-        }
+
 
         private void OnFileItemSelectionChanged(object sender, SelectionChangedEventArgs e) {
 

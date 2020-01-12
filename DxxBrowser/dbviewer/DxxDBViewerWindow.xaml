@@ -42,7 +42,21 @@
         <StackPanel 
             Grid.Row="0"
             Background="{StaticResource DialogBG}" Orientation="Horizontal" HorizontalAlignment="Stretch">
-            <Button Content="hoge"/>
+            <StackPanel.Resources>
+                <ResourceDictionary Source="../res/DxxSvgPath.xaml"/>
+            </StackPanel.Resources>
+            <Button Content="{StaticResource PathRefresh}" Style="{StaticResource PushButtonStyle}" 
+                    Command="{Binding RefreshCommand}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="DBの再読み込み"/>
+                </ToolTipService.ToolTip>
+            </Button>
+            <Button Content="{StaticResource PathDownload}" Style="{StaticResource PushButtonStyle}" 
+                    Command="{Binding RetryDownloadCommand}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="未完了URLの再ロード"/>
+                </ToolTipService.ToolTip>
+            </Button>
         </StackPanel>
         
         <!-- list -->
