@@ -22,6 +22,11 @@ namespace DxxBrowser.driver.caribbean {
         private const string KEY_STORAGE_PATH = "StoragePath";
         public string StoragePath { get; set; }
 
+        public string ReserveFilePath(Uri uri) {
+            var filename = DxxUrl.GetFileName(uri);
+            return Path.Combine(StoragePath, filename);
+        }
+
         public IDxxLinkExtractor LinkExtractor { get; private set; }
 
         public IDxxStorageManager StorageManager { get; private set; }

@@ -28,6 +28,11 @@ namespace DxxBrowser.driver.dmm
 
         public IDxxStorageManager StorageManager { get; }
 
+        public string ReserveFilePath(Uri uri) {
+            var filename = DxxUrl.GetFileName(uri);
+            return Path.Combine(StoragePath, filename);
+        }
+
         private const string KEY_STORAGE_PATH = "StoragePath";
 
         public bool LoadSettins(XmlElement settings) {

@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DxxBrowser"
+        Loaded="OnLoaded"
         mc:Ignorable="d"
         Title="Dxx DB Viewer" Height="450" Width="800">
     <Window.Resources>
@@ -28,7 +29,7 @@
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Path=Status}" Value="COMPLETED">
                         <Setter Property="Data" Value="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
-                        <Setter Property="Fill" Value="GreenYellow"/>
+                        <Setter Property="Fill" Value="#00C000"/>
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Path=Status}" Value="FATAL_ERROR">
                         <Setter Property="Data" Value="M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M6.76,8.82L7.82,7.76L8.88,8.82L9.94,7.76L11,8.82L9.94,9.88L11,10.94L9.94,12L8.88,10.94L7.82,12L6.76,10.94L7.82,9.88L6.76,8.82M6.89,17.5C7.69,15.46 9.67,14 12,14C14.33,14 16.31,15.46 17.11,17.5H6.89M17.24,10.94L16.18,12L15.12,10.94L14.06,12L13,10.94L14.06,9.88L13,8.82L14.06,7.76L15.12,8.82L16.18,7.76L17.24,8.82L16.18,9.88L17.24,10.94Z"/>
@@ -124,8 +125,17 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="URL" Width="200" DisplayMemberBinding="{Binding Url}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Driver" Width="80" DisplayMemberBinding="{Binding Driver}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                     <GridViewColumn Header="Path" Width="200" DisplayMemberBinding="{Binding Path}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                     <GridViewColumn Header="Name" Width="100" DisplayMemberBinding="{Binding Name}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Date" Width="80" HeaderTemplate="{StaticResource SortHeaderTemplate}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Date, Converter={StaticResource DateStringConverter}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Flags" Width="30" DisplayMemberBinding="{Binding Flags}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                     <GridViewColumn Header="Desc" Width="300" DisplayMemberBinding="{Binding Desc}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                 </GridView>
             </ListView.View>

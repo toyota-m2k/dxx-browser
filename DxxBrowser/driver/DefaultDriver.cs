@@ -21,6 +21,10 @@ namespace DxxBrowser.driver {
 
         public string StoragePath { get; private set; }
 
+        public string ReserveFilePath(Uri uri) {
+            return null;
+        }
+
         public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
         }

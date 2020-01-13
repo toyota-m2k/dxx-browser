@@ -22,6 +22,10 @@ namespace DxxBrowser.driver.heizo {
 
         public IDxxStorageManager StorageManager { get; } = new Storage();
 
+        public string ReserveFilePath(Uri uri) {
+            return null;
+        }
+
         private const string KEY_STORAGE_PATH = "StoragePath";
 
         public bool LoadSettins(XmlElement settings) {

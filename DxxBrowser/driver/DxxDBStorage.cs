@@ -109,7 +109,7 @@ namespace DxxBrowser.driver {
          * 保存フォルダを指定できるバージョン(DefaultDriver以外で利用）
          */
         public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
-            var storagePath = driver.StoragePath;
+            //var storagePath = driver.StoragePath;
 
             if (DxxNGList.Instance.IsNG(target.Url)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
@@ -117,6 +117,7 @@ namespace DxxBrowser.driver {
                 return;
             }
             var rec = Retrieve(target.Url);
+            string path = null;
             if (rec != null) {
                 if (rec.Status == DLStatus.COMPLETED ||
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
@@ -128,16 +129,20 @@ namespace DxxBrowser.driver {
                     onCompleted?.Invoke(false);
                     return;
                 }
+                path = rec.Path;
             } else {
-                rec = Reserve(target, driver.Name, 0);
+                path = driver.ReserveFilePath(target.Uri);
+                rec = Reserve(target, driver.Name, path, 0);
                 if (rec == null) {
                     DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
                     onCompleted?.Invoke(false);
                     return;
                 }
             }
-            string fileName = createFileName(rec);
-            var path = System.IO.Path.Combine(storagePath, fileName);
+            if(string.IsNullOrWhiteSpace(path)) {
+                string fileName = createFileName(rec);
+                path = System.IO.Path.Combine(driver.StoragePath, fileName);
+            }
             DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);
@@ -189,6 +194,8 @@ namespace DxxBrowser.driver {
             public string Name { get; }
             public string Desc { get; }
             public string Driver { get; set; }
+            public DateTime Date { get; set; }
+
 
             private string mPath = null;
             public string Path {
@@ -208,7 +215,7 @@ namespace DxxBrowser.driver {
             }
 
 
-            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status, string driver, long flags) {
+            public DBRecord(long id, string url, string name, string path, string desc, DLStatus status, string driver, long flags, DateTime time) {
                 ID = id;
                 Url = url;
                 Name = name;
@@ -217,6 +224,7 @@ namespace DxxBrowser.driver {
                 mStatus = status;
                 Driver = driver;
                 mFlags = flags;
+                Date = time;
             }
         }
 
@@ -244,7 +252,8 @@ namespace DxxBrowser.driver {
                                 AsString(reader["desc"]),
                                 (DLStatus)AsLong(reader["status"]),
                                 AsString(reader["driver"]),
-                                AsLong(reader["flags"])
+                                AsLong(reader["flags"]),
+                                AsTime(reader["date"])
                                 );
                         }
                     }
@@ -267,6 +276,13 @@ namespace DxxBrowser.driver {
             return 0;
         }
 
+        public DateTime AsTime(object obj) {
+            if (obj != null && obj != DBNull.Value) {
+                return DateTime.FromFileTimeUtc(Convert.ToInt64(obj));
+            }
+            return DateTime.MinValue;
+        }
+
         public IEnumerable<DBRecord> ListAll() {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"SELECT * FROM t_storage";
@@ -279,7 +295,8 @@ namespace DxxBrowser.driver {
                             AsString(reader["desc"]),
                             (DLStatus)AsLong(reader["status"]),
                             AsString(reader["driver"]),
-                            AsLong(reader["flags"])
+                            AsLong(reader["flags"]),
+                            AsTime(reader["date"])
                             );
                     }
                 }
@@ -298,14 +315,15 @@ namespace DxxBrowser.driver {
                             AsString(reader["desc"]),
                             (DLStatus)AsLong(reader["status"]),
                             AsString(reader["driver"]),
-                            AsLong(reader["flags"])
+                            AsLong(reader["flags"]),
+                            AsTime(reader["date"])
                             );
                     }
                 }
             }
         }
 
-        private DBRecord Reserve(DxxTargetInfo target, string driverName, int flags=0) {
+        private DBRecord Reserve(DxxTargetInfo target, string driverName, string filePath, int flags=0) {
             try {
                 var url = target.Url;
                 if (string.IsNullOrEmpty(url)) {
@@ -318,8 +336,11 @@ namespace DxxBrowser.driver {
                         name = "untitled";
                     }
                 }
+                if(filePath==null) {
+                    filePath = "";
+                }
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','',{(int)DLStatus.RESERVED},'{target.Description}','{driverName}','{flags}')";
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','{filePath}',{(int)DLStatus.RESERVED},'{target.Description}','{driverName}','{flags}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         return Retrieve(url);
                     }
@@ -346,8 +367,11 @@ namespace DxxBrowser.driver {
                         name = "untitled";
                     }
                 }
+                var info = new FileInfo(path);
+                var time = info.CreationTimeUtc.ToFileTimeUtc();
+
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}','{driverName}','{flags}')";
+                    cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags,date) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}','{driverName}','{flags}','{time}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         return true;
                     }
@@ -378,6 +402,22 @@ namespace DxxBrowser.driver {
             return false;
         }
 
+        public bool UpdateTimestamp(long id, string path) {
+            try {
+                var info = new FileInfo(path);
+                var time = info.CreationTimeUtc.ToFileTimeUtc();
+
+                using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"UPDATE t_storage SET date='{time}' WHERE id={id}";
+                    if (1 == cmd.ExecuteNonQuery()) {
+                        return true;
+                    }
+                }
+            } catch(Exception e) {
+
+            }
+            return false;
+        }
 
         //public bool ComplementRecord(long id, string driver, long flags) {
         //    using (var cmd = mDB.CreateCommand()) {
@@ -393,7 +433,10 @@ namespace DxxBrowser.driver {
 
         private bool CompletePath(long id, string path) {
             using (var cmd = mDB.CreateCommand()) {
-                cmd.CommandText = $"UPDATE t_storage SET path='{path}', status={(int)DLStatus.COMPLETED} WHERE id={id}";
+                var info = new FileInfo(path);
+                var time = info.CreationTimeUtc.ToFileTimeUtc();
+
+                cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED} WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
                     return true;
                 }

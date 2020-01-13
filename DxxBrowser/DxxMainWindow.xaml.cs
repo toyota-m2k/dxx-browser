@@ -132,7 +132,8 @@ namespace DxxBrowser {
             //using (DxxDBStorage.Instance.Transaction()) {
             //    var list = DxxDBStorage.Instance.ListAll();
             //    foreach (var rec in list) {
-            //        DxxDBStorage.Instance.ComplementRecord(rec.ID, DxxDriverManager.Instance.FindDriver(rec.Url)?.Name ?? "UAV", 0);
+            //        //DxxDBStorage.Instance.ComplementRecord(rec.ID, DxxDriverManager.Instance.FindDriver(rec.Url)?.Name ?? "UAV", 0);
+            //        DxxDBStorage.Instance.UpdateTimestamp(rec.ID, rec.Path);
             //    }
             //}
 

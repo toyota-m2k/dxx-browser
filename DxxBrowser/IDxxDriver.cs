@@ -18,6 +18,11 @@ namespace DxxBrowser
         bool SaveSettings(XmlElement settings);
 
         string StoragePath { get; }
+        /**
+         * 保存ファイルのパスを返す。
+         * DBStorageに任せるときは、nullを返す。
+         */
+        string ReserveFilePath(Uri uri);
 
         bool IsSupported(string url);
         string GetNameFromUri(Uri uri, string defName="");

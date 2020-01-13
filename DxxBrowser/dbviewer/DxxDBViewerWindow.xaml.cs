@@ -1,24 +1,15 @@
 ﻿using Common;
 using DxxBrowser.driver;
 using Reactive.Bindings;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
-namespace DxxBrowser
-{
+namespace DxxBrowser {
     /// <summary>
     /// DxxDBViewerWindow.xaml の相互作用ロジック
     /// </summary>
@@ -64,8 +55,6 @@ namespace DxxBrowser
                 });
                 DxxDriverManager.Instance.Download(list);
             }
-
-
         }
 
         DBViewModel ViewModel {
@@ -84,6 +73,8 @@ namespace DxxBrowser
             win.Show();
         }
 
+        #region Sort
+
         public enum SortKey {
             ID,
             Status,
@@ -91,6 +82,9 @@ namespace DxxBrowser
             Path,
             Name,
             Desc,
+            Driver,
+            Flags,
+            Date,
         }
 
         public enum SortOrder {
@@ -116,14 +110,17 @@ namespace DxxBrowser
                 case "URL": return SortKey.URL;
                 case "Desc": return SortKey.Desc;
                 case "Status": return SortKey.Status;
+                case "Flags": return SortKey.Flags;
+                case "Driver": return SortKey.Driver;
+                case "Date": return SortKey.Date;
                 case "ID":
                 default: return SortKey.ID;
             }
         }
 
-        private string SortKey2HeaderName(SortKey key) {
-            return $"{key}";
-        }
+        //private string SortKey2HeaderName(SortKey key) {
+        //    return $"{key}";
+        //}
 
         private void OnHeaderClick(object sender, RoutedEventArgs e) {
             var header = e.OriginalSource as GridViewColumnHeader;
@@ -177,6 +174,15 @@ namespace DxxBrowser
                     case SortKey.Status:
                         r = Compare((int)x.Status, (int)y.Status);
                         break;
+                    case SortKey.Flags:
+                        r = Compare(x.Flags, y.Flags);
+                        break;
+                    case SortKey.Driver:
+                        r = Compare(x.Driver, y.Driver);
+                        break;
+                    case SortKey.Date:
+                        r = Compare(x.Date.ToFileTimeUtc(), y.Date.ToFileTimeUtc());
+                        break;
                 }
                 return (SI.Order == SortOrder.ASCENDING) ? r : -r;
             }
@@ -184,7 +190,10 @@ namespace DxxBrowser
 
         private Dictionary<SortKey, GridViewColumnHeader> mHeaderColumnDic = null;
 
-        private void InitHeaderColumnDic() {
+        private bool InitHeaderColumnDic() {
+            if(null == mListView) {
+                return false;
+            }
             if (null == mHeaderColumnDic) {
                 mHeaderColumnDic = new Dictionary<SortKey, GridViewColumnHeader>(10);
                 foreach (var header in Utils.FindVisualChildren<GridViewColumnHeader>(mListView)) {
@@ -196,10 +205,14 @@ namespace DxxBrowser
                     }
                 }
             }
+            return true;
         }
 
         private void UpdateColumnHeaderOnSort(SortInfo info) {
-            InitHeaderColumnDic();
+            if(!InitHeaderColumnDic()) {
+                return;
+            }
+
             foreach (var v in mHeaderColumnDic) {
                 if (v.Key == info.Key) {
                     v.Value.Tag = info.Order == SortOrder.ASCENDING ? "asc" : "desc";
@@ -209,7 +222,7 @@ namespace DxxBrowser
             }
         }
 
-
+        #endregion
 
         private void OnFileItemSelectionChanged(object sender, SelectionChangedEventArgs e) {
 
@@ -217,6 +230,10 @@ namespace DxxBrowser
 
         private void OnListItemDoubleClick(object sender, MouseButtonEventArgs e) {
 
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e) {
+            UpdateColumnHeaderOnSort(DxxGlobal.Instance.SortInfo);
         }
     }
 }
