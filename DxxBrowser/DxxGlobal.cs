@@ -19,10 +19,20 @@ namespace DxxBrowser {
         private static DxxGlobal sInstance = null;
         public static DxxGlobal Instance {
             get {
-                if (sInstance == null) {
-                    sInstance = Deserialize();
-                }
+                Initialize();
                 return sInstance;
+            }
+        }
+
+        public static void Initialize() {
+            if (sInstance == null) {
+                sInstance = Deserialize();
+            }
+        }
+
+        public static void Terminate() {
+            if( sInstance!=null) {
+                sInstance.Serialize();
             }
         }
 

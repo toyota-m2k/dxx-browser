@@ -23,7 +23,7 @@ namespace DxxBrowser.driver {
             if (File.Exists(path)) {
                 DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped (register db): {target.Name} {target.Description}");
                 DxxDBStorage.Instance.RegisterAsCompleted(target, path, Driver.Name);
-                DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                //DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                 onCompleted?.Invoke(false);
                 return;
             }

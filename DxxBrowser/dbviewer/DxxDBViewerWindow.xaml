@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DxxBrowser"
         Loaded="OnLoaded"
+        Unloaded="OnUnloaded"
         mc:Ignorable="d"
         Title="Dxx DB Viewer" Height="450" Width="800">
     <Window.Resources>
@@ -58,12 +59,19 @@
                     <ToolTip Content="未完了URLの再ロード"/>
                 </ToolTipService.ToolTip>
             </Button>
+            <Button Content="{StaticResource PathPlay}" Style="{StaticResource PushButtonStyle}" 
+                    Command="{Binding PlayCommand}">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="動画を連続再生"/>
+                </ToolTipService.ToolTip>
+            </Button>
         </StackPanel>
         
         <!-- list -->
         <ListView Grid.Row="1" x:Name="mListView" ItemsSource="{Binding List.Value}" 
                   GridViewColumnHeader.Click="OnHeaderClick" 
-                  SelectionChanged="OnFileItemSelectionChanged">
+                  SelectionChanged="OnItemSelectionChanged"
+                  SelectedItem="{Binding PlayList.Current.Value, Mode=TwoWay}">
             <ListView.Resources>
                 <DataTemplate x:Key="SortHeaderTemplate">
                     <DockPanel>
@@ -136,7 +144,7 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Flags" Width="30" DisplayMemberBinding="{Binding Flags}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
-                    <GridViewColumn Header="Desc" Width="300" DisplayMemberBinding="{Binding Desc}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
+                    <GridViewColumn Header="Desc" Width="300" DisplayMemberBinding="{Binding Description}" HeaderTemplate="{StaticResource SortHeaderTemplate}"/>
                 </GridView>
             </ListView.View>
         </ListView>

@@ -4,14 +4,14 @@ using System.Diagnostics;
 namespace DxxBrowser.driver {
     public class DxxPlayItem : IDxxPlayItem {
         private Uri Uri;
-        public string SourceUrl => Uri.ToString();
-        public string FilePath { get; private set; }
+        public string Url => Uri.ToString();
+        public string Path { get; private set; }
         public string Description { get; private set; }
 
         private DxxPlayItem(Uri uri, string path, string description) {
             Uri = uri;
             Description = description;
-            FilePath = path;
+            Path = path;
         }
 
         public static DxxPlayItem FromTarget(DxxTargetInfo target) {

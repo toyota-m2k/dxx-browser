@@ -1,12 +1,6 @@
 ﻿using Common;
-using DxxBrowser.driver;
 using Reactive.Bindings;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.IO;
-using System.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,8 +11,8 @@ namespace DxxBrowser {
     /// DxxPlayerView.xaml の相互作用ロジック
     /// </summary>
     public interface IDxxPlayItem {
-        string SourceUrl { get; }   // key
-        string FilePath { get; }
+        string Url { get; }   // key
+        string Path { get; }
         string Description { get; }
     }
     public interface IDxxPlayList {
@@ -101,7 +95,7 @@ namespace DxxBrowser {
             public Uri Source {
                 get => Player?.Source;
                 set {
-                    if (mDisposed) {
+                    if (Disposed) {
                         return;
                     }
                     IsReady.Value = false;
@@ -161,34 +155,34 @@ namespace DxxBrowser {
 
             string mCurrentUrl = "";
             public void Start() {
-                if (mDisposed) {
+                if (Disposed) {
                     return;
                 }
                 var item = PlayList.Current.Value;
-                if(item!=null && item.SourceUrl!=mCurrentUrl) {
-                    mCurrentUrl = item.SourceUrl;
-                    Source = new Uri(item.FilePath);
+                if(item!=null && item.Url!=mCurrentUrl) {
+                    mCurrentUrl = item.Url;
+                    Source = new Uri(item.Path);
                 } else {
                     Stop();
                 }
             }
 
             public void Next() {
-                if (mDisposed) {
+                if (Disposed) {
                     return;
                 }
                 PlayList.Next();
             }
 
             public void Prev() {
-                if (mDisposed) {
+                if (Disposed) {
                     return;
                 }
                 PlayList.Prev();
             }
 
             public void Play() {
-                if (mDisposed) {
+                if (Disposed) {
                     return;
                 }
                 //Idle = false;
@@ -197,7 +191,7 @@ namespace DxxBrowser {
             }
 
             public void Pause() {
-                if (mDisposed) {
+                if (Disposed) {
                     return;
                 }
                 if (IsPlaying.Value) {
@@ -207,7 +201,7 @@ namespace DxxBrowser {
             }
 
             public void Stop() {
-                if(mDisposed) {
+                if(Disposed) {
                     return;
                 }
                 //Idle = true;
@@ -215,9 +209,11 @@ namespace DxxBrowser {
                 Player?.Stop();
             }
 
-            private bool mDisposed = false;
+            public bool Disposed => Player==null;
+
+            //private bool mDisposed = false;
             public override void Dispose() {
-                mDisposed = true;
+                Player = null;
                 base.Dispose();
             }
         }

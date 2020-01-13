@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
+using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
     public class DxxDBStorage : IDxxStorageManager, IDxxNGList {
@@ -38,8 +39,8 @@ namespace DxxBrowser.driver {
 
         public static DxxDBStorage Instance { get; private set; }   // = new DxxDBStorage();
 
-        public static void Initialize() {
-            Instance = new DxxDBStorage();
+        public static void Initialize(DispatcherObject owner) {
+            Instance = new DxxDBStorage(owner);
         }
 
         public static void Terminate() {
@@ -47,7 +48,9 @@ namespace DxxBrowser.driver {
             Instance = null;
         }
 
-        private DxxDBStorage() {
+        public DxxDownloadPlayLit DLPlayList { get; private set; }
+
+        private DxxDBStorage(DispatcherObject owner) {
             var builder = new SQLiteConnectionStringBuilder() { DataSource = "dxxStorage.db" };
             mDB = new SQLiteConnection(builder.ToString());
             mDB.Open();
@@ -68,12 +71,15 @@ namespace DxxBrowser.driver {
                     ignore INTEGER NOT NULL DEFAULT '0'
                 )"
             );
+            DLPlayList = new DxxDownloadPlayLit(owner);
         }
 
         public void Dispose() {
             mDB?.Close();
             mDB?.Dispose();
             mDB = null;
+            DLPlayList?.Dispose();
+            DLPlayList = null;
         }
 
         #endregion
@@ -121,11 +127,11 @@ namespace DxxBrowser.driver {
             if (rec != null) {
                 if (rec.Status == DLStatus.COMPLETED ||
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
-                    if(rec.Desc!="サンプル動画" && rec.Desc!=target.Description) {
+                    if(rec.Description!="サンプル動画" && rec.Description!=target.Description) {
                         UpdateDescription(rec.ID, target.Description);
                     }
                     DxxLogger.Instance.Cancel(LOG_CAT, $"Skipped ({target.Name})");
-                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                    //DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
                     onCompleted?.Invoke(false);
                     return;
                 }
@@ -146,7 +152,7 @@ namespace DxxBrowser.driver {
             DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (r) => {
                 if (r) {
                     CompletePath(rec.ID, path);
-                    DxxPlayer.PlayList.AddSource(DxxPlayItem.FromTarget(target));
+                    DLPlayList.AddSource(DxxPlayItem.FromTarget(target));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
                 } else {
                     DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
@@ -188,11 +194,11 @@ namespace DxxBrowser.driver {
             FATAL_ERROR = 3,
         }
 
-        public class DBRecord : MicPropertyChangeNotifier {
+        public class DBRecord : MicPropertyChangeNotifier, IDxxPlayItem {
             public long ID { get; }
             public string Url { get; }
             public string Name { get; }
-            public string Desc { get; }
+            public string Description { get; }
             public string Driver { get; set; }
             public DateTime Date { get; set; }
 
@@ -220,7 +226,7 @@ namespace DxxBrowser.driver {
                 Url = url;
                 Name = name;
                 Path = path;
-                Desc = desc;
+                Description = desc;
                 mStatus = status;
                 Driver = driver;
                 mFlags = flags;
@@ -276,11 +282,13 @@ namespace DxxBrowser.driver {
             return 0;
         }
 
+        private readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
+
         public DateTime AsTime(object obj) {
             if (obj != null && obj != DBNull.Value) {
                 return DateTime.FromFileTimeUtc(Convert.ToInt64(obj));
             }
-            return DateTime.MinValue;
+            return EpochDate;
         }
 
         public IEnumerable<DBRecord> ListAll() {

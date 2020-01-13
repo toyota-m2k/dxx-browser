@@ -15,11 +15,36 @@ namespace DxxBrowser {
     /// </summary>
     public partial class DxxDBViewerWindow : Window
     {
-        class DBViewModel : MicViewModelBase<DxxDBViewerWindow> {
+        class DBViewModel : MicViewModelBase<DxxDBViewerWindow>, DxxPlayer.IPlayerOwner {
+            #region Properties
+
             public ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>> List { get; } = new ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>>();
+
+            #endregion
+
+            #region Commands
+
             public ReactiveCommand RefreshCommand { get; } = new ReactiveCommand();
             public ReactiveCommand RetryDownloadCommand { get; } = new ReactiveCommand();
+            public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
 
+            #endregion
+
+            /**
+             * 初期化
+             */
+            public DBViewModel(DxxDBViewerWindow owner) : base(owner) {
+                RefreshCommand.Subscribe(RefreshDB);
+                RetryDownloadCommand.Subscribe(RetryDownload);
+                PlayCommand.Subscribe(ShowPlayer);
+
+                RefreshDB();
+                PlayList = new DBPlayList(this);
+            }
+
+            /**
+             * ソートする
+             */
             public void Sort(SortInfo next, bool force = false) {
                 if (next == null) {
                     return;
@@ -40,21 +65,117 @@ namespace DxxBrowser {
                 Owner.UpdateColumnHeaderOnSort(next);
             }
 
-            public DBViewModel(DxxDBViewerWindow owner) : base(owner) {
-                RefreshCommand.Subscribe(() => {
-                    List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(DxxDBStorage.Instance.ListAll());
-                    Sort(DxxGlobal.Instance.SortInfo, true);
-                });
-                RetryDownloadCommand.Subscribe(RetryDownload);
-                RefreshCommand.Execute();
+            /**
+             * DBを読み直す
+             */
+            private void RefreshDB() {
+                List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(DxxDBStorage.Instance.ListAll());
+                Sort(DxxGlobal.Instance.SortInfo, true);
             }
 
+            /**
+             * 完了していない項目のダウンロードを再実行
+             */
             private void RetryDownload() {
                 var list = DxxDBStorage.Instance.ListForRetry().Select((v) => {
-                    return new DxxTargetInfo(v.Url, v.Name, v.Desc);
+                    return new DxxTargetInfo(v.Url, v.Name, v.Description);
                 });
                 DxxDriverManager.Instance.Download(list);
             }
+
+            private DxxPlayer Player;
+
+            /**
+             * プレーヤーを表示
+             */
+            private void ShowPlayer() {
+                if (null == Player) {
+                    Player = DxxPlayer.ShowPlayer(this);
+                }
+            }
+
+            #region IPlayerOwner
+
+            public void PlayerClosed(DxxPlayer player) {
+                if (Player == player) {
+                    Player = null;
+                }
+            }
+
+            public Window OwnerWindow => Window.GetWindow(Owner);
+
+            //[Disposal(false)]
+            //public IDxxPlayList PlayList => this;
+
+            public IDxxPlayList PlayList { get; }
+
+            #endregion
+
+            #region PlayList
+
+            class DBPlayList : MicViewModelBase<DBViewModel>, IDxxPlayList {
+                public DBPlayList(DBViewModel model) : base(model) {
+                    UpdatePlayList();
+                }
+
+                public ReactiveProperty<IDxxPlayItem> Current { get; } = new ReactiveProperty<IDxxPlayItem>();
+                public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
+                public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
+                public ReactiveProperty<int> CurrentPos { get; } = new ReactiveProperty<int>(0);
+                public ReactiveProperty<int> TotalCount { get; } = new ReactiveProperty<int>(0);
+
+                public void AddSource(IDxxPlayItem source) {
+                }
+
+                public void DeleteSource(IDxxPlayItem source) {
+                }
+
+                private int CurrentIndex {
+                    get {
+                        if (Owner.List.Value.Count > 0) {
+                            var item = Current.Value;
+                            if (null != item) {
+                                int index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)item);
+                                if (index >= 0) {
+                                    return index;
+                                }
+                            }
+                            Current.Value = Owner.List.Value[0];
+                        }
+                        return 0;
+                    }
+                }
+
+                public bool Next() {
+                    if (CurrentPos.Value < Owner.List.Value.Count) {
+                        CurrentPos.Value++;
+                        Current.Value = Owner.List.Value[CurrentPos.Value - 1];
+                        UpdatePlayList();
+                        return true;
+                    }
+                    return false;
+                }
+
+                public bool Prev() {
+                    if (1 < CurrentPos.Value) {
+                        CurrentPos.Value--;
+                        Current.Value = Owner.List.Value[CurrentPos.Value - 1];
+                        UpdatePlayList();
+                        return true;
+                    }
+                    return false;
+                }
+
+                private void UpdatePlayList() {
+                    int current = CurrentIndex;
+                    CurrentPos.Value = current + 1;
+                    TotalCount.Value = Owner.List.Value.Count;
+                    HasNext.Value = 0 < Owner.List.Value.Count && CurrentPos.Value < Owner.List.Value.Count;
+                    HasPrev.Value = 0 < Owner.List.Value.Count && 1 < CurrentPos.Value;
+                }
+            }
+
+            #endregion
         }
 
         DBViewModel ViewModel {
@@ -166,7 +287,7 @@ namespace DxxBrowser {
                         r = Compare(x.Url, y.Url);
                         break;
                     case SortKey.Desc:
-                        r = Compare(x.Desc, y.Desc);
+                        r = Compare(x.Description, y.Description);
                         break;
                     case SortKey.ID:
                         r = Compare(x.ID, y.ID);
@@ -224,7 +345,9 @@ namespace DxxBrowser {
 
         #endregion
 
-        private void OnFileItemSelectionChanged(object sender, SelectionChangedEventArgs e) {
+
+
+        private void OnItemSelectionChanged(object sender, SelectionChangedEventArgs e) {
 
         }
 
@@ -234,6 +357,11 @@ namespace DxxBrowser {
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
             UpdateColumnHeaderOnSort(DxxGlobal.Instance.SortInfo);
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            ViewModel?.Dispose();
+            ViewModel = null;
         }
     }
 }

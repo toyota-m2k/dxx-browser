@@ -66,6 +66,7 @@ namespace Common {
 
     public class MicViewModelBase<T> : MicViewModelBase, INotifyPropertyChanged, IDisposable where T : class {
         private WeakReference<T> mOwner;
+        [Disposal(false)]
         public T Owner {
             get => mOwner?.GetValue();
             set => mOwner = ( value == null ) ? null : new WeakReference<T>(value);

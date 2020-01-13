@@ -32,8 +32,8 @@ namespace DxxBrowser {
             mList.Add(new HeyzoDriver());
         }
 
-        public static void Initialize(Window owner) {
-            DxxDBStorage.Initialize();
+        public static void Initialize(DependencyObject owner) {
+            DxxDBStorage.Initialize(owner);
             Instance = new DxxDriverManager();
             Instance.LoadSettings(owner);
         }
@@ -61,7 +61,7 @@ namespace DxxBrowser {
             }
         }
 
-        public void LoadSettings(Window owner) {
+        public void LoadSettings(DependencyObject owner) {
             var doc = getSettings();
             var root = doc.GetElementsByTagName(ROOT_NAME)[0];
             bool update = false;
@@ -74,7 +74,7 @@ namespace DxxBrowser {
                     d.LoadSettins(el as XmlElement);
                 } else {
                     var el = doc.CreateElement(d.ID);
-                    if (d.Setup(el,owner)) {
+                    if (d.Setup(el,Window.GetWindow(owner))) {
                         root.AppendChild(el);
                         update = true;
                     }

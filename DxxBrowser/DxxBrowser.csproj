@@ -67,6 +67,7 @@
     <Compile Include="driver\DxxActivityWatcher.cs" />
     <Compile Include="driver\DxxDBStorage.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
+    <Compile Include="driver\DxxDownloadPlayLit.cs" />
     <Compile Include="driver\DxxFileBasedStorage.cs" />
     <Compile Include="driver\DxxNGList.cs" />
     <Compile Include="driver\DxxPlayerItem.cs" />
