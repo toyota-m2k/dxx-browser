@@ -366,7 +366,7 @@ namespace DxxBrowser.driver {
          * （可能なら）次のタスクを開始する
          */
         private void Trigger() {
-            Dispatcher.Invoke(() => {
+            Dispatcher.InvokeAsync(() => {
                 if (!Finalizing && ActiveTasks.Count < CONCURRENT_TASK && Queue.Count > 0) {
                     var dlTask = Queue.Dequeue();
                     ActiveTasks.Add(dlTask);
@@ -394,7 +394,7 @@ namespace DxxBrowser.driver {
             if (total > 0) {
                 percent = (int)Math.Round(100 * (double)received / (double)total);
             }
-            Dispatcher.Invoke(() => {
+            Dispatcher.InvokeAsync(() => {
                 dlTask.ItemInfo.Percent = percent;
             });
         }
@@ -403,7 +403,7 @@ namespace DxxBrowser.driver {
          * ダウンロード状態を更新する。
          */
         private void UpdateStatus(DLTask dlTask, DxxDownloadingItem.DownloadStatus status, string errorMsg=null) {
-            Dispatcher.Invoke(() => {
+            Dispatcher.InvokeAsync(() => {
                 dlTask.ItemInfo.Status = status;
                 if(status==DxxDownloadingItem.DownloadStatus.Error && errorMsg!=null) {
                     dlTask.ItemInfo.SetErrorMessage(errorMsg);
