@@ -1,6 +1,7 @@
 ﻿using Common;
 using DxxBrowser.driver;
 using Reactive.Bindings;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -18,7 +19,7 @@ namespace DxxBrowser {
         class DBViewModel : MicViewModelBase<DxxDBViewerWindow>, DxxPlayer.IPlayerOwner {
             #region Properties
 
-            public ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>> List { get; } = new ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>>();
+            public ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>> List { get; } = new ReactiveProperty<ObservableCollection<DxxDBStorage.DBRecord>>(new ObservableCollection<DxxDBStorage.DBRecord>());
 
             #endregion
 
@@ -37,10 +38,38 @@ namespace DxxBrowser {
                 RefreshCommand.Subscribe(RefreshDB);
                 RetryDownloadCommand.Subscribe(RetryDownload);
                 PlayCommand.Subscribe(ShowPlayer);
-
-                RefreshDB();
                 PlayList = new DBPlayList(this);
+                DxxDBStorage.Instance.DBUpdated += OnDBUpdated;
             }
+
+            public override void Dispose() {
+                base.Dispose();
+                DxxDBStorage.Instance.DBUpdated -= OnDBUpdated;
+            }
+
+            private void OnDBUpdated(DxxDBStorage.DBModification type, DxxDBStorage.DBRecord rec) {
+                switch(type) {
+                    case DxxDBStorage.DBModification.APPEND:
+                        List.Value.Add(rec);
+                        Sort(DxxGlobal.Instance.SortInfo, true);
+                        break;
+                    case DxxDBStorage.DBModification.UPDATE:
+                        var r = List.Value.Where((v) => v.ID == rec.ID).Select((v) => {
+                            v.CopyFrom(rec);
+                            return v;
+                        });
+                        Sort(DxxGlobal.Instance.SortInfo, true);
+                        break;
+                    case DxxDBStorage.DBModification.REMOVE:
+                        List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(List.Value.Where((v) => v.ID != rec.ID));
+                        UpdatePlayList();
+                        break;
+                }
+            }
+
+            //public void LoadData() {
+            //    RefreshDB();
+            //}
 
             /**
              * ソートする
@@ -63,6 +92,22 @@ namespace DxxBrowser {
                     List.Value = new ObservableCollection<DxxDBStorage.DBRecord>(List.Value.OrderBy((v) => v, cmp));
                 }
                 Owner.UpdateColumnHeaderOnSort(next);
+
+                // maintainance of PlayList
+                UpdatePlayList();
+            }
+
+            private void UpdatePlayList() {
+                var selected = Owner.mListView.SelectedItem as DxxDBStorage.DBRecord;
+                if (null == selected) {
+                    PlayList.Current.Value = selected;
+                } else {
+                    ((DBPlayList)PlayList).UpdatePlayList(selected);
+                }
+            }
+
+            public void LoadData() {
+                RefreshDB();
             }
 
             /**
@@ -115,10 +160,12 @@ namespace DxxBrowser {
 
             class DBPlayList : MicViewModelBase<DBViewModel>, IDxxPlayList {
                 public DBPlayList(DBViewModel model) : base(model) {
-                    UpdatePlayList();
+                    Current.Subscribe(UpdatePlayList);
                 }
 
+                // ListView の SelectedItemn にバインドする
                 public ReactiveProperty<IDxxPlayItem> Current { get; } = new ReactiveProperty<IDxxPlayItem>();
+
                 public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
                 public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
                 public ReactiveProperty<int> CurrentPos { get; } = new ReactiveProperty<int>(0);
@@ -130,48 +177,59 @@ namespace DxxBrowser {
                 public void DeleteSource(IDxxPlayItem source) {
                 }
 
-                private int CurrentIndex {
-                    get {
-                        if (Owner.List.Value.Count > 0) {
-                            var item = Current.Value;
-                            if (null != item) {
-                                int index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)item);
-                                if (index >= 0) {
-                                    return index;
-                                }
-                            }
-                            Current.Value = Owner.List.Value[0];
-                        }
-                        return 0;
-                    }
-                }
+                //private int CurrentIndex {
+                //    get {
+                //        if (Owner.List.Value.Count > 0) {
+                //            var item = Current.Value;
+                //            if (null != item) {
+                //                int index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)item);
+                //                if (index >= 0) {
+                //                    return index;
+                //                }
+                //            }
+                //            Current.Value = Owner.List.Value[0];
+                //        }
+                //        return 0;
+                //    }
+                //}
 
                 public bool Next() {
-                    if (CurrentPos.Value < Owner.List.Value.Count) {
-                        CurrentPos.Value++;
-                        Current.Value = Owner.List.Value[CurrentPos.Value - 1];
-                        UpdatePlayList();
+                    var index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)Current.Value);
+                    if(index<0) {
+                        index = 0;
+                    } else {
+                        index++;
+                    }
+
+                    if (index< Owner.List.Value.Count) {
+                        Current.Value = Owner.List.Value[index];
                         return true;
                     }
                     return false;
                 }
 
                 public bool Prev() {
-                    if (1 < CurrentPos.Value) {
-                        CurrentPos.Value--;
-                        Current.Value = Owner.List.Value[CurrentPos.Value - 1];
-                        UpdatePlayList();
+                    var index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)Current.Value);
+                    index--;
+ 
+                    if (0<= index && index< Owner.List.Value.Count) {
+                        Current.Value = Owner.List.Value[index];
                         return true;
                     }
                     return false;
                 }
 
-                private void UpdatePlayList() {
-                    int current = CurrentIndex;
-                    CurrentPos.Value = current + 1;
-                    TotalCount.Value = Owner.List.Value.Count;
-                    HasNext.Value = 0 < Owner.List.Value.Count && CurrentPos.Value < Owner.List.Value.Count;
-                    HasPrev.Value = 0 < Owner.List.Value.Count && 1 < CurrentPos.Value;
+                private void UpdateDependentProperties(int currentIndex) {
+                    int totalCount = Owner.List.Value.Count;
+                    CurrentPos.Value = currentIndex + 1;
+                    TotalCount.Value = totalCount;
+                    HasNext.Value = 0 < totalCount && currentIndex + 1 < totalCount;
+                    HasPrev.Value = 0 < totalCount && 0 < currentIndex;
+                }
+
+                public void UpdatePlayList(IDxxPlayItem selectedItem) {
+                    var index = Owner.List.Value.IndexOf((DxxDBStorage.DBRecord)selectedItem);
+                    UpdateDependentProperties(index);
                 }
             }
 
@@ -356,7 +414,8 @@ namespace DxxBrowser {
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e) {
-            UpdateColumnHeaderOnSort(DxxGlobal.Instance.SortInfo);
+            //UpdateColumnHeaderOnSort(DxxGlobal.Instance.SortInfo);
+            ViewModel.LoadData();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {

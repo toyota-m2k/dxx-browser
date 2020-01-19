@@ -85,6 +85,18 @@ namespace DxxBrowser.driver {
         #endregion
 
 
+        #region Events (observing db)
+
+        public enum DBModification {
+            APPEND,
+            REMOVE,
+            UPDATE,
+        }
+        public delegate void DBUpdatedProc(DBModification type, DBRecord rec);
+        public event DBUpdatedProc DBUpdated;
+
+        #endregion
+
         #region Public Properties
 
         /**
@@ -197,10 +209,30 @@ namespace DxxBrowser.driver {
         public class DBRecord : MicPropertyChangeNotifier, IDxxPlayItem {
             public long ID { get; }
             public string Url { get; }
-            public string Name { get; }
-            public string Description { get; }
-            public string Driver { get; set; }
-            public DateTime Date { get; set; }
+
+            private string mDriver = null;
+            public string Driver {
+                get => mDriver;
+                set => setProp(callerName(), ref mDriver, value);
+            }
+
+            private string mName = null;
+            public string Name {
+                get => mName;
+                set => setProp(callerName(), ref mName, value);
+            }
+
+            private string mDescription = null;
+            public string Description {
+                get => mDescription;
+                set => setProp(callerName(), ref mDescription, value);
+            }
+
+            private DateTime mDate = DateTime.UtcNow;
+            public DateTime Date {
+                get => mDate;
+                set => setProp(callerName(), ref mDate, value);
+            }
 
 
             private string mPath = null;
@@ -232,6 +264,16 @@ namespace DxxBrowser.driver {
                 mFlags = flags;
                 Date = time;
             }
+
+            public void CopyFrom(DBRecord src) {
+                Name = src.Name;
+                Path = src.Path;
+                Description = src.Description;
+                mStatus = src.Status;
+                Driver = src.Driver;
+                mFlags = src.Flags;
+                Date = src.Date;
+            }
         }
 
 
@@ -244,51 +286,71 @@ namespace DxxBrowser.driver {
             }
         }
 
-        private DBRecord Retrieve(string url) {
-            using (var cmd = mDB.CreateCommand()) {
-                try {
-
-                    cmd.CommandText = $"SELECT * FROM t_storage WHERE url='{url}'";
-                    using (var reader = cmd.ExecuteReader()) {
-                        if (reader.Read()) {
-                            return new DBRecord(AsLong(reader["id"]),
-                                AsString(reader["url"]),
-                                AsString(reader["name"]),
-                                AsString(reader["path"]),
-                                AsString(reader["desc"]),
-                                (DLStatus)AsLong(reader["status"]),
-                                AsString(reader["driver"]),
-                                AsLong(reader["flags"]),
-                                AsTime(reader["date"])
-                                );
-                        }
-                    }
-                } catch (Exception) {
-                }
-                return null;
-            }
-        }
-
         private static string AsString(object obj) {
-            if(obj!=null&&obj!=DBNull.Value) {
+            if (obj != null && obj != DBNull.Value) {
                 return Convert.ToString(obj);
             }
             return "";
         }
-        private long AsLong(object obj) {
+        private static long AsLong(object obj) {
             if (obj != null && obj != DBNull.Value) {
                 return Convert.ToInt64(obj);
             }
             return 0;
         }
 
-        private readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
+        private static readonly DateTime EpochDate = new DateTime(1970, 1, 1, 0, 0, 0);
 
-        public DateTime AsTime(object obj) {
+        public static DateTime AsTime(object obj) {
             if (obj != null && obj != DBNull.Value) {
                 return DateTime.FromFileTimeUtc(Convert.ToInt64(obj));
             }
             return EpochDate;
+        }
+
+        private static DBRecord RecordFromReader(SQLiteDataReader reader) {
+            return new DBRecord(AsLong(reader["id"]),
+                AsString(reader["url"]),
+                AsString(reader["name"]),
+                AsString(reader["path"]),
+                AsString(reader["desc"]),
+                (DLStatus)AsLong(reader["status"]),
+                AsString(reader["driver"]),
+                AsLong(reader["flags"]),
+                AsTime(reader["date"])
+                );
+        }
+
+        private DBRecord Retrieve(string url) {
+            using (var cmd = mDB.CreateCommand()) {
+                try {
+                    cmd.CommandText = $"SELECT * FROM t_storage WHERE url='{url}'";
+                    using (var reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            return RecordFromReader(reader);
+                        }
+                    }
+                } catch (Exception) {
+                    // No Data
+                }
+                return null;
+            }
+        }
+
+        private DBRecord Retrieve(long id) {
+            using (var cmd = mDB.CreateCommand()) {
+                try {
+                    cmd.CommandText = $"SELECT * FROM t_storage WHERE id='{id}'";
+                    using (var reader = cmd.ExecuteReader()) {
+                        if (reader.Read()) {
+                            return RecordFromReader(reader);
+                        }
+                    }
+                } catch (Exception) {
+                    // No Data
+                }
+                return null;
+            }
         }
 
         public IEnumerable<DBRecord> ListAll() {
@@ -296,16 +358,7 @@ namespace DxxBrowser.driver {
                 cmd.CommandText = $"SELECT * FROM t_storage";
                 using (var reader = cmd.ExecuteReader()) {
                     while (reader.Read()) {
-                        yield return new DBRecord(AsLong(reader["id"]),
-                            AsString(reader["url"]),
-                            AsString(reader["name"]),
-                            AsString(reader["path"]),
-                            AsString(reader["desc"]),
-                            (DLStatus)AsLong(reader["status"]),
-                            AsString(reader["driver"]),
-                            AsLong(reader["flags"]),
-                            AsTime(reader["date"])
-                            );
+                        yield return RecordFromReader(reader);
                     }
                 }
             }
@@ -316,16 +369,7 @@ namespace DxxBrowser.driver {
                 cmd.CommandText = $"SELECT * FROM t_storage WHERE status='{(int)DLStatus.RESERVED}'";
                 using (var reader = cmd.ExecuteReader()) {
                     while (reader.Read()) {
-                        yield return new DBRecord(AsLong(reader["id"]),
-                            AsString(reader["url"]),
-                            AsString(reader["name"]),
-                            AsString(reader["path"]),
-                            AsString(reader["desc"]),
-                            (DLStatus)AsLong(reader["status"]),
-                            AsString(reader["driver"]),
-                            AsLong(reader["flags"]),
-                            AsTime(reader["date"])
-                            );
+                        yield return RecordFromReader(reader);
                     }
                 }
             }
@@ -350,7 +394,9 @@ namespace DxxBrowser.driver {
                 using (var cmd = mDB.CreateCommand()) {
                     cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','{filePath}',{(int)DLStatus.RESERVED},'{target.Description}','{driverName}','{flags}')";
                     if (1 == cmd.ExecuteNonQuery()) {
-                        return Retrieve(url);
+                        var rec = Retrieve(url);
+                        DBUpdated?.Invoke(DBModification.APPEND, rec);
+                        return rec;
                     }
                 }
             } catch (Exception e) {
@@ -381,6 +427,10 @@ namespace DxxBrowser.driver {
                 using (var cmd = mDB.CreateCommand()) {
                     cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags,date) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}','{driverName}','{flags}','{time}')";
                     if (1 == cmd.ExecuteNonQuery()) {
+                        if (DBUpdated != null) {
+                            var rec = Retrieve(url);
+                            DBUpdated?.Invoke(DBModification.APPEND, rec);
+                        }
                         return true;
                     }
                 }
@@ -394,6 +444,10 @@ namespace DxxBrowser.driver {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"UPDATE t_storage SET flags='{flags}' WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
+                    if(DBUpdated!=null) {
+                        var rec = Retrieve(id);
+                        DBUpdated.Invoke(DBModification.UPDATE, rec);
+                    }
                     return true;
                 }
             }
@@ -404,6 +458,10 @@ namespace DxxBrowser.driver {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"UPDATE t_storage SET desc='{desc}' WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
+                    if (DBUpdated != null) {
+                        var rec = Retrieve(id);
+                        DBUpdated.Invoke(DBModification.UPDATE, rec);
+                    }
                     return true;
                 }
             }
@@ -418,6 +476,10 @@ namespace DxxBrowser.driver {
                 using (var cmd = mDB.CreateCommand()) {
                     cmd.CommandText = $"UPDATE t_storage SET date='{time}' WHERE id={id}";
                     if (1 == cmd.ExecuteNonQuery()) {
+                        if (DBUpdated != null) {
+                            var rec = Retrieve(id);
+                            DBUpdated.Invoke(DBModification.UPDATE, rec);
+                        }
                         return true;
                     }
                 }
@@ -446,6 +508,10 @@ namespace DxxBrowser.driver {
 
                 cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED} WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
+                    if (DBUpdated != null) {
+                        var rec = Retrieve(id);
+                        DBUpdated.Invoke(DBModification.UPDATE, rec);
+                    }
                     return true;
                 }
             }
