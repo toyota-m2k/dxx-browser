@@ -84,14 +84,9 @@ namespace DxxBrowser.driver {
                     if (ci > index) {
                         CurrentPos.Value--;
                     }
-                    try {
-                        File.Delete(item.Path);
-                    } catch(Exception e) {
-                        Debug.WriteLine(e);
-                    }
                     DxxNGList.Instance.RegisterNG(item.Url);
+                    UpdateStatus();
                 }
-                UpdateStatus();
             });
         }
 

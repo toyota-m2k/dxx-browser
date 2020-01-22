@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -175,6 +176,8 @@ namespace DxxBrowser {
                 }
 
                 public void DeleteSource(IDxxPlayItem source) {
+                    DxxNGList.Instance.RegisterNG(source.Url);
+                    DxxDBStorage.Instance.DLPlayList.DeleteSource(source);
                 }
 
                 //private int CurrentIndex {

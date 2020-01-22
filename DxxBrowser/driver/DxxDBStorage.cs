@@ -534,13 +534,22 @@ namespace DxxBrowser.driver {
                 using (var cmd = mDB.CreateCommand()) {
                     int status = (int)(fatalError ? DLStatus.FATAL_ERROR : DLStatus.FORBIDDEN);
                     cmd.CommandText = $"UPDATE t_storage SET status='{status}' WHERE url='{url}'";
-                    return 1 == cmd.ExecuteNonQuery();
+                    if(1 == cmd.ExecuteNonQuery()) {
+                        var rec = Retrieve(url);
+                        try {
+                            File.Delete(rec.Path);
+                        } catch (Exception e) {
+                            Debug.WriteLine(e);
+                        }
+                        FireDBUpdatedEvent(DBModification.UPDATE, () => rec);
+                        return true;
+                    }
                 }
             } catch(Exception e) {
                 Debug.WriteLine(e.StackTrace);
                 DxxLogger.Instance.Error(LOG_CAT, "RegisterNG Failed.");
-                return false;
             }
+            return false;
         }
 
         public bool UnregisterNG(string url) {
