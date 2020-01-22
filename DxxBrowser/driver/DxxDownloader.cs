@@ -143,10 +143,10 @@ namespace DxxBrowser.driver {
             public string FilePath { get; }
             public int MaxRetry { get; }
             public int Retry { get; set; }
-            public Action<bool> OnCompleted { get; }
+            public Action<DxxDownloadingItem.DownloadStatus> OnCompleted { get; }
             public CancellationTokenSource Cancellation { get; set; } = null;
 
-            public DLTask(DxxDownloadingItem item, string path, int maxRetry, Action<bool> onCompleted) {
+            public DLTask(DxxDownloadingItem item, string path, int maxRetry, Action<DxxDownloadingItem.DownloadStatus> onCompleted) {
                 ItemInfo = item;
                 FilePath = path;
                 Retry = 0;
@@ -200,7 +200,7 @@ namespace DxxBrowser.driver {
          * @param maxRetry  最大リトライ回数
          * @param onCompleted ダウンロード完了時（成功・失敗に関係ない）に実行するコールバック
          */
-        public bool Reserve(DxxTargetInfo target, string filePath, int maxRetry, Action<bool> onCompleted) {
+        public bool Reserve(DxxTargetInfo target, string filePath, int maxRetry, Action<DxxDownloadingItem.DownloadStatus> onCompleted) {
             if (!Dispatcher.CheckAccess()) {
                 Debug.Assert(false, "Reserve: must be called in ui-thread.");
                 throw new Exception("Invalid Thread");
@@ -497,17 +497,22 @@ namespace DxxBrowser.driver {
             Dispatcher.Invoke(() => {
                 if (result == DxxDownloadingItem.DownloadStatus.Error) {
                     // キャンセル以外のエラーの場合はリトライ
-                    if (!Finalizing && dlTask.Retry < dlTask.MaxRetry) {
-                        dlTask.Retry++;
-                        dlTask.ItemInfo.Percent = -1;
-                        ActiveTasks.Remove(dlTask);
-                        Queue.Enqueue(dlTask);
-                        dlTask.ItemInfo.Status = DxxDownloadingItem.DownloadStatus.Retrying;
-                        return;
+                    if (dlTask.Retry < dlTask.MaxRetry) {
+                        if (!Finalizing) {
+                            dlTask.Retry++;
+                            dlTask.ItemInfo.Percent = -1;
+                            ActiveTasks.Remove(dlTask);
+                            Queue.Enqueue(dlTask);
+                            dlTask.ItemInfo.Status = DxxDownloadingItem.DownloadStatus.Retrying;
+                            return;
+                        } else {
+                            // 終了処理中でリトライできなかったときは、キャンセル扱い
+                            result = DxxDownloadingItem.DownloadStatus.Cancelled;
+                        }
                     }
                 }
                 // ここから完了時の処理
-                dlTask.OnCompleted?.Invoke(result == DxxDownloadingItem.DownloadStatus.Completed);
+                dlTask.OnCompleted?.Invoke(result);
                 ActiveTasks.Remove(dlTask);
                 AllTasks.Remove(dlTask.ItemInfo.Url);
                 if (AllTasks.Count == 0) {

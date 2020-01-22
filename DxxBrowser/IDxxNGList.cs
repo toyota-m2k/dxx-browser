@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace DxxBrowser {
     public interface IDxxNGList {
-        bool RegisterNG(string url);
+        bool RegisterNG(string url, bool fatalError=false);
         bool UnregisterNG(string url);
         bool IsNG(string url);
 

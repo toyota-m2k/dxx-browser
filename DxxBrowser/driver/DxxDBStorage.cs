@@ -72,6 +72,8 @@ namespace DxxBrowser.driver {
                 )"
             );
             DLPlayList = new DxxDownloadPlayLit(owner);
+
+            //ConvertFromNGTable();
         }
 
         public void Dispose() {
@@ -94,6 +96,10 @@ namespace DxxBrowser.driver {
         }
         public delegate void DBUpdatedProc(DBModification type, DBRecord rec);
         public event DBUpdatedProc DBUpdated;
+
+        private void FireDBUpdatedEvent(DBModification type, Func<DBRecord> getRec) {
+            DBUpdated?.Invoke(type, getRec());
+        }
 
         #endregion
 
@@ -127,17 +133,14 @@ namespace DxxBrowser.driver {
          * 保存フォルダを指定できるバージョン(DefaultDriver以外で利用）
          */
         public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
-            //var storagePath = driver.StoragePath;
-
-            if (DxxNGList.Instance.IsNG(target.Url)) {
-                DxxLogger.Instance.Cancel(LOG_CAT, $"Dislike ({target.Name})");
-                onCompleted?.Invoke(false);
-                return;
-            }
             var rec = Retrieve(target.Url);
             string path = null;
             if (rec != null) {
-                if (rec.Status == DLStatus.COMPLETED ||
+                if (rec.Status == DLStatus.FORBIDDEN || rec.Status==DLStatus.FATAL_ERROR) {
+                    DxxLogger.Instance.Cancel(LOG_CAT, $"{rec.Status} ({target.Name})");
+                    onCompleted?.Invoke(false);
+                    return;
+                } else if (rec.Status == DLStatus.COMPLETED ||
                      (rec.Status == DLStatus.RESERVED && DxxDownloader.Instance.IsDownloading(rec.Url))) {
                     if(rec.Description!="サンプル動画" && rec.Description!=target.Description) {
                         UpdateDescription(rec.ID, target.Description);
@@ -162,14 +165,19 @@ namespace DxxBrowser.driver {
                 path = System.IO.Path.Combine(driver.StoragePath, fileName);
             }
             DxxDownloader.Instance.Reserve(target, path, DxxDownloader.MAX_RETRY, (r) => {
-                if (r) {
+                bool succeeded = false;
+                if (r==DxxDownloadingItem.DownloadStatus.Completed) {
                     CompletePath(rec.ID, path);
                     DLPlayList.AddSource(DxxPlayItem.FromTarget(target));
                     DxxLogger.Instance.Success(LOG_CAT, $"Completed: {target.Name}");
+                    succeeded = true;
                 } else {
                     DxxLogger.Instance.Error(LOG_CAT, $"Error: {target.Name}");
+                    if(r==DxxDownloadingItem.DownloadStatus.Error) {
+                        RegisterNG(rec.Url, true);
+                    }
                 }
-                onCompleted?.Invoke(r);
+                onCompleted?.Invoke(succeeded);
             });
         }
 
@@ -204,6 +212,7 @@ namespace DxxBrowser.driver {
             RESERVED = 1,
             COMPLETED = 2,
             FATAL_ERROR = 3,
+            FORBIDDEN = 4,
         }
 
         public class DBRecord : MicPropertyChangeNotifier, IDxxPlayItem {
@@ -395,7 +404,7 @@ namespace DxxBrowser.driver {
                     cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags) VALUES('{url}','{name}','{filePath}',{(int)DLStatus.RESERVED},'{target.Description}','{driverName}','{flags}')";
                     if (1 == cmd.ExecuteNonQuery()) {
                         var rec = Retrieve(url);
-                        DBUpdated?.Invoke(DBModification.APPEND, rec);
+                        FireDBUpdatedEvent(DBModification.APPEND, () => rec);
                         return rec;
                     }
                 }
@@ -425,12 +434,14 @@ namespace DxxBrowser.driver {
                 var time = info.CreationTimeUtc.ToFileTimeUtc();
 
                 using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED}, desc='{target.Description}', driver='{driverName}', flags='{flags}', date='{time}' WHERE url={url}";
+                    if (1 == cmd.ExecuteNonQuery()) {
+                        FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(url));
+                        return true;
+                    }
                     cmd.CommandText = $"INSERT INTO t_storage (url,name,path,status,desc,driver,flags,date) VALUES('{url}','{name}','{path}',{(int)DLStatus.COMPLETED},'{target.Description}','{driverName}','{flags}','{time}')";
                     if (1 == cmd.ExecuteNonQuery()) {
-                        if (DBUpdated != null) {
-                            var rec = Retrieve(url);
-                            DBUpdated?.Invoke(DBModification.APPEND, rec);
-                        }
+                        FireDBUpdatedEvent(DBModification.APPEND, () => Retrieve(url));
                         return true;
                     }
                 }
@@ -444,10 +455,7 @@ namespace DxxBrowser.driver {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"UPDATE t_storage SET flags='{flags}' WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
-                    if(DBUpdated!=null) {
-                        var rec = Retrieve(id);
-                        DBUpdated.Invoke(DBModification.UPDATE, rec);
-                    }
+                    FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(id));
                     return true;
                 }
             }
@@ -458,10 +466,7 @@ namespace DxxBrowser.driver {
             using (var cmd = mDB.CreateCommand()) {
                 cmd.CommandText = $"UPDATE t_storage SET desc='{desc}' WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
-                    if (DBUpdated != null) {
-                        var rec = Retrieve(id);
-                        DBUpdated.Invoke(DBModification.UPDATE, rec);
-                    }
+                    FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(id));
                     return true;
                 }
             }
@@ -476,14 +481,11 @@ namespace DxxBrowser.driver {
                 using (var cmd = mDB.CreateCommand()) {
                     cmd.CommandText = $"UPDATE t_storage SET date='{time}' WHERE id={id}";
                     if (1 == cmd.ExecuteNonQuery()) {
-                        if (DBUpdated != null) {
-                            var rec = Retrieve(id);
-                            DBUpdated.Invoke(DBModification.UPDATE, rec);
-                        }
+                        FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(id));
                         return true;
                     }
                 }
-            } catch(Exception e) {
+            } catch(Exception) {
 
             }
             return false;
@@ -508,10 +510,7 @@ namespace DxxBrowser.driver {
 
                 cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED} WHERE id={id}";
                 if (1 == cmd.ExecuteNonQuery()) {
-                    if (DBUpdated != null) {
-                        var rec = Retrieve(id);
-                        DBUpdated.Invoke(DBModification.UPDATE, rec);
-                    }
+                    FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(id));
                     return true;
                 }
             }
@@ -530,14 +529,11 @@ namespace DxxBrowser.driver {
 
         #region IDxxNGList i/f
 
-        public bool RegisterNG(string url) {
+        public bool RegisterNG(string url, bool fatalError) {
             try {
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"UPDATE t_ng SET ignore='0' WHERE url='{url}'";
-                    if (1 == cmd.ExecuteNonQuery()) {
-                        return true;
-                    }
-                    cmd.CommandText = $"INSERT INTO t_ng (url,ignore) VALUES('{url}','0')";
+                    int status = (int)(fatalError ? DLStatus.FATAL_ERROR : DLStatus.FORBIDDEN);
+                    cmd.CommandText = $"UPDATE t_storage SET status='{status}' WHERE url='{url}'";
                     return 1 == cmd.ExecuteNonQuery();
                 }
             } catch(Exception e) {
@@ -550,8 +546,8 @@ namespace DxxBrowser.driver {
         public bool UnregisterNG(string url) {
             try {
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"UPDATE t_ng SET ignore='1' WHERE url='{url}'";
-                    return true;
+                    cmd.CommandText = $"UPDATE t_storage SET status='{(int)DLStatus.RESERVED}' WHERE url='{url}'";
+                    return 1 == cmd.ExecuteNonQuery();
                 }
             } catch (Exception e) {
                 Debug.WriteLine(e.StackTrace);
@@ -575,6 +571,25 @@ namespace DxxBrowser.driver {
                 return false;
             }
         }
+
+        //public bool ConvertFromNGTable() {
+        //    using (Transaction())
+        //    using (var cmd = mDB.CreateCommand()) {
+        //        try {
+        //            cmd.CommandText = $"SELECT * FROM t_ng";
+        //            using (var reader = cmd.ExecuteReader()) {
+        //                while (reader.Read()) {
+        //                    if (AsLong(reader["ignore"]) == 0) {
+        //                        RegisterNG(AsString(reader["url"]), false);
+        //                    }
+        //                }
+        //            }
+        //        } catch (Exception e) {
+        //            Debug.WriteLine(e.StackTrace);
+        //        }
+        //        return false;
+        //    }
+        //}
 
         #endregion
     }

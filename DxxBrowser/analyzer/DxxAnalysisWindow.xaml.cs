@@ -124,7 +124,7 @@ namespace DxxBrowser {
                         if (dlg.ShowDialog(Owner) == CommonFileDialogResult.Ok) {
                             DxxDownloader.Instance.Reserve(ti, dlg.FileName, 0, (f) => {
                                 Owner.Dispatcher.InvokeAsync(() => {
-                                    if (f) {
+                                    if (f== DxxDownloadingItem.DownloadStatus.Completed) {
                                         DxxFileDispositionDialog.Show(dlg.FileName, Owner);
                                     }
                                 });

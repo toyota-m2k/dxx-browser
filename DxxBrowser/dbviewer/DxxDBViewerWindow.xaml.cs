@@ -326,11 +326,11 @@ namespace DxxBrowser {
                 return string.Compare(x, y);
             }
             public int Compare(long x, long y) {
-                var d = y - x;
+                var d = x - y;
                 return (d < 0) ? -1 : (d > 0) ? 1 : 0;
             }
             public int Compare(int x, int y) {
-                return y - x;
+                return x - y;
             }
             public int Compare(DxxDBStorage.DBRecord x, DxxDBStorage.DBRecord y) {
                 int r = 0;
