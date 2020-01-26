@@ -434,7 +434,7 @@ namespace DxxBrowser.driver {
                 var time = info.CreationTimeUtc.ToFileTimeUtc();
 
                 using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED}, desc='{target.Description}', driver='{driverName}', flags='{flags}', date='{time}' WHERE url={url}";
+                    cmd.CommandText = $"UPDATE t_storage SET path='{path}',date='{time}', status={(int)DLStatus.COMPLETED}, desc='{target.Description}', driver='{driverName}', flags='{flags}', date='{time}' WHERE url='{url}'";
                     if (1 == cmd.ExecuteNonQuery()) {
                         FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(url));
                         return true;
@@ -529,9 +529,12 @@ namespace DxxBrowser.driver {
 
         #region IDxxNGList i/f
 
+        public event PlayItemWillBeRemovedProc PlayItemWillBeRemoved;
+
         public bool RegisterNG(string url, bool fatalError) {
             try {
                 using (var cmd = mDB.CreateCommand()) {
+                    PlayItemWillBeRemoved?.Invoke(url);
                     int status = (int)(fatalError ? DLStatus.FATAL_ERROR : DLStatus.FORBIDDEN);
                     cmd.CommandText = $"UPDATE t_storage SET status='{status}' WHERE url='{url}'";
                     if(1 == cmd.ExecuteNonQuery()) {
@@ -552,34 +555,34 @@ namespace DxxBrowser.driver {
             return false;
         }
 
-        public bool UnregisterNG(string url) {
-            try {
-                using (var cmd = mDB.CreateCommand()) {
-                    cmd.CommandText = $"UPDATE t_storage SET status='{(int)DLStatus.RESERVED}' WHERE url='{url}'";
-                    return 1 == cmd.ExecuteNonQuery();
-                }
-            } catch (Exception e) {
-                Debug.WriteLine(e.StackTrace);
-                DxxLogger.Instance.Error(LOG_CAT, "UnregisterNG Failed.");
-                return false;
-            }
-        }
+        //public bool UnregisterNG(string url) {
+        //    try {
+        //        using (var cmd = mDB.CreateCommand()) {
+        //            cmd.CommandText = $"UPDATE t_storage SET status='{(int)DLStatus.RESERVED}' WHERE url='{url}'";
+        //            return 1 == cmd.ExecuteNonQuery();
+        //        }
+        //    } catch (Exception e) {
+        //        Debug.WriteLine(e.StackTrace);
+        //        DxxLogger.Instance.Error(LOG_CAT, "UnregisterNG Failed.");
+        //        return false;
+        //    }
+        //}
 
-        public bool IsNG(string url) {
-            using (var cmd = mDB.CreateCommand()) {
-                try {
-                    cmd.CommandText = $"SELECT * FROM t_ng WHERE url='{url}'";
-                    using (var reader = cmd.ExecuteReader()) {
-                        if (reader.Read()) {
-                            return AsLong(reader["ignore"]) == 0;
-                        }
-                    }
-                } catch (Exception e) {
-                    Debug.WriteLine(e.StackTrace);
-                }
-                return false;
-            }
-        }
+        //public bool IsNG(string url) {
+        //    using (var cmd = mDB.CreateCommand()) {
+        //        try {
+        //            cmd.CommandText = $"SELECT * FROM t_ng WHERE url='{url}'";
+        //            using (var reader = cmd.ExecuteReader()) {
+        //                if (reader.Read()) {
+        //                    return AsLong(reader["ignore"]) == 0;
+        //                }
+        //            }
+        //        } catch (Exception e) {
+        //            Debug.WriteLine(e.StackTrace);
+        //        }
+        //        return false;
+        //    }
+        //}
 
         //public bool ConvertFromNGTable() {
         //    using (Transaction())

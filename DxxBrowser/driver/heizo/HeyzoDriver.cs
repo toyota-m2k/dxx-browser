@@ -107,9 +107,9 @@ namespace DxxBrowser.driver.heizo {
                 }
                 return null;
             }
-            //           <a name = 他人妻味～疼く妖艶エロボティ～&nbsp;&lt;a href = &quot; javascript:;&quot; onclick=&quot;linktoDetail(&#39;1184&#39;)&quot; &gt;詳細ページ&lt;/a&gt; rel=lightbox[external 704 396] href=//sample.heyzo.com/contents/3000/1184/sample.mp4 class=sampleMovie style=font-size: 80%;>
-            //サンプル動画
-            //    </a>
+            // <a name = ○○○○○○○○○○○○～&nbsp;&lt;a href = &quot; javascript:;&quot; onclick=&quot;linktoDetail(&#39;1184&#39;)&quot; &gt;詳細ページ&lt;/a&gt; rel=lightbox[external 704 396] href=//sample.heyzo.com/contents/3000/1184/sample.mp4 class=sampleMovie style=font-size: 80%;>
+            //　　サンプル動画
+            // </a>
             static readonly string[] DescDelimiter = new string[] { "&nbsp", "&lt", "&quot" };
 
             private static string SafeDescription(string src) {
@@ -201,6 +201,9 @@ namespace DxxBrowser.driver.heizo {
                                     .Distinct(mAnchorNodeComparator)?
                                     .Select((v) => CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v))?
                                     .Where((v) => v != null);
+#if false
+                    // js でロードされる、sample_low.mp4 を列挙する
+                    // ... sample_low は低解像度の動画で、同じ内容で高解像度のものが存在するようなので、こいつらは列挙しないことにする。
                     var scripts = html.DocumentNode.SelectNodes(".//script[contains(text(),'emvideo')]");
                     IEnumerable<DxxTargetInfo> embedded = null;
                     if(null!= scripts) {
@@ -225,6 +228,7 @@ namespace DxxBrowser.driver.heizo {
                             }
                         }
                     }
+#endif
                     return mp4s?.ToList();
                 });
             }

@@ -110,16 +110,17 @@
                 <Style TargetType="ListViewItem">
                     <EventSetter Event="MouseDoubleClick" Handler="OnListItemDoubleClick"/>
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    <!--<Setter Property="ContextMenu">
+                    <Setter Property="Tag"
+                            Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListView}}" />
+                    <Setter Property="ContextMenu">
                         <Setter.Value>
-                            <ContextMenu Background="WhiteSmoke">
-                                <MenuItem Header="Edit or Create Trimming (_E)" InputGestureText="Ctrl+E" Command="{x:Static local:MainWindow.CreateTrimming}"/>
-                                <MenuItem Header="Apply Existing Trimming (_J)" InputGestureText="Ctrl+J" Command="{x:Static local:MainWindow.ApplyTrimming}"/>
-                                <MenuItem Header="Reset Play Counter (_N)" InputGestureText="Ctrl+N" Command="{x:Static local:MainWindow.ResetCounter}"/>
-                                <MenuItem Header="Delete Files (_D)" InputGestureText="Ctrl+D" Command="{x:Static local:MainWindow.DeleteFiles}"/>
+                            <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
+                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                             </ContextMenu>
                         </Setter.Value>
-                    </Setter>-->
+                    </Setter>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.View>

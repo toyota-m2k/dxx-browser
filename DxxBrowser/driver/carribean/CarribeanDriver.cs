@@ -23,8 +23,7 @@ namespace DxxBrowser.driver.caribbean {
         public string StoragePath { get; set; }
 
         public string ReserveFilePath(Uri uri) {
-            var filename = DxxUrl.GetFileName(uri);
-            return Path.Combine(StoragePath, filename);
+            return ((DxxFileBasedStorage)StorageManager).GetPath(uri);
         }
 
         public IDxxLinkExtractor LinkExtractor { get; private set; }
@@ -237,7 +236,7 @@ namespace DxxBrowser.driver.caribbean {
 
             }
             protected override string LOG_CAT => "CRB";
-            protected override string GetPath(Uri uri) {
+            public override string GetPath(Uri uri) {
                 var idx = uri.Segments.Count() - 2;
                 var filename = idx >= 0 ? uri.Segments.ElementAt(idx) : "unknown";
                 if(filename.EndsWith("/")) {

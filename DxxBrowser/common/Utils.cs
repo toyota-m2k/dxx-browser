@@ -53,5 +53,11 @@ namespace Common
         public static R Run<T,R>(this T obj, Func<T,R> fn) where T : class {
             return fn(obj);
         }
+
+        public static IEnumerable<T> ToEnumerable<T>(this System.Collections.IList list) {
+            foreach(var o in list) {
+                yield return (T)o;
+            }
+        }
     }
 }

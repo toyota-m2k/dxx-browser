@@ -30,6 +30,9 @@ namespace DxxBrowser {
             public ReactiveCommand RetryDownloadCommand { get; } = new ReactiveCommand();
             public ReactiveCommand PlayCommand { get; } = new ReactiveCommand();
 
+            public ReactiveCommand DeleteAndBlockCommand { get; } = new ReactiveCommand();
+            public ReactiveCommand ResetAndDownloadCommand { get; } = new ReactiveCommand();
+
             #endregion
 
             /**
@@ -39,8 +42,30 @@ namespace DxxBrowser {
                 RefreshCommand.Subscribe(RefreshDB);
                 RetryDownloadCommand.Subscribe(RetryDownload);
                 PlayCommand.Subscribe(ShowPlayer);
+                DeleteAndBlockCommand.Subscribe(DeleteAndBlock);
+                ResetAndDownloadCommand.Subscribe(ResetAndDownload);
                 PlayList = new DBPlayList(this);
                 DxxDBStorage.Instance.DBUpdated += OnDBUpdated;
+            }
+
+            private void ResetAndDownload() {
+                Debug.WriteLine("reset and download");
+                var list = Owner?.mListView?.SelectedItems.ToEnumerable<DxxDBStorage.DBRecord>()?
+                            .Where((v) => v.Status == DxxDBStorage.DLStatus.FATAL_ERROR || v.Status == DxxDBStorage.DLStatus.FORBIDDEN)?
+                            .Select((v) => new DxxTargetInfo(v.Url, v.Name, v.Description));
+                if(!Utils.IsNullOrEmpty(list)) {
+                    DxxDriverManager.Instance.Download(list);
+                }
+            }
+
+            private void DeleteAndBlock() {
+                Debug.WriteLine("delete and block");
+                Owner?.mListView?.SelectedItems.ToEnumerable<DxxDBStorage.DBRecord>()?
+                            .Where((v) => v.Status == DxxDBStorage.DLStatus.COMPLETED)?
+                            .Select((v) => {
+
+                                return false;
+                            });
             }
 
             public override void Dispose() {
@@ -55,10 +80,10 @@ namespace DxxBrowser {
                         Sort(DxxGlobal.Instance.SortInfo, true);
                         break;
                     case DxxDBStorage.DBModification.UPDATE:
-                        var r = List.Value.Where((v) => v.ID == rec.ID).Select((v) => {
-                            v.CopyFrom(rec);
-                            return v;
-                        });
+                        var r = List.Value.Where((v) => v.ID == rec.ID);
+                        if(!Utils.IsNullOrEmpty(r)) {
+                            r.First().CopyFrom(rec);
+                        }
                         Sort(DxxGlobal.Instance.SortInfo, true);
                         break;
                     case DxxDBStorage.DBModification.REMOVE:
@@ -176,6 +201,11 @@ namespace DxxBrowser {
                 }
 
                 public void DeleteSource(IDxxPlayItem source) {
+                    if(source.Url==Current.Value.Url) {
+                        if (!Next() && !Prev()) {
+                            Current.Value = null;
+                        }
+                    }
                     DxxNGList.Instance.RegisterNG(source.Url);
                     DxxDBStorage.Instance.DLPlayList.DeleteSource(source);
                 }

@@ -11,7 +11,7 @@ namespace DxxBrowser.driver {
             mDriver = new WeakReference<IDxxDriver>(driver);
         }
 
-        protected virtual string GetPath(Uri uri) {
+        public virtual string GetPath(Uri uri) {
             var filename = DxxUrl.GetFileName(uri);
             return Path.Combine(Driver.StoragePath, filename);
         }
