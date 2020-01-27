@@ -204,6 +204,63 @@ namespace DxxBrowser.driver {
             return rec?.Status == DLStatus.COMPLETED;
         }
 
+        private bool SafeMoveFile(string oldPath, string newPath) {
+            if (oldPath.ToLower() == newPath.ToLower()) {
+                return false;
+            }
+
+            if (File.Exists(newPath)) {
+                try {
+                    File.Delete(newPath);
+                } catch(Exception e) {
+                    Debug.WriteLine(e);
+                    return false;
+                }
+            }
+
+            if (!File.Exists(oldPath)) {
+                // 移動元のファイルが存在しなければ、Moveが成功したものとして true を返す
+                // <-- DB上に予約されたパスがあれば、それを更新しておく必要があるため。
+                return true;
+            }
+
+            try {
+                File.Move(oldPath, newPath);
+                return true;
+            } catch(Exception e) {
+                Debug.WriteLine(e);
+                return false;
+            }
+        }
+
+        public void MoveStorageFolder(string driverName, string toFolder) {
+            using (Transaction()) {
+                using (var cmd = mDB.CreateCommand()) {
+                    cmd.CommandText = $"SELECT * FROM t_storage WHERE driver='{driverName}'";
+                    using (var reader = cmd.ExecuteReader())
+                    using (var upd = mDB.CreateCommand()) {
+                        while (reader.Read()) {
+                            var rec = RecordFromReader(reader);
+                            string fileName = Path.GetFileName(rec.Path);
+                            string newPath = Path.Combine(toFolder, fileName);
+                            if (SafeMoveFile(rec.Path, newPath)) {
+                                upd.CommandText = $"UPDATE t_storage SET path = '{newPath}' WHERE id = '{rec.ID}'";
+                                try {
+                                    upd.ExecuteNonQuery();
+                                    rec.Path = newPath;
+                                } catch (Exception e) {
+                                    // undo
+                                    Debug.WriteLine(e);
+                                    SafeMoveFile(newPath, rec.Path);
+                                }
+                                FireDBUpdatedEvent(DBModification.UPDATE, () => rec);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         #endregion
 

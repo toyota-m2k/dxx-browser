@@ -8,62 +8,47 @@ using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver {
-    public class DefaultDriver : IDxxDriver {
-        public string Name => "Default";
+    public class DefaultDriver : DxxDriverBaseStoragePathSupport {
+        public override string Name => "Default";
+        public override string ID => "simpleDefaultDownloader";
+        public override IDxxLinkExtractor LinkExtractor { get; } = new SimpleLinkExtractor();
+        public override IDxxStorageManager StorageManager => DxxDBStorage.Instance;
 
-        public string ID => "simpleDefaultDownloader";
-
-        public bool HasSettings => true;
-
-        public IDxxLinkExtractor LinkExtractor { get; } = new SimpleLinkExtractor();
-
-        public IDxxStorageManager StorageManager => DxxDBStorage.Instance;
-
-        public string StoragePath { get; private set; }
-
-        public string ReserveFilePath(Uri uri) {
-            return null;
+        /**
+         * ダウンロードファイルのパス（DB予約用）
+         */
+        public override string ReserveFilePath(Uri uri) {
+            return null;    // DBStorageに任せる
         }
 
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        /**
+         * ダウンロード要求
+         */
+        public override void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
         }
 
-        public string GetNameFromUri(Uri uri, string defName = "") {
+        /**
+         * URLからファイル名を取得
+         */
+        public override string GetNameFromUri(Uri uri, string defName = "") {
             return DxxUrl.TrimName(DxxUrl.GetFileName(uri));
         }
 
-        public bool IsSupported(string url) {
-            return true;
+        /**
+         * urlは、このドライバーがサポートしているか？
+         */
+        public override bool IsSupported(string url) {
+            return true;    // DefaultDriverは、すべてのURLを扱う
         }
 
-        private const string KEY_STORAGE_PATH = "StoragePath";
-
-        public bool LoadSettins(XmlElement settings) {
-            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
-            return true;
-        }
-
-        public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
-            return true;
-        }
-
-        public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
-            dlg.Owner = owner;
-            if (dlg.ShowDialog() ?? false) {
-                StoragePath = dlg.Path;
-                if (null != settings) {
-                    SaveSettings(settings);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        const string LOG_CAT = "DEF";
+        /**
+         * 単純なLinkExtractor 
+         * - <a>, <video> タグから、動画ファイルのURLを取り出す。
+         * - 動画ファイルの拡張子を持ったURLをターゲットとして扱う。
+         */
         public class SimpleLinkExtractor : IDxxLinkExtractor {
+            private const string LOG_CAT = "DEF";
             private string TryGetDescription(HtmlNode node, Uri uri) {
                 string r = DxxUrl.TrimText(node.InnerText);
                 if (!string.IsNullOrWhiteSpace(r)) {
@@ -154,9 +139,9 @@ namespace DxxBrowser.driver {
                     case ".mp4":
                     case ".mpeg":
                     case ".mpg":
-                    case "mov":
-                    case "wmv":
-                    case "qt":
+                    case ".mov":
+                    case ".wmv":
+                    case ".qt":
                         return true;
                     default:
                         return false;

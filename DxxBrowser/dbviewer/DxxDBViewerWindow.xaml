@@ -51,7 +51,7 @@
             <StackPanel.Resources>
                 <ResourceDictionary Source="../res/DxxSvgPath.xaml"/>
             </StackPanel.Resources>
-            <Button Content="{StaticResource PathRefresh}" Style="{StaticResource PushButtonStyle}" 
+            <Button Content="{StaticResource PathDBRefresh}" Style="{StaticResource PushButtonStyle}" 
                     Command="{Binding RefreshCommand}">
                 <ToolTipService.ToolTip>
                     <ToolTip Content="DBの再読み込み"/>
@@ -116,8 +116,8 @@
                         <Setter.Value>
                             <!-- ListViewのTagにセットしておいたWindow#DataContextを、ContextMenuのデータコンテキストにセットするセットしておく -->
                             <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
-                                <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                                 <MenuItem Header="Reset &amp; Download" Command="{Binding ResetAndDownloadCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                <MenuItem Header="Delete &amp; Block" Command="{Binding DeleteAndBlockCommand}" CommandParameter="{Binding PlacementTarget.Content, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                             </ContextMenu>
                         </Setter.Value>
                     </Setter>

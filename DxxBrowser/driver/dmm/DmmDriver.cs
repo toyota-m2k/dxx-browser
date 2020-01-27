@@ -15,59 +15,27 @@ using Common;
 
 namespace DxxBrowser.driver.dmm
 {
-    public class DmmDriver : IDxxDriver {
-        public string StoragePath { get; set; }
+    public class DmmDriver : DxxDriverBaseStoragePathSupport {
+        public override string Name => "DMM";
+        public override string ID => "dmmFileBasedDriver";
+        public override IDxxLinkExtractor LinkExtractor { get; }
+        public override IDxxStorageManager StorageManager { get; }
 
-        public string Name => "DMM";
-
-        public string ID => "dmmFileBasedDriver";
-
-        public bool HasSettings => true;
-
-        public IDxxLinkExtractor LinkExtractor { get; }
-
-        public IDxxStorageManager StorageManager { get; }
-
-        public string ReserveFilePath(Uri uri) {
+        public override string ReserveFilePath(Uri uri) {
             var filename = DxxUrl.GetFileName(uri);
             return Path.Combine(StoragePath, filename);
         }
 
-        private const string KEY_STORAGE_PATH = "StoragePath";
-
-        public bool LoadSettins(XmlElement settings) {
-            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
-            return true;
-        }
-
-        public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
-            return true;
-        }
-
-        public bool IsSupported(string url) {
+        public override bool IsSupported(string url) {
             var uri = new Uri(url);
             return uri.Host.Contains("dmm.co.jp");
         }
 
-        public string GetNameFromUri(Uri uri, string defName) {
+        public override string GetNameFromUri(Uri uri, string defName) {
             return DxxUrl.GetFileName(uri);
         }
 
-        public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
-            dlg.Owner = owner;
-            if(dlg.ShowDialog() ?? false) {
-                StoragePath = dlg.Path;
-                if (null!=settings) {
-                    SaveSettings(settings);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        public override void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
         }
 

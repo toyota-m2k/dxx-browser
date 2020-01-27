@@ -61,6 +61,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="common\CompoundProperty.cs" />
+    <Compile Include="common\MicWaitCursor.cs" />
     <Compile Include="common\WinPlacement.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
     <Compile Include="driver\DefaultDriver.cs" />
@@ -68,6 +69,7 @@
     <Compile Include="driver\DxxDBStorage.cs" />
     <Compile Include="driver\DxxDownloader.cs" />
     <Compile Include="driver\DxxDownloadPlayLit.cs" />
+    <Compile Include="driver\DxxDriverBaseStoragePathSupport.cs" />
     <Compile Include="driver\DxxFileBasedStorage.cs" />
     <Compile Include="driver\DxxNGList.cs" />
     <Compile Include="driver\DxxPlayerItem.cs" />

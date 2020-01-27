@@ -9,59 +9,28 @@ using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver.heizo {
-    public class HeyzoDriver : IDxxDriver {
+    public class HeyzoDriver : DxxDriverBaseStoragePathSupport {
         #region IDxxDriver i/f
 
-        public string Name => "Heyzo";
+        public override string Name => "Heyzo";
+        public override string ID => "heizoDBBasedDriver";
+        public override IDxxLinkExtractor LinkExtractor { get; } = new Extractor();
+        public override IDxxStorageManager StorageManager { get; } = new Storage();
 
-        public string ID => "heizoDBBasedDriver";
-
-        public bool HasSettings => true;
-
-        public IDxxLinkExtractor LinkExtractor { get; } = new Extractor();
-
-        public IDxxStorageManager StorageManager { get; } = new Storage();
-
-        public string ReserveFilePath(Uri uri) {
+        public override string ReserveFilePath(Uri uri) {
             return null;
         }
 
-        private const string KEY_STORAGE_PATH = "StoragePath";
-
-        public bool LoadSettins(XmlElement settings) {
-            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
-            return true;
-        }
-
-        public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
-            return true;
-        }
-
-        public bool IsSupported(string url) {
+        public override bool IsSupported(string url) {
             var uri = new Uri(url);
             return uri.Host.Contains("heyzo.com");
         }
 
-        public string GetNameFromUri(Uri uri, string defName = "") {
-            // ToDo:
+        public override string GetNameFromUri(Uri uri, string defName = "") {
             return DxxUrl.TrimName(DxxUrl.GetFileName(uri));
         }
 
-        public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
-            dlg.Owner = owner;
-            if (dlg.ShowDialog() ?? false) {
-                StoragePath = dlg.Path;
-                if (null != settings) {
-                    SaveSettings(settings);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        public override void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
         }
 
@@ -70,11 +39,9 @@ namespace DxxBrowser.driver.heizo {
         public HeyzoDriver() {
         }
 
-        private const string LOG_CAT = "HYZ";
-
-        public string StoragePath { get; set; } = null;
 
         private class Extractor : IDxxLinkExtractor {
+            private const string LOG_CAT = "HYZ";
 
             readonly Regex reg = new Regex("title\\s*=\\s*\"(?<d>.*)\"");
             string TryGetDescFromInnerHtml(string html) {

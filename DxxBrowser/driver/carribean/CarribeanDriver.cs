@@ -12,40 +12,23 @@ using System.Windows;
 using System.Xml;
 
 namespace DxxBrowser.driver.caribbean {
-    public class CaribbeanDriver : IDxxDriver {
-        public string Name => "Caribbean";
+    public class CaribbeanDriver : DxxDriverBaseStoragePathSupport {
+        public override string Name => "Caribbean";
+        public override string ID => "caribbeanFileBasedDriver";
 
-        public string ID => "caribbeanFileBasedDriver";
-
-        public bool HasSettings => true;
-
-        private const string KEY_STORAGE_PATH = "StoragePath";
-        public string StoragePath { get; set; }
-
-        public string ReserveFilePath(Uri uri) {
+        public override string ReserveFilePath(Uri uri) {
             return ((DxxFileBasedStorage)StorageManager).GetPath(uri);
         }
 
-        public IDxxLinkExtractor LinkExtractor { get; private set; }
+        public override IDxxLinkExtractor LinkExtractor { get; }
+        public override IDxxStorageManager StorageManager { get; }
 
-        public IDxxStorageManager StorageManager { get; private set; }
-
-        public bool LoadSettins(XmlElement settings) {
-            StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
-            return true;
-        }
-
-        public bool SaveSettings(XmlElement settings) {
-            settings.SetAttribute(KEY_STORAGE_PATH, StoragePath);
-            return true;
-        }
-
-        public bool IsSupported(string url) {
+        public override bool IsSupported(string url) {
             var uri = new Uri(url);
             return uri.Host.Contains("caribbeancom.com") || uri.Host.Contains("caribbeancompr.com");
         }
 
-        public string GetNameFromUri(Uri uri, string defName) {
+        public override string GetNameFromUri(Uri uri, string defName) {
             // var regex = new Regex("Movie = (?<json>{.*})");
             var regex = new Regex(@"/(?<name>\d+[-]d*)/");
             var match = regex.Match(uri.ToString());
@@ -55,20 +38,7 @@ namespace DxxBrowser.driver.caribbean {
             return defName;
         }
 
-        public bool Setup(XmlElement settings, Window owner) {
-            var dlg = new DxxStorageFolderDialog(Name, StoragePath);
-            dlg.Owner = owner;
-            if (dlg.ShowDialog() ?? false) {
-                StoragePath = dlg.Path;
-                if (null != settings) {
-                    SaveSettings(settings);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
+        public override void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
         }
 

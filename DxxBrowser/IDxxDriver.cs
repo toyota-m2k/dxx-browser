@@ -18,6 +18,7 @@ namespace DxxBrowser
         bool SaveSettings(XmlElement settings);
 
         string StoragePath { get; }
+
         /**
          * 保存ファイルのパスを返す。
          * DBStorageに任せるときは、nullを返す。
