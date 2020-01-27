@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
+using System.Reactive.Linq;
 using System.Windows.Threading;
 
 namespace DxxBrowser.driver {
@@ -41,11 +42,12 @@ namespace DxxBrowser.driver {
 
         public static void Initialize(DispatcherObject owner) {
             Instance = new DxxDBStorage(owner);
+            Instance.DLPlayList = new DxxDownloadPlayLit(owner);
         }
 
         public static void Terminate() {
             Instance?.Dispose();
-            Instance = null;
+            //Instance = null;
         }
 
         public DxxDownloadPlayLit DLPlayList { get; private set; }
@@ -63,15 +65,17 @@ namespace DxxBrowser.driver {
                     status INTEGER NOT NULL,
                     desc TEXT,
                     driver TEXT,
-                    flags INTEGER DEFAULT '0'
-                )",
-                @"CREATE TABLE IF NOT EXISTS t_ng (
-                    id INTEGER NOT NULL PRIMARY KEY,
-                    url TEXT NOT NULL UNIQUE,
-                    ignore INTEGER NOT NULL DEFAULT '0'
+                    flags INTEGER DEFAULT '0',
+                    date INTEGER DEFAULT '0'
                 )"
+                // ,
+                //@"CREATE TABLE IF NOT EXISTS t_ng (
+                //    id INTEGER NOT NULL PRIMARY KEY,
+                //    url TEXT NOT NULL UNIQUE,
+                //    ignore INTEGER NOT NULL DEFAULT '0'
+                //)"
             );
-            DLPlayList = new DxxDownloadPlayLit(owner);
+            //DLPlayList = new DxxDownloadPlayLit(owner);
 
             //ConvertFromNGTable();
         }
@@ -278,9 +282,9 @@ namespace DxxBrowser.driver {
                 Name = src.Name;
                 Path = src.Path;
                 Description = src.Description;
-                mStatus = src.Status;
+                Status = src.Status;
                 Driver = src.Driver;
-                mFlags = src.Flags;
+                Flags = src.Flags;
                 Date = src.Date;
             }
         }
@@ -529,12 +533,12 @@ namespace DxxBrowser.driver {
 
         #region IDxxNGList i/f
 
-        public event PlayItemWillBeRemovedProc PlayItemWillBeRemoved;
+        public event PlayItemRemovingHandler PlayItemRemoving;
 
         public bool RegisterNG(string url, bool fatalError) {
             try {
                 using (var cmd = mDB.CreateCommand()) {
-                    PlayItemWillBeRemoved?.Invoke(url);
+                    PlayItemRemoving?.Invoke(url);
                     int status = (int)(fatalError ? DLStatus.FATAL_ERROR : DLStatus.FORBIDDEN);
                     cmd.CommandText = $"UPDATE t_storage SET status='{status}' WHERE url='{url}'";
                     if(1 == cmd.ExecuteNonQuery()) {
@@ -555,17 +559,44 @@ namespace DxxBrowser.driver {
             return false;
         }
 
+        public int UnregisterNG(IEnumerable<string> urls) {
+            int count = 0;
+            if (!Utils.IsNullOrEmpty(urls)) {
+                using (Transaction()) {
+                    foreach (var url in urls) {
+                        using (var cmd = mDB.CreateCommand()) {
+                            try {
+                                cmd.CommandText = $"UPDATE t_storage SET status='{(int)DLStatus.RESERVED}' WHERE url='{url}'";
+                                if (1 == cmd.ExecuteNonQuery()) {
+                                    FireDBUpdatedEvent(DBModification.UPDATE, () => Retrieve(url));
+                                    count++;
+                                }
+                            } catch(Exception e) {
+                                Debug.WriteLine(e);
+                            }
+                        }
+                    }
+                }
+            }
+            return count;
+        }
+
         //public bool UnregisterNG(string url) {
         //    try {
         //        using (var cmd = mDB.CreateCommand()) {
         //            cmd.CommandText = $"UPDATE t_storage SET status='{(int)DLStatus.RESERVED}' WHERE url='{url}'";
-        //            return 1 == cmd.ExecuteNonQuery();
+        //            if(1 == cmd.ExecuteNonQuery()) {
+        //                var rec = Retrieve(url);
+        //                FireDBUpdatedEvent(DBModification.UPDATE, () => rec);
+        //                DLPlayList.AddSource(rec);
+        //                return true;
+        //            }
         //        }
         //    } catch (Exception e) {
         //        Debug.WriteLine(e.StackTrace);
         //        DxxLogger.Instance.Error(LOG_CAT, "UnregisterNG Failed.");
-        //        return false;
         //    }
+        //    return false;
         //}
 
         //public bool IsNG(string url) {

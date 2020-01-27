@@ -1,4 +1,5 @@
 ﻿using Common;
+using DxxBrowser.driver;
 using Reactive.Bindings;
 using System;
 using System.Reactive.Subjects;
@@ -23,8 +24,8 @@ namespace DxxBrowser {
         ReactiveProperty<int> TotalCount { get; }
         bool Next();
         bool Prev();
-        void AddSource(IDxxPlayItem source);
-        void DeleteSource(IDxxPlayItem source);
+        //void AddSource(IDxxPlayItem source);
+        //void DeleteSource(IDxxPlayItem source);
     }
 
     public partial class DxxPlayerView : UserControl {
@@ -139,7 +140,8 @@ namespace DxxBrowser {
                 });
                 TrashCommand.Subscribe(() => {
                     Stop();
-                    PlayList?.DeleteSource(PlayList.Current.Value);
+                    //PlayList?.DeleteSource(PlayList.Current.Value);
+                    DxxNGList.Instance.RegisterNG(PlayList.Current.Value.Url);
                 });
 
                 if (reserver != null) {

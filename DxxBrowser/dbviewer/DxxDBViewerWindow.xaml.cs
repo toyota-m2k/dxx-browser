@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -51,21 +52,28 @@ namespace DxxBrowser {
             private void ResetAndDownload() {
                 Debug.WriteLine("reset and download");
                 var list = Owner?.mListView?.SelectedItems.ToEnumerable<DxxDBStorage.DBRecord>()?
-                            .Where((v) => v.Status == DxxDBStorage.DLStatus.FATAL_ERROR || v.Status == DxxDBStorage.DLStatus.FORBIDDEN)?
-                            .Select((v) => new DxxTargetInfo(v.Url, v.Name, v.Description));
-                if(!Utils.IsNullOrEmpty(list)) {
+                                .Where(v => v.Status == DxxDBStorage.DLStatus.FATAL_ERROR || v.Status == DxxDBStorage.DLStatus.FORBIDDEN || v.Status == DxxDBStorage.DLStatus.RESERVED)?
+                                .Select((v) => new DxxTargetInfo(v.Url, v.Name, v.Description))
+                                .ToList();  // UnregisterNG と、Download で、２つのforeachが行われ、IEnumerableでは対応できない。
+
+                if (!Utils.IsNullOrEmpty(list)) {
+                    DxxNGList.Instance.UnregisterNG(list.Select(v => v.Url));
                     DxxDriverManager.Instance.Download(list);
                 }
             }
 
             private void DeleteAndBlock() {
                 Debug.WriteLine("delete and block");
-                Owner?.mListView?.SelectedItems.ToEnumerable<DxxDBStorage.DBRecord>()?
-                            .Where((v) => v.Status == DxxDBStorage.DLStatus.COMPLETED)?
-                            .Select((v) => {
-
-                                return false;
-                            });
+                var list = Owner?.mListView?.SelectedItems.ToEnumerable<DxxDBStorage.DBRecord>()?
+                                 .Where((v) => v.Status == DxxDBStorage.DLStatus.COMPLETED || v.Status == DxxDBStorage.DLStatus.RESERVED)
+                                 .ToList(); // RegisterNG 中に選択状態が変わるので、ToList()でリストを確定しておく。
+                if (!Utils.IsNullOrEmpty(list)) {
+                    using (DxxDBStorage.Instance.Transaction()) {
+                        foreach (var v in list) {
+                            DxxNGList.Instance.RegisterNG(v.Url);
+                        }
+                    }
+                }
             }
 
             public override void Dispose() {
@@ -185,8 +193,9 @@ namespace DxxBrowser {
             #region PlayList
 
             class DBPlayList : MicViewModelBase<DBViewModel>, IDxxPlayList {
-                public DBPlayList(DBViewModel model) : base(model) {
+                public DBPlayList(DBViewModel model) : base(owner:model, disposeNonPublic:true) {
                     Current.Subscribe(UpdatePlayList);
+                    ItemRemoving = DxxNGList.Instance.AsPlayItemRemovingObservable().Subscribe(OnRemovingItem);
                 }
 
                 // ListView の SelectedItemn にバインドする
@@ -197,17 +206,32 @@ namespace DxxBrowser {
                 public ReactiveProperty<int> CurrentPos { get; } = new ReactiveProperty<int>(0);
                 public ReactiveProperty<int> TotalCount { get; } = new ReactiveProperty<int>(0);
 
-                public void AddSource(IDxxPlayItem source) {
-                }
+                //public void AddSource(IDxxPlayItem source) {
+                //}
 
-                public void DeleteSource(IDxxPlayItem source) {
-                    if(source.Url==Current.Value.Url) {
+                //public void DeleteSource(IDxxPlayItem source) {
+                //    if(source.Url==Current.Value.Url) {
+                //        if (!Next() && !Prev()) {
+                //            Current.Value = null;
+                //        }
+                //    }
+                //    DxxNGList.Instance.RegisterNG(source.Url);
+                //    DxxDBStorage.Instance.DLPlayList.DeleteSource(source);
+                //}
+
+                // （使わないけど）MicViewModelBase で Disposeされるようにプロパティとして保持しておく。
+                private IDisposable ItemRemoving { get; }
+
+                /**
+                 * DBアイテム（ファイル）が削除される前に呼び出される。
+                 * --> 現在再生中なら、インデックスを進めるか、戻すかして、カレントアイテムが削除されるのを回避する。
+                 */
+                private void OnRemovingItem(string url) {
+                    if (url == Current.Value.Url) {
                         if (!Next() && !Prev()) {
                             Current.Value = null;
                         }
                     }
-                    DxxNGList.Instance.RegisterNG(source.Url);
-                    DxxDBStorage.Instance.DLPlayList.DeleteSource(source);
                 }
 
                 //private int CurrentIndex {

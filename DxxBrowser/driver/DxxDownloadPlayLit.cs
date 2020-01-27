@@ -14,7 +14,10 @@ namespace DxxBrowser.driver {
 
         public DxxDownloadPlayLit(DispatcherObject source) {
             DispatcherSource = source;
+            ItemRemoving = DxxNGList.Instance.AsPlayItemRemovingObservable().Subscribe(OnRemovingItem);
         }
+
+        IDisposable ItemRemoving { get; }
 
         //private bool Contains(string sourceUrl) {
         //    return !Utils.IsNullOrEmpty(PlayList.Value.Where((v) => v.SourceUrl == sourceUrl));
@@ -66,29 +69,39 @@ namespace DxxBrowser.driver {
             HasPrev.Value = 0 < Sources.Count && 1 < CurrentPos.Value;
         }
 
-        public void DeleteSource(IDxxPlayItem source) {
-            Dispatcher.Invoke(() => {
-                var index = Sources.FindIndex((v) => {
-                    return v.Url == source.Url;
-                });
-                if (index >= 0) {
-                    var ci = CurrentPos.Value - 1;
-                    var item = Sources[index];
-                    if (ci == index) {
-                        if (!Next() && !Prev()) {
-                            Current.Value = null;
-                        }
+        void OnRemovingItem(string url) {
+            if (Current?.Value != null) {
+                if (url == Current.Value.Url) {
+                    if (!Next() && !Prev()) {
+                        Current.Value = null;
                     }
-                    Sources.RemoveAt(index);
-                    TotalCount.Value = Sources.Count;
-                    if (ci > index) {
-                        CurrentPos.Value--;
-                    }
-                    DxxNGList.Instance.RegisterNG(item.Url);
-                    UpdateStatus();
                 }
-            });
+            }
         }
+
+        //public void DeleteSource(IDxxPlayItem source) {
+        //    Dispatcher.Invoke(() => {
+        //        var index = Sources.FindIndex((v) => {
+        //            return v.Url == source.Url;
+        //        });
+        //        if (index >= 0) {
+        //            var ci = CurrentPos.Value - 1;
+        //            var item = Sources[index];
+        //            if (ci == index) {
+        //                if (!Next() && !Prev()) {
+        //                    Current.Value = null;
+        //                }
+        //            }
+        //            Sources.RemoveAt(index);
+        //            TotalCount.Value = Sources.Count;
+        //            if (ci > index) {
+        //                CurrentPos.Value--;
+        //            }
+        //            DxxNGList.Instance.RegisterNG(item.Url);
+        //            UpdateStatus();
+        //        }
+        //    });
+        //}
 
         public bool Next() {
             if (CurrentPos.Value < Sources.Count) {
