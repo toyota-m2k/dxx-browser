@@ -1,4 +1,5 @@
-﻿using HtmlAgilityPack;
+﻿using Common;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -168,7 +169,10 @@ namespace DxxBrowser.driver.heizo {
                                     .Distinct(mAnchorNodeComparator)?
                                     .Select((v) => CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v))?
                                     .Where((v) => v != null);
-#if false
+                    if(!Utils.IsNullOrEmpty(mp4s)) {
+                        return mp4s.ToList();
+                    }
+
                     // js でロードされる、sample_low.mp4 を列挙する
                     // ... sample_low は低解像度の動画で、同じ内容で高解像度のものが存在するようなので、こいつらは列挙しないことにする。
                     var scripts = html.DocumentNode.SelectNodes(".//script[contains(text(),'emvideo')]");
@@ -195,7 +199,6 @@ namespace DxxBrowser.driver.heizo {
                             }
                         }
                     }
-#endif
                     return mp4s?.ToList();
                 });
             }

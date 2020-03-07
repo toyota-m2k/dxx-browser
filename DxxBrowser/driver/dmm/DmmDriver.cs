@@ -27,6 +27,9 @@ namespace DxxBrowser.driver.dmm
         }
 
         public override bool IsSupported(string url) {
+            if(url==null) {
+                return false;
+            }
             var uri = new Uri(url);
             return uri.Host.Contains("dmm.co.jp");
         }
@@ -103,7 +106,9 @@ namespace DxxBrowser.driver.dmm
             }
 
             private string ensureUrl(Uri baseUri, string url) {
-                if (url.StartsWith("//")) {
+                if(url==null) {
+                    return null;
+                } if (url.StartsWith("//")) {
                     return $"{baseUri.Scheme}:{url}";
                 } else if (url.StartsWith("/")) {
                     return $"{baseUri.Scheme}://{baseUri.Host}{url}";
@@ -131,9 +136,12 @@ namespace DxxBrowser.driver.dmm
                         if (null != iframes) {
                             // カテゴリとか、そんなページ
                             anchors = iframes.Select((f) => {
-                                return f.GetAttributeValue("src", null);
-                            }).Where((u) => u != null);
-                        } else {
+                                var url = f.GetAttributeValue("src", null);
+                                return ensureUrl(urx.Uri, url);
+                            }).Where((u) => Driver.IsSupported(u) );
+                        }
+
+                        if(Utils.IsNullOrEmpty(anchors)) { 
                             // トップページ（新着とか）
                             do {
                                 var a = outer.DocumentNode.SelectSingleNode("//a[contains(@onclick,'sampleplay')]");
@@ -159,7 +167,7 @@ namespace DxxBrowser.driver.dmm
                                     break;
                                 }
                                 var anchor = last.GetAttributeValue("src", null);
-                                if (anchor == null) {
+                                if (anchor == null || !Driver.IsSupported(anchor)) {
                                     break;
                                 }
                                 anchors = new List<string>() { anchor };

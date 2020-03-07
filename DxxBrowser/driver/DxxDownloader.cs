@@ -298,7 +298,7 @@ namespace DxxBrowser.driver {
         #region Constants
 
         private const int CONCURRENT_TASK = 2;
-        private const int BUFF_SIZE = 1024;
+        private const int BUFF_SIZE = 1024*1024;    // 1MB
         private const string LOG_CAT = "DL";
         public const int MAX_RETRY = 2;
 
@@ -394,9 +394,11 @@ namespace DxxBrowser.driver {
             if (total > 0) {
                 percent = (int)Math.Round(100 * (double)received / (double)total);
             }
-            Dispatcher.InvokeAsync(() => {
-                dlTask.ItemInfo.Percent = percent;
-            });
+            if (percent == 100 || percent - dlTask.ItemInfo.Percent > 2) {
+                Dispatcher.InvokeAsync(() => {
+                    dlTask.ItemInfo.Percent = percent;
+                });
+            }
         }
 
         /**

@@ -199,11 +199,15 @@ namespace DxxBrowser {
         }
 
         private void OnDownloadListChanged(object sender, NotifyCollectionChangedEventArgs e) {
-            ListScrollIntoView(downloadingList);
+            if (e.Action == NotifyCollectionChangedAction.Add) {
+                ListScrollIntoView(downloadingList);
+            }
         }
 
         private void OnStatusListChanged(object sender, NotifyCollectionChangedEventArgs e) {
-            ListScrollIntoView(statusList);
+            if (e.Action == NotifyCollectionChangedAction.Add) {
+                ListScrollIntoView(statusList);
+            }
         }
 
         /**
