@@ -71,6 +71,9 @@
                     <Button IsEnabled="{Binding HasNext.Value}"
                         Command="{Binding GoForwardCommand}"  
                         Content="{StaticResource PathNext}" Style="{StaticResource PushButtonStyle}"/>
+                    <Button IsEnabled="{Binding IsReady.Value}"
+                        Command="{Binding FitCommand}"  
+                        Content="{StaticResource PathMaximize}" Style="{StaticResource PushButtonStyle}"/>
                 </StackPanel>
                 <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" Orientation="Horizontal">
                     <TextBlock Text="{Binding PlayList.CurrentPos.Value}" Foreground="White" VerticalAlignment="Center"/>
