@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace DxxBrowser {
     /// <summary>
@@ -68,6 +69,7 @@ namespace DxxBrowser {
             public ReactiveCommand GoBackCommand { get; } = new ReactiveCommand();
             public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
             public ReactiveCommand TrashCommand { get; } = new ReactiveCommand();
+            public ReactiveCommand FitCommand { get; } = new ReactiveCommand();
 
             public IObservable<bool> IsPlayingProperty => IsPlaying;
             public IObservable<double> DurationProperty => Duration;
@@ -143,6 +145,9 @@ namespace DxxBrowser {
                     //PlayList?.DeleteSource(PlayList.Current.Value);
                     DxxNGList.Instance.RegisterNG(PlayList.Current.Value.Url);
                 });
+                FitCommand.Subscribe(() => {
+                    Player.Stretch = (Player.Stretch == Stretch.UniformToFill) ? Stretch.Uniform : Stretch.UniformToFill;
+                });
 
                 if (reserver != null) {
                     PlayList = reserver;
@@ -161,7 +166,7 @@ namespace DxxBrowser {
                     return;
                 }
                 var item = PlayList.Current.Value;
-                if(item!=null && item.Url!=mCurrentUrl) {
+                if(item!=null && item.Url!=mCurrentUrl && !string.IsNullOrEmpty(item.Path)) {
                     mCurrentUrl = item.Url;
                     Source = new Uri(item.Path);
                 } else {
