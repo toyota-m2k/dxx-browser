@@ -199,6 +199,9 @@ namespace DxxBrowser.driver.heizo {
                             }
                         }
                     }
+                    if(Utils.IsNullOrEmpty(mp4s)) {
+                        DxxLogger.Instance.Comment(LOG_CAT, $"No Data: {DxxUrl.GetFileName(urx.Uri)}");
+                    }
                     return mp4s?.ToList();
                 });
             }
