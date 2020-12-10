@@ -26,7 +26,7 @@ namespace DxxBrowser.driver {
             var dlg = new DxxStorageFolderDialog(Name, StoragePath);
             dlg.Owner = owner;
             if (dlg.ShowDialog() ?? false) {
-                if(IsSameDirectoryPath(dlg.Path, StoragePath)) {
+                if(StoragePath!=null && IsSameDirectoryPath(dlg.Path, StoragePath)) {
                     return false;
                 }
                 StoragePath = dlg.Path;
