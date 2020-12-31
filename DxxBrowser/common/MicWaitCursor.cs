@@ -21,7 +21,7 @@ namespace DxxBrowser.common {
             }
         }
 
-        private Cursor OrgCursor;
+        private Cursor OrgCursor = null;
 
         public MicWaitCursor(FrameworkElement cursorOwner, Cursor waitCursor=null) {
             if (null != cursorOwner) {
@@ -32,7 +32,10 @@ namespace DxxBrowser.common {
         }
 
         public void Dispose() {
-            Cursor = OrgCursor;
+            if (null != OrgCursor) {
+                Cursor = OrgCursor;
+                OrgCursor = null;
+            }
         }
 
         public static MicWaitCursor Start(FrameworkElement cursorOwner, Cursor waitCursor=null) {

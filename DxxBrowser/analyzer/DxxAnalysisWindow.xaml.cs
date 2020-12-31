@@ -188,8 +188,9 @@ namespace DxxBrowser {
             try {
                 Nodes.Value = null;
                 CurrentNode.Value = null;
-                HtmlRoot = await Web.LoadFromWebAsync(BaseUrl.Value);
-                if(null!=HtmlRoot) {
+                //HtmlRoot = await Web.LoadFromWebAsync(BaseUrl.Value);
+                HtmlRoot = Web.LoadFromBrowser(BaseUrl.Value);
+                if (null!=HtmlRoot) {
                     DocumentAvailable.Value = true;
                     CurrentNode.Value = new DxxHtmlNode(HtmlRoot.DocumentNode);
                     Nodes.Value = CurrentNode.Value.ChildNodes;

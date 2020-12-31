@@ -130,15 +130,28 @@ namespace DxxBrowser.driver.dmm
                             DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Target):{urx.Url}");
                             return null;
                         }
-
                         IEnumerable<string> anchors = null;
+                        var a_auth = outer.DocumentNode.SelectNodes("//a[contains(@href,'declared=yes')]");
+                        if (!Utils.IsNullOrEmpty(a_auth)) {
+                            var nextUrl = a_auth.SingleOrDefault()?.GetAttributeValue("href", null);
+                            if (!string.IsNullOrEmpty(nextUrl)) {
+                                // 年齢認証
+                                // JavaScriptが必要
+                                outer = web.LoadFromBrowser(nextUrl);
+                                if (null == outer) {
+                                    DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{urx.Url}");
+                                    return null;
+                                }
+                            }
+                        }
+
                         var iframes = outer.DocumentNode.SelectNodes("//iframe");
                         if (null != iframes) {
                             // カテゴリとか、そんなページ
                             anchors = iframes.Select((f) => {
                                 var url = f.GetAttributeValue("src", null);
                                 return ensureUrl(urx.Uri, url);
-                            }).Where((u) => Driver.IsSupported(u) );
+                            }).Where((u) => Driver.IsSupported(u));
                         }
 
                         if(Utils.IsNullOrEmpty(anchors)) { 
