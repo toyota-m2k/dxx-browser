@@ -24,7 +24,7 @@ namespace DxxBrowser.common {
         private Cursor OrgCursor = null;
 
         public MicWaitCursor(FrameworkElement cursorOwner, Cursor waitCursor=null) {
-            if (cursorOwner != null) {
+            if (null != cursorOwner) {
                 CursorOwner = new WeakReference<FrameworkElement>(cursorOwner);
                 OrgCursor = cursorOwner.Cursor;
                 cursorOwner.Cursor = waitCursor ?? Cursors.Wait;
