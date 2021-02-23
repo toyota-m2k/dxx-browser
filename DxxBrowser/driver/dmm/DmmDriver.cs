@@ -12,6 +12,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using Common;
+using System.Diagnostics;
 
 namespace DxxBrowser.driver.dmm
 {
@@ -199,7 +200,7 @@ namespace DxxBrowser.driver.dmm
                                 continue;
                             }
                             var inner = await web.LoadFromWebAsync(innerUrl, cancellationToken);
-                            var txt = inner.DocumentNode.SelectSingleNode("//script[contains(text(), 'params')]");
+                            var txt = inner.DocumentNode.SelectSingleNode("//script[contains(text(), 'DMMPlayerFactory')]");
                             if (null != txt) {
                                 var regex = new Regex("{.*}");
                                 var v = regex.Match(txt.InnerText);
@@ -220,22 +221,39 @@ namespace DxxBrowser.driver.dmm
                                     //        "affiliateId":"","controls":{"header":true,"panel":true,"title":true,"seek":true,"duration":true,"rewind60":false,"rewind10":true,"playpause":true,
                                     //        "forward10":true,"forward60":false,"bitrate":true,"volume":true,"fullscreen":true},"isDebug":false,"isVideoDebug":false,"isDisplayPlayCount":false
                                     //    }
-                                    var js = JObject.Parse(v.Value);
-                                    var ary = js["bitrates"];
-                                    if (ary != null && ary.Type == JTokenType.Array) {
-                                        int br = 0;
-                                        string src = js["src"].Value<string>();
-                                        foreach (var e in ary) {
-                                            var i = e["bitrate"].Value<int>();
-                                            if (i > br) {
-                                                br = i;
-                                                src = e["src"].Value<string>();
+                                    JObject js = null;
+                                    try {
+                                        js = JObject.Parse(v.Value);
+                                    } catch(Exception e) {
+                                        Debug.WriteLine(e);
+                                        Debug.WriteLine("---");
+                                        Debug.WriteLine(v.Value);
+                                        Debug.WriteLine("---");
+                                        throw;
+                                    }
+                                    string src0 = null;
+                                    if (js.ContainsKey("src")) {
+                                        src0 = js["src"].Value<string>();
+                                    }
+
+                                    string src = null;
+                                    if (js.ContainsKey("bitrates")) {
+                                        var ary = js["bitrates"];
+                                        if (ary != null && ary.Type == JTokenType.Array) {
+                                            int br = 0;
+                                            foreach (var e in ary) {
+                                                var i = e["bitrate"].Value<int>();
+                                                if (i > br) {
+                                                    br = i;
+                                                    src = e["src"].Value<string>();
+                                                }
                                             }
                                         }
-                                        if (src != null) {
-                                            var targetUrl = ensureUrl(urx.Uri, src);
-                                            list.Add(new DxxTargetInfo(targetUrl, DxxUrl.GetFileName(targetUrl), js["title"].Value<string>()));
-                                        }
+                                    }
+                                    src = src ?? src0;
+                                    if (src != null) {
+                                        var targetUrl = ensureUrl(urx.Uri, src);
+                                        list.Add(new DxxTargetInfo(targetUrl, DxxUrl.GetFileName(targetUrl), js["title"].Value<string>()));
                                     }
                                 }
                             }
@@ -247,6 +265,7 @@ namespace DxxBrowser.driver.dmm
                             DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (Target):{urx.Url}");
                         } else {
                             DxxLogger.Instance.Error(LOG_CAT, $"Error (Target):{urx.Url}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"... {e}");
                         }
                         return null;
                     }
