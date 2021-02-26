@@ -138,7 +138,8 @@ namespace DxxBrowser.driver.dmm
                             if (!string.IsNullOrEmpty(nextUrl)) {
                                 // 年齢認証
                                 // JavaScriptが必要
-                                outer = web.LoadFromBrowser(nextUrl);
+                                //outer = web.LoadFromBrowser(nextUrl);
+                                outer = await web.LoadFromWebAsync(nextUrl, cancellationToken);
                                 if (null == outer) {
                                     DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{urx.Url}");
                                     return null;
@@ -231,13 +232,12 @@ namespace DxxBrowser.driver.dmm
                                         Debug.WriteLine("---");
                                         throw;
                                     }
-                                    string src0 = null;
+                                    string src = null;
                                     if (js.ContainsKey("src")) {
-                                        src0 = js["src"].Value<string>();
+                                        src = js["src"].Value<string>();
                                     }
 
-                                    string src = null;
-                                    if (js.ContainsKey("bitrates")) {
+                                    if (src==null && js.ContainsKey("bitrates")) {
                                         var ary = js["bitrates"];
                                         if (ary != null && ary.Type == JTokenType.Array) {
                                             int br = 0;
@@ -250,7 +250,6 @@ namespace DxxBrowser.driver.dmm
                                             }
                                         }
                                     }
-                                    src = src ?? src0;
                                     if (src != null) {
                                         var targetUrl = ensureUrl(urx.Uri, src);
                                         list.Add(new DxxTargetInfo(targetUrl, DxxUrl.GetFileName(targetUrl), js["title"].Value<string>()));
