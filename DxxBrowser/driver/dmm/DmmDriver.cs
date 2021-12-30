@@ -201,9 +201,9 @@ namespace DxxBrowser.driver.dmm
                                 continue;
                             }
                             var inner = await web.LoadFromWebAsync(innerUrl, cancellationToken);
-                            var txt = inner.DocumentNode.SelectSingleNode("//script[contains(text(), 'DMMPlayerFactory')]");
+                            var txt = inner.DocumentNode.SelectSingleNode("//script[contains(text(), 'dmmplayer')]");
                             if (null != txt) {
-                                var regex = new Regex("{.*}");
+                                var regex = new Regex(@"const\s+args\s?=\s?(?<json>\{.*\})");
                                 var v = regex.Match(txt.InnerText);
                                 if (v.Success) {
                                     //var params =
@@ -224,7 +224,7 @@ namespace DxxBrowser.driver.dmm
                                     //    }
                                     JObject js = null;
                                     try {
-                                        js = JObject.Parse(v.Value);
+                                        js = JObject.Parse(v.Groups["json"].Value);
                                     } catch(Exception e) {
                                         Debug.WriteLine(e);
                                         Debug.WriteLine("---");
