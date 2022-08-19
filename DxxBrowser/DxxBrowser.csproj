@@ -98,7 +98,6 @@
     <Compile Include="player\DxxPlayerView.xaml.cs">
       <DependentUpon>DxxPlayerView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="browser\DxxWebViewManager.cs" />
     <Compile Include="browser\DxxWebViewrHost.cs" />
     <Compile Include="DxxDriverManager.cs" />
     <Compile Include="driver\DxxLogger.cs" />
@@ -208,11 +207,8 @@
     <PackageReference Include="HtmlAgilityPack">
       <Version>1.11.30</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Toolkit.Wpf.UI.Controls.WebView">
-      <Version>6.1.2</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.705.50</Version>
+      <Version>1.0.1293.44</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>13.0.1</Version>

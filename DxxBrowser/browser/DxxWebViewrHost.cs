@@ -1,6 +1,6 @@
 ﻿using Common;
-using Microsoft.Toolkit.Win32.UI.Controls.Interop.WinRT;
-using Microsoft.Toolkit.Wpf.UI.Controls;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -29,8 +29,8 @@ namespace DxxBrowser {
         public bool IsMain { get; }
 
         [Disposal(false)]
-        private WeakReference<WebView> mBrowser;
-        public WebView Browser => mBrowser?.GetValue();
+        private WeakReference<WebView2> mBrowser;
+        public WebView2 Browser => mBrowser?.GetValue();
         private WeakReference<Window> mOwner;
         public Window Owner => mOwner?.GetValue();
 
@@ -205,54 +205,44 @@ namespace DxxBrowser {
             LMonitor = new LoadingMonitor(this);
         }
 
-        public void SetBrowser(WebView wv) { 
-            if(Browser!=null && Browser!=wv) {
-                ResetBrowser();
-            }
-            mBrowser = new WeakReference<WebView>(wv);
+        public void SetBrowser(WebView2 wv) { 
+            mBrowser = new WeakReference<WebView2>(wv);
             wv.NavigationStarting += WebView_NavigationStarting;
             wv.NavigationCompleted += WebView_NavigationCompleted;
-            wv.SourceUpdated += WebView_SourceUpdated;
             wv.ContentLoading += WebView_ContentLoading;
-            wv.DOMContentLoaded += WebView_DOMContentLoaded;
-            wv.FrameContentLoading += WebView_FrameContentLoading;
-            wv.FrameNavigationCompleted += WebView_FrameNavigationCompleted;
-            wv.FrameNavigationStarting += WebView_FrameNavigationStarting;
-            wv.FrameDOMContentLoaded += WebView_FrameDOMContentLoaded;
-            wv.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
-            wv.UnsupportedUriSchemeIdentified += WebView_UnsupportedUriSchemeIdentified;
-            wv.UnviewableContentIdentified += WebView_UnviewableContentIdentified;
-            wv.ScriptNotify += WebView_ScriptNotify;
-            wv.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
-            wv.NewWindowRequested += WebView_NewWindowRequested;
-            wv.PermissionRequested += WebView_PermissionRequired;
-            wv.MoveFocusRequested += WebView_MoveFocusRequested;
+            wv.CoreWebView2.DOMContentLoaded += WebView_DOMContentLoaded;
+            wv.CoreWebView2.FrameNavigationCompleted += WebView_FrameNavigationCompleted;
+            wv.CoreWebView2.FrameNavigationStarting += WebView_FrameNavigationStarting;
+            wv.CoreWebView2.NewWindowRequested += WebView_NewWindowRequested;
+            wv.CoreWebView2.PermissionRequested += WebView_PermissionRequired;
+            wv.CoreWebView2.ProcessFailed += WebView_ProcessFailed;
+
+            //wv.SourceUpdated += WebView_SourceUpdated;
+            //wv.CoreWebView2.FrameContentLoading += WebView_FrameContentLoading;
+            //wv.CoreWebView2.FrameDOMContentLoaded += WebView_FrameDOMContentLoaded;
+            //wv.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
+            //wv.UnsupportedUriSchemeIdentified += WebView_UnsupportedUriSchemeIdentified;
+            //wv.UnviewableContentIdentified += WebView_UnviewableContentIdentified;
+            //wv.ScriptNotify += WebView_ScriptNotify;
+            //wv.LongRunningScriptDetected += WebView_LongRunningScriptDetected;
+            //wv.MoveFocusRequested += WebView_MoveFocusRequested;
             //wv.Process.ProcessExited += WebView_ProcessExited;
         }
 
         public void ResetBrowser() {
-            WebView wv = Browser;
+            WebView2 wv = Browser;
             if (null == wv) {
                 return;
             }
             wv.NavigationStarting -= WebView_NavigationStarting;
             wv.NavigationCompleted -= WebView_NavigationCompleted;
-            wv.SourceUpdated -= WebView_SourceUpdated;
             wv.ContentLoading -= WebView_ContentLoading;
-            wv.DOMContentLoaded -= WebView_DOMContentLoaded;
-            wv.FrameContentLoading -= WebView_FrameContentLoading;
-            wv.FrameNavigationCompleted -= WebView_FrameNavigationCompleted;
-            wv.FrameNavigationStarting -= WebView_FrameNavigationStarting;
-            wv.FrameDOMContentLoaded -= WebView_FrameDOMContentLoaded;
-            wv.UnsafeContentWarningDisplaying -= WebView_UnsafeContentWarningDisplaying;
-            wv.UnsupportedUriSchemeIdentified -= WebView_UnsupportedUriSchemeIdentified;
-            wv.UnviewableContentIdentified -= WebView_UnviewableContentIdentified;
-            wv.ScriptNotify -= WebView_ScriptNotify;
-            wv.LongRunningScriptDetected -= WebView_LongRunningScriptDetected;
-            wv.NewWindowRequested -= WebView_NewWindowRequested;
-            wv.PermissionRequested -= WebView_PermissionRequired;
-            wv.MoveFocusRequested -= WebView_MoveFocusRequested;
-            //wv.Process.ProcessExited -= WebView_ProcessExited;
+            wv.CoreWebView2.DOMContentLoaded -= WebView_DOMContentLoaded;
+            wv.CoreWebView2.FrameNavigationCompleted -= WebView_FrameNavigationCompleted;
+            wv.CoreWebView2.FrameNavigationStarting -= WebView_FrameNavigationStarting;
+            wv.CoreWebView2.NewWindowRequested -= WebView_NewWindowRequested;
+            wv.CoreWebView2.PermissionRequested -= WebView_PermissionRequired;
+            wv.CoreWebView2.ProcessFailed -= WebView_ProcessFailed;
             mBrowser = null;
         }
 
@@ -287,11 +277,13 @@ namespace DxxBrowser {
         //Pending PendingCommand = new Pending(Pending.Command.None);
 
         void Navigate(string url) {
+            var browser = Browser;
             var uri = DxxUrl.FixUpUrl(url);
-            if (null==uri) { 
+            if (null==uri || null==browser) { 
                 return;
             }
-            Browser?.Navigate(url);
+           
+            Browser.Source = new Uri(url);
         }
 
         void Stop() {
@@ -304,7 +296,7 @@ namespace DxxBrowser {
         }
 
         void Reload() {
-            Browser?.Refresh();
+            Browser?.Reload();
         }
 
         void GoBack() {
@@ -312,7 +304,7 @@ namespace DxxBrowser {
         }
 
         void GoForward() {
-            Browser.GoForward();
+            Browser?.GoForward();
         }
 
         void UpdateHistory() {
@@ -416,24 +408,52 @@ namespace DxxBrowser {
 
         #region Navigation Events
 
-        private void WebView_NavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
-            Debug.WriteLine(callerName());
+        /**
+         * NavigationID と Urlマップ
+         * WebView は、各イベントのEventArgsに Uri 属性が渡ってきていたが、
+         * WebView2では、NavigationStartingの時に発行される NavigationId という ulong 値で管理するようになったようだ。
+         */
+        class NavigationMap {
+            Dictionary<ulong, Uri> map = new Dictionary<ulong, Uri>();
+            public void Register(ulong id, Uri uri) {
+                map[id] = uri;
+            }
+            public void Unregister(ulong id) {
+                map.Remove(id);
+            }
+            public void Clear() {
+                map.Clear();
+            }
+            public Uri GetUri(ulong id) {
+                return map.GetValue(id);
+            }
+            public Uri this[ulong id] => GetUri(id);
+        }
+        private NavigationMap navMap = new NavigationMap();
+
+        private void WebView_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e) {
+            Debug.WriteLine($"{callerName()}: {e.Uri} ({e.NavigationId})");
+            var leftCtrl = Keyboard.IsKeyDown(Key.LeftCtrl);
             if (IsMain) {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl)) {
-                    RequestLoadInSubview.OnNext(e.Uri.ToString());
+                if (leftCtrl) {
+                    // WebView2 ではここには入ってこないはず。
+                    RequestLoadInSubview.OnNext(e.Uri);
                     e.Cancel = true;
                     return;
                 }
             }
-            if (!Keyboard.IsKeyDown(Key.LeftCtrl)) {
-                var driver = DxxDriverManager.Instance.FindDriver(e.Uri.ToString());
+            var uri = new Uri(e.Uri);
+            navMap.Register(e.NavigationId, uri);
+
+            if (!leftCtrl) {
+                var driver = DxxDriverManager.Instance.FindDriver(e.Uri);
                 if (driver != null) {
-                    var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(e.Uri, "link"), "");
+                    var du = new DxxUrl(e.Uri, driver, driver.GetNameFromUri(uri, "link"), "");
                     if (du.IsContainer || du.IsTarget) {
                         if (IsMain) {
                             MainViewBeginAutoDownload.OnNext(du);
                         }
-                        DxxDriverManager.Instance.Download(e.Uri.ToString(), null, "");
+                        DxxDriverManager.Instance.Download(e.Uri, null, "");
                         e.Cancel = true;
                         return;
                     }
@@ -443,10 +463,13 @@ namespace DxxBrowser {
             UpdateHistory();
         }
 
-        private void WebView_ContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
+        private void WebView_ContentLoading(object sender, CoreWebView2ContentLoadingEventArgs e) {
             Debug.WriteLine(callerName());
-            Url.Value = e.Uri.ToString();
-            LMonitor.OnStartLoading(e.Uri.ToString(), false);
+            var uri = navMap[e.NavigationId];
+            if (uri != null) {
+                Url.Value = uri.ToString();
+                LMonitor.OnStartLoading(uri.ToString(), false);
+            }
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
             }
@@ -454,67 +477,84 @@ namespace DxxBrowser {
             UpdateHistory();
         }
 
-        private void WebView_DOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
+        private void WebView_DOMContentLoaded(object sender, CoreWebView2DOMContentLoadedEventArgs e) {
             Debug.WriteLine(callerName());
             UpdateHistory();
-            var script = @"
-                    var els = document.getElementsByTagName('a');
-                    Array.prototype.map.call(els, (v) => {
-                        v.onmouseover = function(e) {
-                            window.external.notify('i=' + e.currentTarget.href);
-                        }
-                        v.onmouseleave = function(e) {
-                            window.external.notify('o=' + e.currentTarget.href);
-                        }
+            //var script = @"
+            //        var els = document.getElementsByTagName('a');
+            //        Array.prototype.map.call(els, (v) => {
+            //            v.onmouseover = function(e) {
+            //                window.external.notify('i=' + e.currentTarget.href);
+            //            }
+            //            v.onmouseleave = function(e) {
+            //                window.external.notify('o=' + e.currentTarget.href);
+            //            }
                         
-                    })";
-            _ = Browser.InvokeScriptAsync("eval", new string[] { script });
+            //        })";
+            //_ = Browser.ExecuteScriptAsync("eval", new string[] { script });
             //_ = Browser.InvokeScriptAsync("eval", new string[] { "document.onmousemove = function(e) { window.external.notify(e); }" });
         }
 
-        private void WebView_NavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
+        private void WebView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) {
             Debug.WriteLine(callerName());
-            LMonitor.OnEndLoading(e.Uri.ToString(), false);
-            UpdateHistory();
+            var uri = navMap[e.NavigationId];
+            if (uri != null) {
+                navMap.Unregister(e.NavigationId);
+                LMonitor.OnEndLoading(uri.ToString(), false);
+                UpdateHistory();
+            }
         }
 
         #endregion
 
         #region Frame Loading Events
 
-        private void WebView_FrameNavigationStarting(object sender, WebViewControlNavigationStartingEventArgs e) {
+
+        private void WebView_FrameNavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e) {
+            navMap.Register(e.NavigationId, new Uri(e.Uri));
             Debug.WriteLine($"{callerName()}:{e.Uri}");
-            var url = e.Uri.ToString();
-            if(url=="about:blank"||url.StartsWith("javascript:")) {
-                e.Cancel = true;
+            if(e.Uri=="about:blank"||e.Uri.StartsWith("javascript:")) {
+                //e.Cancel = true;
                 return;
             }
             UpdateHistory();
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
+            } else {
+                LMonitor.OnStartLoading(e.Uri, true);
+                AddFrameList(e.Uri);
             }
         }
-        private void WebView_FrameContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
-            Debug.WriteLine(callerName());
-            LMonitor.OnStartLoading(e.Uri.ToString(), true);
-            AddFrameList(e.Uri.ToString());
-            UpdateHistory();
-        }
-        private void WebView_FrameDOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
-            Debug.WriteLine(callerName());
-            UpdateHistory();
-        }
 
-        private void WebView_FrameNavigationCompleted(object sender, WebViewControlNavigationCompletedEventArgs e) {
-            Debug.WriteLine(callerName());
-            LMonitor.OnEndLoading(e.Uri.ToString(), true);
-            UpdateHistory();
+        //private void WebView_FrameContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //    LMonitor.OnStartLoading(e.Uri.ToString(), true);
+        //    AddFrameList(e.Uri.ToString());
+        //    UpdateHistory();
+        //}
+
+
+        //private void WebView_FrameDOMContentLoaded(object sender, WebViewControlDOMContentLoadedEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //    UpdateHistory();
+        //}
+
+        private void WebView_FrameNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) {
+            var uri = navMap[e.NavigationId];
+            if (uri != null) {
+                navMap.Unregister(e.NavigationId);
+                Debug.WriteLine($"{callerName()}:{uri}");
+                Debug.WriteLine(callerName());
+                LMonitor.OnEndLoading(uri.ToString(), true);
+                UpdateHistory();
+            }
         }
         #endregion
 
         #region Special Caces
 
-        private void WebView_NewWindowRequested(object sender, WebViewControlNewWindowRequestedEventArgs e) {
+
+        private void WebView_NewWindowRequested(object sender, CoreWebView2NewWindowRequestedEventArgs e) {
             Debug.WriteLine(callerName());
             if(IsMain) {
                 // Main View の場合は、サブビューに表示
@@ -525,67 +565,69 @@ namespace DxxBrowser {
             }
             e.Handled = true;
         }
-        private void WebView_PermissionRequired(object sender, WebViewControlPermissionRequestedEventArgs e) {
+
+
+        private void WebView_PermissionRequired(object sender, CoreWebView2PermissionRequestedEventArgs e) {
             Debug.WriteLine(callerName());
-            e.PermissionRequest.Deny();
+            e.State = CoreWebView2PermissionState.Deny;
         }
 
         #endregion
 
         #region Potential Probrems
-        private void WebView_LongRunningScriptDetected(object sender, WebViewControlLongRunningScriptDetectedEventArgs e) {
-            Debug.WriteLine(callerName());
-            e.StopPageScriptExecution = true;
-            HasError.Value = ErrorLevel.ERROR;
-            CurrentError.Value = "Long running script was detected and stopped it.";
-        }
+        //private void WebView_LongRunningScriptDetected(object sender, WebViewControlLongRunningScriptDetectedEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //    e.StopPageScriptExecution = true;
+        //    HasError.Value = ErrorLevel.ERROR;
+        //    CurrentError.Value = "Long running script was detected and stopped it.";
+        //}
 
-        private void WebView_UnviewableContentIdentified(object sender, WebViewControlUnviewableContentIdentifiedEventArgs e) {
-            Debug.WriteLine(callerName());
-            HasError.Value = ErrorLevel.ERROR;
-            CurrentError.Value = "content in unknown type was received.";
-        }
+        //private void WebView_UnviewableContentIdentified(object sender, WebViewControlUnviewableContentIdentifiedEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //    HasError.Value = ErrorLevel.ERROR;
+        //    CurrentError.Value = "content in unknown type was received.";
+        //}
 
-        private void WebView_UnsupportedUriSchemeIdentified(object sender, WebViewControlUnsupportedUriSchemeIdentifiedEventArgs e) {
-            Debug.WriteLine(callerName());
-            HasError.Value = ErrorLevel.ERROR;
-            CurrentError.Value = "unknown url scheme was specified.";
-        }
+        //private void WebView_UnsupportedUriSchemeIdentified(object sender, WebViewControlUnsupportedUriSchemeIdentifiedEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //    HasError.Value = ErrorLevel.ERROR;
+        //    CurrentError.Value = "unknown url scheme was specified.";
+        //}
 
-        private void WebView_UnsafeContentWarningDisplaying(object sender, object e) {
-            Debug.WriteLine(callerName());
-            HasError.Value = ErrorLevel.ERROR;
-            CurrentError.Value = "SmartScreen says, 'unsafe content'.";
-        }
+        //private void WebView_UnsafeContentWarningDisplaying(object sender, object e) {
+        //    Debug.WriteLine(callerName());
+        //    HasError.Value = ErrorLevel.ERROR;
+        //    CurrentError.Value = "SmartScreen says, 'unsafe content'.";
+        //}
 
         #endregion
 
         #region Interaction
 
-        private void WebView_ScriptNotify(object sender, WebViewControlScriptNotifyEventArgs e) {
-            Debug.WriteLine($"{callerName()} {e.Value}");
-            switch(e.Value[0]) {
-                case 'i':
-                    StatusLine.Value = e.Value.Substring(2);
-                    break;
-                case 'o':
-                    LMonitor.ResumeStatusLine();
-                    break;
-                //case 'c':
-                //    CopyCommand.Execute(e.Value.Substring(2));
-                //    break;
-                default:
-                    Debug.Assert(false, $"unknown command:{e.Value}");
-                    break;
-            }
-        }
+        //private void WebView_ScriptNotify(object sender, WebViewControlScriptNotifyEventArgs e) {
+        //    Debug.WriteLine($"{callerName()} {e.Value}");
+        //    switch(e.Value[0]) {
+        //        case 'i':
+        //            StatusLine.Value = e.Value.Substring(2);
+        //            break;
+        //        case 'o':
+        //            LMonitor.ResumeStatusLine();
+        //            break;
+        //        //case 'c':
+        //        //    CopyCommand.Execute(e.Value.Substring(2));
+        //        //    break;
+        //        default:
+        //            Debug.Assert(false, $"unknown command:{e.Value}");
+        //            break;
+        //    }
+        //}
 
         #endregion
 
 
         #region Fatal Error
 
-        private void WebView_ProcessExited(object sender, object e) {
+        private void WebView_ProcessFailed(object sender, CoreWebView2ProcessFailedEventArgs e) {
             Debug.WriteLine(callerName());
             HasError.Value = ErrorLevel.FATAL_ERROR;
             CurrentError.Value = "WebView has been dead. Please reboot DxxBrowser.";
@@ -595,13 +637,13 @@ namespace DxxBrowser {
 
         #region Unknown Events
 
-        private void WebView_MoveFocusRequested(object sender, WebViewControlMoveFocusRequestedEventArgs e) {
-            Debug.WriteLine(callerName());
-        }
+        //private void WebView_MoveFocusRequested(object sender, WebViewControlMoveFocusRequestedEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //}
 
-        private void WebView_SourceUpdated(object sender, DataTransferEventArgs e) {
-            Debug.WriteLine(callerName());
-        }
+        //private void WebView_SourceUpdated(object sender, DataTransferEventArgs e) {
+        //    Debug.WriteLine(callerName());
+        //}
 
         #endregion
     }

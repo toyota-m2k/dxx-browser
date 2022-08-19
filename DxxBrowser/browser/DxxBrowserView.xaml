@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DxxBrowser"
              xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
-             xmlns:ct="clr-namespace:Microsoft.Toolkit.Wpf.UI.Controls;assembly=Microsoft.Toolkit.Wpf.UI.Controls.WebView"
+             xmlns:wpf="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              Unloaded="OnUnloaded"
@@ -25,7 +25,15 @@
         <local:DxxNaviBar Grid.Row="0" x:Name="naviBar"/>
 
         <!-- Browser Body -->
-        <Grid Grid.Row="1" x:Name="browserHostGrid"/>
+        <Grid Grid.Row="1" x:Name="browserHostGrid">
+            <wpf:WebView2 
+                x:Name="webView"
+                      Source="about:blank"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                CoreWebView2InitializationCompleted="WV2CoreWebView2InitializationCompleted"
+                />
+        </Grid>
 
         <!-- どういうわけか、WebView の上にViewを置くと、WebViewの裏に隠れてしまう-->
         <!--<Grid Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="4" Background="#A0F0F8FF"
