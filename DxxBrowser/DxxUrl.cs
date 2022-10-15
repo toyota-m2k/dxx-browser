@@ -14,6 +14,9 @@ namespace DxxBrowser {
         public DxxUrl(Uri uri, IDxxDriver driver, string name, string description) : base(uri, name, description) {
             Driver = driver;
         }
+        public DxxUrl(string uri, IDxxDriver driver, string name, string description) : base(uri, name, description) {
+            Driver = driver;
+        }
 
         public DxxUrl(DxxTargetInfo info, IDxxDriver driver) : base(info.Url, info.Name, info.Description) {
             Driver = driver;

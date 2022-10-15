@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Wpf.UI.Controls;
-using Reactive.Bindings;
+﻿using Reactive.Bindings;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,7 +7,7 @@ namespace DxxBrowser {
     /// <summary>
     /// DxxBrowserView.xaml の相互作用ロジック
     /// </summary>
-    public partial class DxxBrowserView : UserControl, DxxWebViewManager.IDxxWebViewContainer {
+    public partial class DxxBrowserView : UserControl {
 
         public DxxWebViewHost ViewModel {
             get => DataContext as DxxWebViewHost;
@@ -24,30 +23,17 @@ namespace DxxBrowser {
             var vm = new DxxWebViewHost(isMain, Window.GetWindow(this), bookmarks, targetList);
             naviBar.ViewModel = vm;
             this.ViewModel = vm;
-            DxxWebViewManager.Instance.PrepareBrowser(this);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) {
             naviBar.ViewModel.Dispose();
+            ViewModel.ResetBrowser();
         }
 
-        #pragma warning disable CS0618 // 型またはメンバーが古い形式です
 
-        public void AttachWebView(WebView wv) {
-            browserHostGrid.Children.Add(wv);
-            naviBar.ViewModel.SetBrowser(wv);
+        private void WV2CoreWebView2InitializationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs e) {
+            ViewModel.SetBrowser(webView);
         }
 
-        public WebView DetachWebView() {
-            if (browserHostGrid.Children.Count > 0) {
-                var r = browserHostGrid.Children[0] as WebView;
-                browserHostGrid.Children.Clear();
-                naviBar.ViewModel.ResetBrowser();
-                return r;
-            }
-            return null;
-        }
-
-        #pragma warning restore CS0618 // 型またはメンバーが古い形式です
     }
 }

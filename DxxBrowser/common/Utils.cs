@@ -17,6 +17,10 @@ namespace Common
             return !(v?.Any() ?? false);
         }
 
+        public static T GetValue<K,T>(this Dictionary<K,T> dic, K key) {
+            return dic.TryGetValue(key, out T v) ? v : default;
+        }
+
         public static DependencyObject FindChild(DependencyObject root, string name, Type type) {
             for(int i=0, ci=VisualTreeHelper.GetChildrenCount(root); i<ci; i++) {
                 var ch = VisualTreeHelper.GetChild(root, i) as FrameworkElement;
