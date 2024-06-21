@@ -39,6 +39,7 @@ namespace DxxBrowser {
         public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; }
 
         public ReactiveProperty<string> Url { get; } = new ReactiveProperty<string>();
+        public string LoadedUrl = null;
 
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
@@ -62,6 +63,7 @@ namespace DxxBrowser {
         //public ReactiveProperty<bool> LinkActivated { get; } = new ReactiveProperty<bool>();
         public ReactiveProperty<string> StatusLine { get; } = new ReactiveProperty<string>();
 
+        public ReactiveCollection<string> LinkResources { get; } = new ReactiveCollection<string>();
 
         private void InitializeProperties() {
             IsDownloadable = IsContainer.CombineLatest(IsTarget, (c, t) => {
@@ -202,7 +204,7 @@ namespace DxxBrowser {
             mBrowser = null;
             InitializeProperties();
             InitializeCommands();
-            LMonitor = new LoadingMonitor(this);
+            //LMonitor = new LoadingMonitor(this);
         }
 
         public void SetBrowser(WebView2 wv) { 
@@ -216,8 +218,16 @@ namespace DxxBrowser {
             wv.CoreWebView2.NewWindowRequested += WebView_NewWindowRequested;
             wv.CoreWebView2.PermissionRequested += WebView_PermissionRequired;
             wv.CoreWebView2.ProcessFailed += WebView_ProcessFailed;
+            wv.CoreWebView2.HistoryChanged += WebView_HistoryChanged;
+            wv.CoreWebView2.DocumentTitleChanged += WebView_DocumentTitleChanged;
 
-            //wv.SourceUpdated += WebView_SourceUpdated;
+            wv.SourceUpdated += WebView_SourceUpdated;
+            wv.SourceChanged += WebView_SourceChanged;
+            wv.WebMessageReceived += WebView_WebMessageReceived;
+            wv.CoreWebView2.WebResourceRequested += WebView_WebResourceRequested;
+            wv.CoreWebView2.WebResourceResponseReceived += WebView_WebResourceResponseReceived;
+
+
             //wv.CoreWebView2.FrameContentLoading += WebView_FrameContentLoading;
             //wv.CoreWebView2.FrameDOMContentLoaded += WebView_FrameDOMContentLoaded;
             //wv.UnsafeContentWarningDisplaying += WebView_UnsafeContentWarningDisplaying;
@@ -291,7 +301,7 @@ namespace DxxBrowser {
             if (null == browser) {
                 return;
             }
-            LMonitor.Renew();
+            //LMonitor.Renew();
             browser?.Stop();
         }
 
@@ -318,73 +328,73 @@ namespace DxxBrowser {
             }
         }
 
-        class LoadingMonitor {
-            private WeakReference<DxxWebViewHost> mViewModel;
-            private DxxWebViewHost ViewModel => mViewModel?.GetValue();
+        //class LoadingMonitor {
+        //    private WeakReference<DxxWebViewHost> mViewModel;
+        //    private DxxWebViewHost ViewModel => mViewModel?.GetValue();
 
-            public LoadingMonitor(DxxWebViewHost viewModel) {
-                mViewModel = new WeakReference<DxxWebViewHost>(viewModel);
-            }
-            class Info {
-                ulong Generation;
-                public string Url;
-                public bool Frame;
+        //    public LoadingMonitor(DxxWebViewHost viewModel) {
+        //        mViewModel = new WeakReference<DxxWebViewHost>(viewModel);
+        //    }
+        //    class Info {
+        //        ulong Generation;
+        //        public string Url;
+        //        public bool Frame;
 
-                public Info(ulong gene, string url, bool frame) {
-                    Generation = gene;
-                    Url = url;
-                    Frame = frame;
-                }
+        //        public Info(ulong gene, string url, bool frame) {
+        //            Generation = gene;
+        //            Url = url;
+        //            Frame = frame;
+        //        }
 
-                public bool IsSame(string url, bool frame) {
-                    return url == Url && frame == Frame;
-                }
-            }
+        //        public bool IsSame(string url, bool frame) {
+        //            return url == Url && frame == Frame;
+        //        }
+        //    }
 
-            ulong Generation = 0;
-            static IEnumerable<Info> EMPTY = new Info[0];
-            IEnumerable<Info> Loadings = EMPTY;
+        //    ulong Generation = 0;
+        //    static IEnumerable<Info> EMPTY = new Info[0];
+        //    IEnumerable<Info> Loadings = EMPTY;
 
-            IEnumerable<Info> One(Info info) {
-                yield return info;
-            }
+        //    IEnumerable<Info> One(Info info) {
+        //        yield return info;
+        //    }
 
-            public void Renew() {
-                Generation++;
-                Loadings = EMPTY;
-                ViewModel.Loading.Value = false;
-                ViewModel.StatusLine.Value = "";
-            }
+        //    public void Renew() {
+        //        Generation++;
+        //        Loadings = EMPTY;
+        //        ViewModel.Loading.Value = false;
+        //        ViewModel.StatusLine.Value = "";
+        //    }
 
-            public void OnStartLoading(string url, bool frame) {
-                Loadings = Loadings.Concat(One(new Info(Generation, url, frame)));
-                // 挙動から推測して、
-                // ドキュメントのロードが完了してから、Frameのロードが始まり、その場合、NavigationCompletedイベントは発行されないようだ。
-                // なので、frame の Loadが開始されるタイミングで、NavigationCompletedを受け取ったものとしてみる。
-                if (frame) {
-                    Loadings = Loadings.Where((v) => { return v.Frame; });
-                }
-                ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
-                ViewModel.StatusLine.Value = $"Loading> {url}";
-            }
+        //    public void OnStartLoading(string url, bool frame) {
+        //        Loadings = Loadings.Concat(One(new Info(Generation, url, frame)));
+        //        // 挙動から推測して、
+        //        // ドキュメントのロードが完了してから、Frameのロードが始まり、その場合、NavigationCompletedイベントは発行されないようだ。
+        //        // なので、frame の Loadが開始されるタイミングで、NavigationCompletedを受け取ったものとしてみる。
+        //        if (frame) {
+        //            Loadings = Loadings.Where((v) => { return v.Frame; });
+        //        }
+        //        ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
+        //        ViewModel.StatusLine.Value = $"Loading> {url}";
+        //    }
 
-            public void OnEndLoading(string url, bool frame) {
-                Loadings = Loadings.Where((v) => !v.IsSame(url, frame)) ?? EMPTY;
-                ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
-                ResumeStatusLine();
-            }
+        //    public void OnEndLoading(string url, bool frame) {
+        //        Loadings = Loadings.Where((v) => !v.IsSame(url, frame)) ?? EMPTY;
+        //        ViewModel.Loading.Value = !Utils.IsNullOrEmpty(Loadings);
+        //        ResumeStatusLine();
+        //    }
 
-            public void ResumeStatusLine() {
-                if (Utils.IsNullOrEmpty(Loadings)) {
-                    ViewModel.StatusLine.Value = "Ready";
-                } else {
-                    var last = Loadings.Last()?.Url;
-                    ViewModel.StatusLine.Value = (string.IsNullOrEmpty(last)) ? "Ready" : $"Loading> {last}";
-                }
-            }
-        }
+        //    public void ResumeStatusLine() {
+        //        if (Utils.IsNullOrEmpty(Loadings)) {
+        //            ViewModel.StatusLine.Value = "Ready";
+        //        } else {
+        //            var last = Loadings.Last()?.Url;
+        //            ViewModel.StatusLine.Value = (string.IsNullOrEmpty(last)) ? "Ready" : $"Loading> {last}";
+        //        }
+        //    }
+        //}
 
-        private LoadingMonitor LMonitor;
+        //private LoadingMonitor LMonitor;
 
 
         #endregion
@@ -459,8 +469,9 @@ namespace DxxBrowser {
                     }
                 }
             }
-            LMonitor.Renew();
-            UpdateHistory();
+            Loading.Value = true;
+            //LMonitor.Renew();
+            //UpdateHistory();
         }
 
         private void WebView_ContentLoading(object sender, CoreWebView2ContentLoadingEventArgs e) {
@@ -468,18 +479,18 @@ namespace DxxBrowser {
             var uri = navMap[e.NavigationId];
             if (uri != null) {
                 Url.Value = uri.ToString();
-                LMonitor.OnStartLoading(uri.ToString(), false);
+                //LMonitor.OnStartLoading(uri.ToString(), false);
             }
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
             }
             ClearFrameList();
-            UpdateHistory();
+            //UpdateHistory();
         }
 
         private void WebView_DOMContentLoaded(object sender, CoreWebView2DOMContentLoadedEventArgs e) {
             Debug.WriteLine(callerName());
-            UpdateHistory();
+            //UpdateHistory();
             //var script = @"
             //        var els = document.getElementsByTagName('a');
             //        Array.prototype.map.call(els, (v) => {
@@ -500,8 +511,9 @@ namespace DxxBrowser {
             var uri = navMap[e.NavigationId];
             if (uri != null) {
                 navMap.Unregister(e.NavigationId);
-                LMonitor.OnEndLoading(uri.ToString(), false);
-                UpdateHistory();
+                //LMonitor.OnEndLoading(uri.ToString(), false);
+                //UpdateHistory();
+                Loading.Value = true;
             }
         }
 
@@ -517,11 +529,11 @@ namespace DxxBrowser {
                 //e.Cancel = true;
                 return;
             }
-            UpdateHistory();
+            //UpdateHistory();
             if (HasError.Value == ErrorLevel.ERROR) {
                 HasError.Value = ErrorLevel.NONE;
             } else {
-                LMonitor.OnStartLoading(e.Uri, true);
+                //LMonitor.OnStartLoading(e.Uri, true);
                 AddFrameList(e.Uri);
             }
         }
@@ -540,13 +552,14 @@ namespace DxxBrowser {
         //}
 
         private void WebView_FrameNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e) {
+            Debug.WriteLine(callerName());
             var uri = navMap[e.NavigationId];
             if (uri != null) {
                 navMap.Unregister(e.NavigationId);
                 Debug.WriteLine($"{callerName()}:{uri}");
                 Debug.WriteLine(callerName());
-                LMonitor.OnEndLoading(uri.ToString(), true);
-                UpdateHistory();
+                //LMonitor.OnEndLoading(uri.ToString(), true);
+                //UpdateHistory();
             }
         }
         #endregion
@@ -641,9 +654,36 @@ namespace DxxBrowser {
         //    Debug.WriteLine(callerName());
         //}
 
-        //private void WebView_SourceUpdated(object sender, DataTransferEventArgs e) {
-        //    Debug.WriteLine(callerName());
-        //}
+        private void WebView_SourceUpdated(object sender, DataTransferEventArgs e) {
+            Debug.WriteLine(callerName());
+        }
+
+        private void WebView_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e) {
+            Debug.WriteLine(callerName());
+        }
+        private void WebView_WebResourceResponseReceived(object sender, CoreWebView2WebResourceResponseReceivedEventArgs e) {
+            Debug.WriteLine($"{callerName()} URL={e.Request.Uri}");
+        }
+
+        private void WebView_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e) {
+            Debug.WriteLine(callerName());
+        }
+
+        private void WebView_DocumentTitleChanged(object sender, object e) {
+            Debug.WriteLine($"{callerName()} title={Browser?.CoreWebView2?.DocumentTitle}");
+        }
+
+        private void WebView_HistoryChanged(object sender, object e) {
+            Debug.WriteLine(callerName());
+            UpdateHistory();
+        }
+
+        private void WebView_SourceChanged(object sender, CoreWebView2SourceChangedEventArgs e) {
+            Debug.WriteLine($"{callerName()} new={e.IsNewDocument}");
+            if(!e.IsNewDocument) {
+                Url.Value = Browser.Source.ToString();
+            }
+        }
 
         #endregion
     }

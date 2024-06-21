@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Xml;
 
 namespace DxxBrowser.driver.caribbean {
@@ -144,6 +145,26 @@ namespace DxxBrowser.driver.caribbean {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
                         var html = await web.LoadFromWebAsync(urx.Url);
+                        var metaCharset = html.DocumentNode.SelectSingleNode("//meta[@http-equiv='Content-Type']/@content");
+                        if (metaCharset != null) {
+                            var contentValue = metaCharset.Attributes["content"].Value;
+                            var match = Regex.Match(contentValue, @"charset=([^;""]+)", RegexOptions.IgnoreCase);
+                            if (match.Success) {
+                                string charset = match.Groups[1].Value.Trim();
+                                try {
+                                    // 検出された文字コードでエンコーディングを作成
+                                    Encoding encoding = Encoding.GetEncoding(charset);
+
+                                    // 新しいエンコーディングで HTML を再ロード
+                                    html = await web.LoadFromWebAsync(urx.Url, encoding);
+                                }
+                                catch (ArgumentException) {
+                                    // 無効な文字コードの場合はデフォルトのエンコーディングを使用
+                                    Console.WriteLine($"Invalid charset '{charset}'. Using default encoding.");
+                                }
+                            }
+                        }
+
                         var nodes = html.DocumentNode.SelectNodes("//script[contains(text(),'Movie =')]");
                         var list = new List<DxxTargetInfo>();
                         if (!Utils.IsNullOrEmpty(nodes)) {
@@ -181,6 +202,9 @@ namespace DxxBrowser.driver.caribbean {
                                         var name = js["movie_id"].Value<string>() ?? "untitled";
                                         if (null != url) {
                                             var desc = html.DocumentNode.SelectNodes("//h1[@itemprop='name']")?[0]?.InnerText ?? "";
+                                            if(string.IsNullOrEmpty(desc)) {
+                                                desc = html.DocumentNode.SelectNodes("//h1")?[0]?.InnerText ?? "";
+                                            }
                                             list.Add(new DxxTargetInfo(url, name, desc));
                                         }
                                     }

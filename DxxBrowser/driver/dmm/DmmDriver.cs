@@ -119,9 +119,9 @@ namespace DxxBrowser.driver.dmm
             }
 
             public async Task<IList<DxxTargetInfo>> ExtractTargets(DxxUriEx urx) {
-                if(!IsContainer(urx)) {
-                    return null;
-                }
+                //if(!IsContainer(urx)) {
+                //    return null;
+                //}
                 return await DxxActivityWatcher.Instance.Execute(async(cancellationToken) => {
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
