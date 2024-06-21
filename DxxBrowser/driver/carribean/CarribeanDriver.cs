@@ -136,6 +136,7 @@ namespace DxxBrowser.driver.caribbean {
                 });
             }
 
+
             public async Task<IList<DxxTargetInfo>> ExtractTargets(DxxUriEx urx) {
                 if (!IsContainer(urx)) {
                     return null;
@@ -144,23 +145,27 @@ namespace DxxBrowser.driver.caribbean {
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
-                        var html = await web.LoadFromWebAsync(urx.Url);
+                        //Console.WriteLine($"AutoDetectEncoding={web.AutoDetectEncoding}");
+                        // Carribean は EUC-JP が使われており、HtmlWebが時々文字化けするので、明示的に指定する
+                        var html = await web.LoadFromWebAsync(urx.Url, Encoding.GetEncoding("euc-jp"));
+                        //Console.WriteLine($"Encoding={html.Encoding.EncodingName}, DeclaredEncoding={html.DeclaredEncoding.EncodingName}, StreamEncoding={html.StreamEncoding?.EncodingName} ");
+                        // 念のため、実際の文字コードをチェック
                         var metaCharset = html.DocumentNode.SelectSingleNode("//meta[@http-equiv='Content-Type']/@content");
                         if (metaCharset != null) {
                             var contentValue = metaCharset.Attributes["content"].Value;
                             var match = Regex.Match(contentValue, @"charset=([^;""]+)", RegexOptions.IgnoreCase);
                             if (match.Success) {
-                                string charset = match.Groups[1].Value.Trim();
-                                try {
-                                    // 検出された文字コードでエンコーディングを作成
-                                    Encoding encoding = Encoding.GetEncoding(charset);
-
-                                    // 新しいエンコーディングで HTML を再ロード
-                                    html = await web.LoadFromWebAsync(urx.Url, encoding);
-                                }
-                                catch (ArgumentException) {
-                                    // 無効な文字コードの場合はデフォルトのエンコーディングを使用
-                                    Console.WriteLine($"Invalid charset '{charset}'. Using default encoding.");
+                                string charset = match.Groups[1].Value.Trim();  
+                                if (!charset.Equals("euc-jp", StringComparison.OrdinalIgnoreCase)) {
+                                    try {
+                                        // charsetがeuc-jpじゃない --> 検出された文字コードでロードし直す
+                                        Encoding encoding = Encoding.GetEncoding(charset);
+                                        html = await web.LoadFromWebAsync(urx.Url, encoding);
+                                    }
+                                    catch (ArgumentException) {
+                                        // 無効な文字コードの場合はデフォルトのエンコーディングを使用
+                                        Console.WriteLine($"Invalid charset '{charset}'. Using default encoding.");
+                                    }
                                 }
                             }
                         }
