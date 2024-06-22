@@ -157,7 +157,7 @@ namespace DxxBrowser.driver {
                 path = rec.Path;
             } else {
                 path = driver.ReserveFilePath(target.Uri);
-                rec = Reserve(target, driver.Name, path, 0);
+                    rec = Reserve(target, driver.Name, path, 0);
                 if (rec == null) {
                     DxxLogger.Instance.Error(LOG_CAT, $"Can't Reserved ({target.Name})");
                     onCompleted?.Invoke(false);

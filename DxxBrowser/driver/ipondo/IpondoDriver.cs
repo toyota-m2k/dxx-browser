@@ -43,6 +43,7 @@ namespace DxxBrowser.driver.ipondo {
             StorageManager.Download(target, this, onCompleted);
         }
 
+        private string HandlingUrl = null;
         private Regex jsonRegex = new Regex(@".*/movie_details/movie_id/(?<id>[0-9_]+).json");
         public override void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
             if(IsSupported(url)) {
@@ -75,6 +76,8 @@ namespace DxxBrowser.driver.ipondo {
 
             Task.Run(() => {
                 lock(mHttpClient) {
+                    if (HandlingUrl == url) return;
+                    HandlingUrl = url;
                     var jsonString = mHttpClient.GetStringAsync(url).Result;
                     var json = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonString);
                     var title = json.GetValue("Title")?.ToString();
