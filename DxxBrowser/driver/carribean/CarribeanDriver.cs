@@ -31,7 +31,7 @@ namespace DxxBrowser.driver.caribbean {
 
         public override string GetNameFromUri(Uri uri, string defName) {
             // var regex = new Regex("Movie = (?<json>{.*})");
-            var regex = new Regex(@"/(?<name>\d+[-]d*)/");
+            var regex = new Regex(@"/(?<name>\d+[-]\d+)/");
             var match = regex.Match(uri.ToString());
             if(match.Success) {
                 return match.Groups["name"]?.Value ?? defName;
@@ -41,6 +41,14 @@ namespace DxxBrowser.driver.caribbean {
 
         public override void Download(DxxTargetInfo target, Action<bool> onCompleted = null) {
             StorageManager.Download(target, this, onCompleted);
+        }
+
+        public override void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            return; // インライン再生される動画リンクはダウンロードしない。（ちゃんとしたリンクからダウンロードしないとタイトルが全部同じになってしまう）
+            //if(url.Contains("/www.caribbeancom.com/")) {
+            //    return;
+            //}
+            //base.HandleLinkedResource(url, refererUrl, refererTitle);
         }
 
         public CaribbeanDriver() {
