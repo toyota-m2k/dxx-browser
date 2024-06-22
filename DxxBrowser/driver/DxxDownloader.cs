@@ -163,6 +163,13 @@ namespace DxxBrowser.driver {
             Instance = new DxxDownloader(dispatcherSource);
         }
 
+        public static void RunOnUIThread(Action action) {
+            if (Instance == null) {
+                return;
+            }
+            Instance.Dispatcher.Invoke(action);
+        }
+
         public static async Task TerminateAsync() {
             await Instance.AbortAsync();
             Instance = null;

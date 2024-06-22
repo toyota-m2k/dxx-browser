@@ -2,10 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace DxxBrowser.driver {
     public abstract class DxxDriverBaseStoragePathSupport : IDxxDriver {
@@ -63,5 +65,16 @@ namespace DxxBrowser.driver {
         public abstract string GetNameFromUri(Uri uri, string defName = "");
         public abstract bool IsSupported(string url);
         public abstract string ReserveFilePath(Uri uri);
+
+        public virtual void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            if (IsSupported(url)) {
+                var urx = new DxxUriEx(url);
+                if (LinkExtractor.IsTarget(urx)) {
+                    var name = GetNameFromUri(urx.Uri, "noname");
+                    var di = new DxxTargetInfo(url, name, refererTitle);
+                    Download(di);
+                }
+            }
+        }
     }
 }

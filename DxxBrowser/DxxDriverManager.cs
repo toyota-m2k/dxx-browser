@@ -3,6 +3,7 @@ using DxxBrowser.driver;
 using DxxBrowser.driver.caribbean;
 using DxxBrowser.driver.dmm;
 using DxxBrowser.driver.heizo;
+using DxxBrowser.driver.ipondo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +15,7 @@ namespace DxxBrowser {
     /**
      * ダウンロードドライバーを統べる者
      */
-    public class DxxDriverManager : IDisposable
-    {
+    public class DxxDriverManager : IDisposable {
         public static DxxDriverManager Instance { get; private set; }
         public static IDxxDriver NOP = new NopDriver();
         public static IDxxDriver DEFAULT = new DefaultDriver();
@@ -26,10 +26,12 @@ namespace DxxBrowser {
          * コンストラクタ
          */
         private DxxDriverManager() {
-            mList = new List<IDxxDriver>();
-            mList.Add(new DmmDriver());
-            mList.Add(new CaribbeanDriver());
-            mList.Add(new HeyzoDriver());
+            mList = new List<IDxxDriver> {
+                new DmmDriver(),
+                new CaribbeanDriver(),
+                new HeyzoDriver(),
+                new IpondoDriver(),
+            };
         }
 
         public static void Initialize(DependencyObject owner) {
@@ -47,16 +49,18 @@ namespace DxxBrowser {
          */
         public IDxxDriver FindDriver(string url) {
             try {
-                if(string.IsNullOrEmpty(url)||!url.StartsWith("http")) {
+                if (string.IsNullOrEmpty(url) || !url.StartsWith("http")) {
                     return null;
                 }
                 var drv = mList.Where((v) => v.IsSupported(url));
-                if(!Utils.IsNullOrEmpty(drv)) {
+                if (!Utils.IsNullOrEmpty(drv)) {
                     return drv.First();
-                } else {
+                }
+                else {
                     return DEFAULT;
                 }
-            } catch(Exception) {
+            }
+            catch (Exception) {
                 return null;
             }
         }
@@ -67,36 +71,37 @@ namespace DxxBrowser {
             bool update = false;
 
             var driverList = (new IDxxDriver[] { DEFAULT }).Concat(mList);
-            foreach(var d in driverList) {
+            foreach (var d in driverList) {
                 var elems = doc.GetElementsByTagName(d.ID);
-                if(elems.Count>0) {
+                if (elems.Count > 0) {
                     var el = elems[0];
                     d.LoadSettins(el as XmlElement);
-                } else {
+                }
+                else {
                     var el = doc.CreateElement(d.ID);
-                    if (d.Setup(el,Window.GetWindow(owner))) {
+                    if (d.Setup(el, Window.GetWindow(owner))) {
                         root.AppendChild(el);
                         update = true;
                     }
                 }
             }
-            if(update) {
+            if (update) {
                 doc.Save(SETTINGS_PATH);
             }
         }
 
         public void Setup(IDxxDriver targetDriver, Window owner) {
-            if(!targetDriver.HasSettings) {
+            if (!targetDriver.HasSettings) {
                 return;
             }
             var doc = getSettings();
             var root = doc.GetElementsByTagName(ROOT_NAME)[0];
             var el = root.SelectSingleNode(targetDriver.ID);
-            if(el==null) {
+            if (el == null) {
                 el = doc.CreateElement(targetDriver.ID);
                 root.AppendChild(el);
             }
-            if(targetDriver.Setup(el as XmlElement, owner)) {
+            if (targetDriver.Setup(el as XmlElement, owner)) {
                 doc.Save(SETTINGS_PATH);
             }
         }
@@ -109,7 +114,8 @@ namespace DxxBrowser {
                 var doc = new XmlDocument();
                 doc.Load(SETTINGS_PATH);
                 return doc;
-            } catch (Exception) {
+            }
+            catch (Exception) {
                 var doc = new XmlDocument();
                 doc.AppendChild(doc.CreateProcessingInstruction("xml", "version=\"1.0\" encoding=\"utf-8\""));
                 doc.AppendChild(doc.CreateElement(ROOT_NAME));
@@ -136,7 +142,8 @@ namespace DxxBrowser {
                         if (driver != null) {
                             if (driver.LinkExtractor.IsTarget(t)) {
                                 driver.Download(t);
-                            } else {
+                            }
+                            else {
                                 var du = new DxxUrl(t, driver);
                                 var cnt = await driver.LinkExtractor.ExtractContainerList(du);
                                 if (cnt != null && cnt.Count > 0) {
@@ -151,10 +158,12 @@ namespace DxxBrowser {
                             }
                         }
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     if (e is OperationCanceledException) {
                         DxxLogger.Instance.Cancel(LOG_CAT, "Download Cancelled.");
-                    } else {
+                    }
+                    else {
                         DxxLogger.Instance.Error(LOG_CAT, $"Download Error: {e.Message}");
                     }
                 }
@@ -167,14 +176,15 @@ namespace DxxBrowser {
          */
         public async void Download(string url, string name, string desc) {
             var driver = FindDriver(url);
-            if(null!=driver) {
+            if (null != driver) {
                 var urx = new DxxUriEx(url);
                 if (null == name) {
                     name = driver.GetNameFromUri(urx.Uri, "noname");
                 }
                 if (driver.LinkExtractor.IsTarget(urx)) {
                     driver.Download(new DxxTargetInfo(url, name, desc));
-                } else {
+                }
+                else {
                     var containers = await driver.LinkExtractor.ExtractContainerList(urx);
                     if (!Utils.IsNullOrEmpty(containers)) {
                         Download(containers);
@@ -184,6 +194,14 @@ namespace DxxBrowser {
                         Download(targets);
                     }
                 }
+            }
+        }
+
+
+        public void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            var driver = FindDriver(url);
+            if (null != driver) {
+                driver.HandleLinkedResource(url, refererUrl, refererTitle);
             }
         }
     }

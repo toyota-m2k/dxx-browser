@@ -29,6 +29,8 @@ namespace DxxBrowser
         string GetNameFromUri(Uri uri, string defName="");
         void Download(DxxTargetInfo target, Action<bool> onCompleted=null);
 
+        void HandleLinkedResource(string url, string refererUrl, string refererTitle);
+
         IDxxLinkExtractor LinkExtractor { get; }
         IDxxStorageManager StorageManager { get; }
     }

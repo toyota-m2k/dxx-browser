@@ -39,7 +39,6 @@ namespace DxxBrowser {
         public ReactiveProperty<ObservableCollection<DxxTargetInfo>> TargetList { get; }
 
         public ReactiveProperty<string> Url { get; } = new ReactiveProperty<string>();
-        public string LoadedUrl = null;
 
         public ReactiveProperty<bool> HasPrev { get; } = new ReactiveProperty<bool>(false);
         public ReactiveProperty<bool> HasNext { get; } = new ReactiveProperty<bool>(false);
@@ -61,9 +60,7 @@ namespace DxxBrowser {
         public ReactiveProperty<ObservableCollection<string>> FrameUrls { get; } = new ReactiveProperty<ObservableCollection<string>>(new ObservableCollection<string>());
         //public ReactiveProperty<string> ActivatedUrl { get; } = new ReactiveProperty<string>();
         //public ReactiveProperty<bool> LinkActivated { get; } = new ReactiveProperty<bool>();
-        public ReactiveProperty<string> StatusLine { get; } = new ReactiveProperty<string>();
-
-        public ReactiveCollection<string> LinkResources { get; } = new ReactiveCollection<string>();
+        public ReactiveProperty<string> StatusLine { get; } = new ReactiveProperty<string>("Ready");
 
         private void InitializeProperties() {
             IsDownloadable = IsContainer.CombineLatest(IsTarget, (c, t) => {
@@ -87,6 +84,8 @@ namespace DxxBrowser {
                 }
                 IsBookmarked.Value = Bookmarks.Value.FindBookmark(v)!=null;
             });
+
+
         }
 
         #endregion
@@ -106,6 +105,7 @@ namespace DxxBrowser {
         public ReactiveCommand SetupDriverCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<string> CopyCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand<string> FrameSelectCommand { get; } = new ReactiveCommand<string>();
+        public Subject<string> LinkedResources { get; } = new Subject<string>();
 
         //private DxxUrl CreateDxxUrl() {
         //    var driver = Driver.Value;
@@ -182,6 +182,13 @@ namespace DxxBrowser {
                     RequestLoadInSubview.OnNext(v);
                 } else {
                     Navigate(v);
+                }
+            });
+
+            LinkedResources.Subscribe((v) => {
+                var driver = DxxDriverManager.Instance.FindDriver(v);
+                if (driver != null) {
+                    driver.HandleLinkedResource(v, Url.Value, Browser.CoreWebView2.DocumentTitle);
                 }
             });
         }
@@ -536,6 +543,7 @@ namespace DxxBrowser {
                 //LMonitor.OnStartLoading(e.Uri, true);
                 AddFrameList(e.Uri);
             }
+            StatusLine.Value = $"Loading: {e.Uri}";
         }
 
         //private void WebView_FrameContentLoading(object sender, WebViewControlContentLoadingEventArgs e) {
@@ -561,6 +569,7 @@ namespace DxxBrowser {
                 //LMonitor.OnEndLoading(uri.ToString(), true);
                 //UpdateHistory();
             }
+            StatusLine.Value = "Ready";
         }
         #endregion
 
@@ -662,7 +671,8 @@ namespace DxxBrowser {
             Debug.WriteLine(callerName());
         }
         private void WebView_WebResourceResponseReceived(object sender, CoreWebView2WebResourceResponseReceivedEventArgs e) {
-            Debug.WriteLine($"{callerName()} URL={e.Request.Uri}");
+            //Debug.WriteLine($"{callerName()} URL={e.Request.Uri}");
+            LinkedResources.OnNext(e.Request.Uri);
         }
 
         private void WebView_WebResourceRequested(object sender, CoreWebView2WebResourceRequestedEventArgs e) {

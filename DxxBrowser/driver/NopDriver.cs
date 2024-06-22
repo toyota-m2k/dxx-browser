@@ -48,6 +48,10 @@ namespace DxxBrowser.driver {
             return false;
         }
 
+        public void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            return;
+        }
+
         class Storage : IDxxStorageManager {
             public void Download(DxxTargetInfo target, IDxxDriver driver, Action<bool> onCompleted) {
                 onCompleted?.Invoke(false);
