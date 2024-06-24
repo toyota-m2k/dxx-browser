@@ -43,7 +43,15 @@ namespace DxxBrowser.driver.caribbean {
             StorageManager.Download(target, this, onCompleted);
         }
 
+        Regex mShortVideoUrl = new Regex(@"https://shorts.jpornmarket.com/video/sites/caribbeancom.com/(?<name>\d+[-]\d+)/.+.mp4");
         public override void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            var m = mShortVideoUrl.Match(url);
+            if(m.Success) {
+                var name = m.Groups["name"].Value;
+                var target = new DxxTargetInfo(url, name, refererTitle);
+                Download(target);
+                return;
+            }
             return; // インライン再生される動画リンクはダウンロードしない。（ちゃんとしたリンクからダウンロードしないとタイトルが全部同じになってしまう）
             //if(url.Contains("/www.caribbeancom.com/")) {
             //    return;
