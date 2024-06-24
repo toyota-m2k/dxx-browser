@@ -144,11 +144,11 @@ namespace DxxBrowser {
             ClearURLCommand.Subscribe((v) => {
                 Url.Value = "";
             });
-            AnalyzeCommand.Subscribe((v) => {
+            AnalyzeCommand.Subscribe(async (v) => {
                 if(v==null) {
                     v = Url.Value;
                 }
-                var aw = new DxxAnalysisWindow(v);
+                var aw = new DxxAnalysisWindow(v, await GetCurrentHtmlAsync());
                 //aw.Owner = Owner;
                 aw.Show();
             });
@@ -403,6 +403,18 @@ namespace DxxBrowser {
 
         //private LoadingMonitor LMonitor;
 
+
+        /**
+         * 現在表示中のHTMLを取得する
+         */
+        public async Task<string> GetCurrentHtmlAsync() {
+            // JavaScriptを実行してページのHTMLを取得
+            string html = await Browser.ExecuteScriptAsync("document.documentElement.outerHTML");
+
+            // ExecuteScriptAsyncは結果をJSON文字列として返すため、不要な引用符を削除
+            html = Newtonsoft.Json.JsonConvert.DeserializeObject<string>(html);
+            return html;
+        }
 
         #endregion
 

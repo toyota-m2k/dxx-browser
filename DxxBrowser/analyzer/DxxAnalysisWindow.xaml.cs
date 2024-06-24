@@ -76,7 +76,7 @@ namespace DxxBrowser {
         private void InitializeCommands() {
             BeginAnalysis.Subscribe((v) => {
                 BaseUrl.Value = EnsureUri(v)?.ToString();
-                Load();
+                Load(null);
             });
 
             ApplyXPath.Subscribe((v) => {
@@ -109,7 +109,7 @@ namespace DxxBrowser {
                 Debug.WriteLine(v);
                 var url = EnsureUri(v.Value)?.ToString();
                 if (url != null) {
-                    var aw = new DxxAnalysisWindow(url);
+                    var aw = new DxxAnalysisWindow(url, null);
                     aw.Show();
                 }
             });
@@ -160,11 +160,11 @@ namespace DxxBrowser {
         private WeakReference<DxxAnalysisWindow> mOwner;
         private DxxAnalysisWindow Owner => mOwner?.GetValue();
 
-        public DxxAnalysysViewModel(DxxAnalysisWindow owner, string initialUrl) {
+        public DxxAnalysysViewModel(DxxAnalysisWindow owner, string initialUrl, string htmlString) {
             mOwner = new WeakReference<DxxAnalysisWindow>(owner);
             if (!string.IsNullOrEmpty(initialUrl)) {
                 BaseUrl.Value = initialUrl;
-                Load();
+                Load(htmlString);
             }
 
             InitializeCommands();
@@ -175,12 +175,11 @@ namespace DxxBrowser {
 
         #region Analyzing
 
-        HtmlWeb Web = new HtmlWeb();
         HtmlDocument HtmlRoot = null;
 
         public static string LOG_CAT = "ANALYZER";
 
-        private async void Load() {
+        private async void Load(string htmlString) {
             if(string.IsNullOrWhiteSpace(BaseUrl.Value)) {
                 return;
             }
@@ -189,7 +188,13 @@ namespace DxxBrowser {
                 Nodes.Value = null;
                 CurrentNode.Value = null;
                 //HtmlRoot = await Web.LoadFromWebAsync(BaseUrl.Value);
-                HtmlRoot = Web.LoadFromBrowser(BaseUrl.Value);
+                if (string.IsNullOrEmpty(htmlString)) {
+                    HtmlWeb Web = new HtmlWeb();
+                    HtmlRoot = Web.LoadFromBrowser(BaseUrl.Value);
+                } else {
+                    HtmlRoot = new HtmlDocument();
+                    HtmlRoot.LoadHtml(htmlString);
+                }
                 if (null!=HtmlRoot) {
                     DocumentAvailable.Value = true;
                     CurrentNode.Value = new DxxHtmlNode(HtmlRoot.DocumentNode);
@@ -223,8 +228,8 @@ namespace DxxBrowser {
     /// DxxAnalysisWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class DxxAnalysisWindow : Window {
-        public DxxAnalysisWindow(string url) {
-            ViewModel = new DxxAnalysysViewModel(this, url);
+        public DxxAnalysisWindow(string url, string htmlString) {
+            ViewModel = new DxxAnalysysViewModel(this, url, htmlString);
             InitializeComponent();
             AnalysisWindows = AnalysisWindows.Concat(new WeakReference<DxxAnalysisWindow>[] {new WeakReference<DxxAnalysisWindow>(this)});
         }
