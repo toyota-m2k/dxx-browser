@@ -13,6 +13,7 @@ using System.Threading;
 using System.Windows;
 using Common;
 using System.Diagnostics;
+using System.Security.Policy;
 
 namespace DxxBrowser.driver.dmm
 {
@@ -58,6 +59,30 @@ namespace DxxBrowser.driver.dmm
                 mDriver = new WeakReference<DmmDriver>(driver);
             }
 
+            private async Task<HtmlDocument> LoadHtmlWithAuth(string url, CancellationToken cancellationToken) {
+                var web = new HtmlWeb();
+                var html = await web.LoadFromWebAsync(url, cancellationToken);
+                if (null == html) {
+                    DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{url}");
+                    return null;
+                }
+                var a_auth = html.DocumentNode.SelectNodes("//a[contains(@href,'declared=yes')]");
+                if (!Utils.IsNullOrEmpty(a_auth)) {
+                    var nextUrl = a_auth.SingleOrDefault()?.GetAttributeValue("href", null);
+                    if (!string.IsNullOrEmpty(nextUrl)) {
+                        // 年齢認証
+                        // JavaScriptが必要
+                        //outer = web.LoadFromBrowser(nextUrl);
+                        html = await web.LoadFromWebAsync(nextUrl, cancellationToken);
+                        if (null == html) {
+                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{url}");
+                            return null;
+                        }
+                    }
+                }
+                return html;
+            }
+
             public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
                 if(!IsContainerList(urx)) {
                     return null;
@@ -71,26 +96,7 @@ namespace DxxBrowser.driver.dmm
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
-                        var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                        if (null == html) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{urx.Url}");
-                            return null;
-                        }
-                        var a_auth = html.DocumentNode.SelectNodes("//a[contains(@href,'declared=yes')]");
-                        if (!Utils.IsNullOrEmpty(a_auth)) {
-                            var nextUrl = a_auth.SingleOrDefault()?.GetAttributeValue("href", null);
-                            if (!string.IsNullOrEmpty(nextUrl)) {
-                                // 年齢認証
-                                // JavaScriptが必要
-                                //outer = web.LoadFromBrowser(nextUrl);
-                                html = await web.LoadFromWebAsync(nextUrl, cancellationToken);
-                                if (null == html) {
-                                    DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{urx.Url}");
-                                    return null;
-                                }
-                            }
-                        }
-
+                        var html = await LoadHtmlWithAuth(urx.Url, cancellationToken);
 
                         cancellationToken.ThrowIfCancellationRequested();
                         var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
@@ -148,27 +154,9 @@ namespace DxxBrowser.driver.dmm
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var web = new HtmlWeb();
-                        var outer = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                        if (null == outer) {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Target):{urx.Url}");
-                            return null;
-                        }
-                        IEnumerable<string> anchors = null;
-                        var a_auth = outer.DocumentNode.SelectNodes("//a[contains(@href,'declared=yes')]");
-                        if (!Utils.IsNullOrEmpty(a_auth)) {
-                            var nextUrl = a_auth.SingleOrDefault()?.GetAttributeValue("href", null);
-                            if (!string.IsNullOrEmpty(nextUrl)) {
-                                // 年齢認証
-                                // JavaScriptが必要
-                                //outer = web.LoadFromBrowser(nextUrl);
-                                outer = await web.LoadFromWebAsync(nextUrl, cancellationToken);
-                                if (null == outer) {
-                                    DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{urx.Url}");
-                                    return null;
-                                }
-                            }
-                        }
+                        var outer = await LoadHtmlWithAuth(urx.Url, cancellationToken);
 
+                        IEnumerable<string> anchors = null;
                         var iframes = outer.DocumentNode.SelectNodes("//iframe");
                         if (null != iframes) {
                             // カテゴリとか、そんなページ
@@ -195,7 +183,7 @@ namespace DxxBrowser.driver.dmm
                                     break;
                                 }
                                 var onclickUrl = ensureUrl(urx.Uri, v.Groups["url"].Value);
-                                var next = await web.LoadFromWebAsync(onclickUrl, cancellationToken);
+                                var next = await LoadHtmlWithAuth(onclickUrl, cancellationToken);
                                 if (null == next) {
                                     break;
                                 }
@@ -222,7 +210,7 @@ namespace DxxBrowser.driver.dmm
                             if (!Driver.IsSupported(innerUrl)) {
                                 continue;
                             }
-                            var inner = await web.LoadFromWebAsync(innerUrl, cancellationToken);
+                            var inner = await LoadHtmlWithAuth(innerUrl, cancellationToken);
                             var txt = inner.DocumentNode.SelectSingleNode("//script[contains(text(), 'dmmplayer')]");
                             if (null != txt) {
                                 var regex = new Regex(@"const\s+args\s?=\s?(?<json>\{.*\})");
