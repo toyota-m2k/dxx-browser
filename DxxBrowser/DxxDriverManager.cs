@@ -129,7 +129,8 @@ namespace DxxBrowser {
 
         const string LOG_CAT = "DDM";
 
-        public async void Download(IEnumerable<DxxTargetInfo> targets) {
+        public async void Download(IEnumerable<DxxTargetInfo> targets_) {
+            var targets = targets_.ToList();
             if (Utils.IsNullOrEmpty(targets)) {
                 return;
             }
@@ -185,10 +186,10 @@ namespace DxxBrowser {
                     driver.Download(new DxxTargetInfo(url, name, desc));
                 }
                 else {
-                    var containers = await driver.LinkExtractor.ExtractContainerList(urx);
-                    if (!Utils.IsNullOrEmpty(containers)) {
-                        Download(containers);
-                    }
+                    //var containers = await driver.LinkExtractor.ExtractContainerList(urx);
+                    //if (!Utils.IsNullOrEmpty(containers)) {
+                    //    Download(containers);
+                    //}
                     var targets = await driver.LinkExtractor.ExtractTargets(urx);
                     if (!Utils.IsNullOrEmpty(targets)) {
                         Download(targets);

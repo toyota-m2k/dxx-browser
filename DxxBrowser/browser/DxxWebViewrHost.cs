@@ -164,7 +164,7 @@ namespace DxxBrowser {
                 if (IsContainerList.Value) {
                     var uri = new Uri(Url.Value);
                     var dxxUrl = new DxxUrl(uri, Driver.Value, Driver.Value.GetNameFromUri(uri), "");
-                    var targets = await Driver.Value.LinkExtractor.ExtractTargets(dxxUrl);
+                    var targets = await Driver.Value.LinkExtractor.ExtractContainerList(dxxUrl);
                     if (targets != null && targets.Count > 0) {
                         TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
                     } else {
@@ -299,8 +299,12 @@ namespace DxxBrowser {
             if (null==uri || null==browser) { 
                 return;
             }
-           
-            Browser.Source = new Uri(url);
+            if (url == browser.Source.ToString()) {
+                Reload();
+            }
+            else {
+                browser.Source = new Uri(url);
+            }
         }
 
         void Stop() {

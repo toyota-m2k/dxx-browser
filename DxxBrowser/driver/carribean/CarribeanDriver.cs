@@ -110,7 +110,7 @@ namespace DxxBrowser.driver.caribbean {
                         var web = new HtmlWeb();
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
                         var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
-                        var nodes = html.DocumentNode.SelectNodes("//a[contains(@href, '/moviepages/')]");
+                        var nodes = html.DocumentNode.SelectNodes("//a[contains(@href,'moviepages')]");
                         if (null == html) {
                             DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{urx.Url}");
                             return null;
@@ -123,28 +123,38 @@ namespace DxxBrowser.driver.caribbean {
                                     return null;
                                 }
                                 string desc = v.InnerText.Trim();
-                                if(string.IsNullOrEmpty(desc)) {
-                                    var img = v.SelectSingleNode("img");
-                                    if(null!=img) {
-                                        desc = img.Attributes["alt"].Value;
-                                    }
+                                if (string.IsNullOrEmpty(desc)) {
+                                    return null;
                                 }
+                                desc = desc.Split(new char[] { '\r', '\n' }).First(s => {
+                                    return s.Trim().Length > 0;
+                                });
+
+                                //if(string.IsNullOrEmpty(desc)) {
+                                //    var img = v.SelectSingleNode("img");
+                                //    if(null!=img) {
+                                //        desc = img.Attributes["alt"].Value;
+                                //    }
+                                //}
                                 var targetUri = new Uri(href);
                                 var idx = targetUri.Segments.Count() - 2;
                                 var name = idx >= 0 ? targetUri.Segments.ElementAt(idx) : "untitled";
-
-                                return (href != null) ? new DxxTargetInfo(href, name, desc) : null;
+                                if(name.EndsWith("/")) {
+                                    name = name.Substring(0, name.Length - 1);
+                                }
+                                return new DxxTargetInfo(href, name, desc);
                             }).Where((v) => v != null)?.ToList();
                             cancellationToken.ThrowIfCancellationRequested();
+                            DxxLogger.Instance.Success(LOG_CAT, $"Analyzed: {DxxUrl.GetFileName(urx.Uri)}");
                             return list;
                         }
-                        DxxLogger.Instance.Error(LOG_CAT, $"No List:{urx.Url}");
+                        DxxLogger.Instance.Error(LOG_CAT, $"No Targets: {urx.Url}");
                         return null;
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list):{urx.Url}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list): {urx.Url}");
                         } else {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list):{urx.Url}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list): {urx.Url}");
                         }
                         return null;
                     }

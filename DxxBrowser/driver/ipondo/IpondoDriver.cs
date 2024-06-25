@@ -91,7 +91,7 @@ namespace DxxBrowser.driver.ipondo {
                     var actor = json.GetValue("Actor")?.ToString();
                     var title = json.GetValue("Title")?.ToString();
                     if(!string.IsNullOrEmpty(actor)) {
-                        title = actor + " " + title;
+                        title = $"{actor}> {title}";
                     }
                     var files = json.GetValue("SampleFiles") as JArray;
                     if (files != null) {

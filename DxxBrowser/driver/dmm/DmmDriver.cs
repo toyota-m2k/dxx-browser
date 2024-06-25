@@ -76,6 +76,22 @@ namespace DxxBrowser.driver.dmm
                             DxxLogger.Instance.Error(LOG_CAT, $"Load Error (list):{urx.Url}");
                             return null;
                         }
+                        var a_auth = html.DocumentNode.SelectNodes("//a[contains(@href,'declared=yes')]");
+                        if (!Utils.IsNullOrEmpty(a_auth)) {
+                            var nextUrl = a_auth.SingleOrDefault()?.GetAttributeValue("href", null);
+                            if (!string.IsNullOrEmpty(nextUrl)) {
+                                // 年齢認証
+                                // JavaScriptが必要
+                                //outer = web.LoadFromBrowser(nextUrl);
+                                html = await web.LoadFromWebAsync(nextUrl, cancellationToken);
+                                if (null == html) {
+                                    DxxLogger.Instance.Error(LOG_CAT, $"Load Error (Age):{urx.Url}");
+                                    return null;
+                                }
+                            }
+                        }
+
+
                         cancellationToken.ThrowIfCancellationRequested();
                         var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
                         if (para == null || para.Count == 0) {
@@ -94,12 +110,18 @@ namespace DxxBrowser.driver.dmm
                             return new DxxTargetInfo(href, DxxUrl.GetFileName(href), desc);
                         }).Where((v) => v != null);
                         cancellationToken.ThrowIfCancellationRequested();
-                        return list.ToList();
+                        var result = list.ToList();
+                        if (result.Count > 0) {
+                            DxxLogger.Instance.Success(LOG_CAT, $"Analyzed: {DxxUrl.GetFileName(urx.Uri)}");
+                        } else {
+                           DxxLogger.Instance.Error(LOG_CAT, $"No Targets: {urx.Url}");
+                        }
+                        return result;
                     } catch (Exception e) {
                         if (e is OperationCanceledException) {
-                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list):{urx.Url}");
+                            DxxLogger.Instance.Cancel(LOG_CAT, $"Cancelled (list): {urx.Url}");
                         } else {
-                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list):{urx.Url}");
+                            DxxLogger.Instance.Error(LOG_CAT, $"Error (list): {urx.Url}");
                         }
                         return null;
                     }
