@@ -42,6 +42,11 @@ namespace DxxBrowser.driver {
             return true;    // DefaultDriverは、すべてのURLを扱う
         }
 
+        public override void HandleLinkedResource(string url, string refererUrl, string refererTitle) {
+            Console.WriteLine(url);
+            base.HandleLinkedResource(url, refererUrl, refererTitle);
+        }
+
         /**
          * 単純なLinkExtractor 
          * - <a>, <video> タグから、動画ファイルのURLを取り出す。

@@ -33,7 +33,7 @@ namespace DxxBrowser.driver.ipondo {
 
         public override bool IsSupported(string url) {
             var uri = new Uri(url);
-            return uri.Host.Contains("1pondo.tv");
+            return uri.Host.Contains("1pondo.tv") || uri.Host.Contains("pacopacomama.com") || uri.Host.Contains("muramura.tv") || uri.Host.Contains("10musume.com");
         }
         public override string GetNameFromUri(Uri uri, string defName = "") {
             return DxxUrl.GetFileName(uri);
