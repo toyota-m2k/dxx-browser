@@ -36,8 +36,10 @@
         </StackPanel>
         <!-- URL Input area -->
         <ComboBox Grid.Column="1" FontSize="14" x:Name="urlInput" VerticalContentAlignment="Center" 
-                      IsEditable="True" Text="{Binding Url.Value}" ItemsSource="{Binding Bookmarks.Value}"
-                      TextSearch.TextPath="Url">
+                  IsEditable="True" Text="{Binding Url.Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" ItemsSource="{Binding Bookmarks.Value}"
+                  TextSearch.TextPath="Url"
+                  IsTextSearchEnabled="False"
+                  >
             <ComboBox.InputBindings>
                 <KeyBinding Gesture="Enter" Command="{Binding NavigateCommand}" CommandParameter="{Binding ElementName=urlInput, Path=Text}"/>
             </ComboBox.InputBindings>
