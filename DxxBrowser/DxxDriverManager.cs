@@ -1,6 +1,7 @@
 ﻿using Common;
 using DxxBrowser.driver;
 using DxxBrowser.driver.caribbean;
+using DxxBrowser.driver.cospri;
 using DxxBrowser.driver.dmm;
 using DxxBrowser.driver.heizo;
 using DxxBrowser.driver.ipondo;
@@ -31,6 +32,7 @@ namespace DxxBrowser {
                 new CaribbeanDriver(),
                 new HeyzoDriver(),
                 new IpondoDriver(),
+                new CospriDriver(),
             };
         }
 
@@ -73,12 +75,15 @@ namespace DxxBrowser {
             var driverList = (new IDxxDriver[] { DEFAULT }).Concat(mList);
             foreach (var d in driverList) {
                 var elems = doc.GetElementsByTagName(d.ID);
+                bool ready = false;
+                XmlElement el;
                 if (elems.Count > 0) {
-                    var el = elems[0];
-                    d.LoadSettins(el as XmlElement);
+                    el = elems[0] as XmlElement;
+                    ready = d.LoadSettins(el);
+                } else {
+                    el = doc.CreateElement(d.ID);
                 }
-                else {
-                    var el = doc.CreateElement(d.ID);
+                if (!ready) {
                     if (d.Setup(el, Window.GetWindow(owner))) {
                         root.AppendChild(el);
                         update = true;
@@ -146,7 +151,7 @@ namespace DxxBrowser {
                             }
                             else {
                                 var du = new DxxUrl(t, driver);
-                                var cnt = await driver.LinkExtractor.ExtractContainerList(du);
+                                var cnt = await driver.LinkExtractor.ExtractContainerList(du, null);
                                 if (cnt != null && cnt.Count > 0) {
                                     DxxLogger.Instance.Comment(LOG_CAT, $"{cnt.Count} containers in {du.FileName}");
                                     Download(cnt);

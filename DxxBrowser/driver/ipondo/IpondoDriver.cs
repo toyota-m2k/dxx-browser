@@ -185,7 +185,7 @@ namespace DxxBrowser.driver.ipondo {
                 return null;
             }
 
-            public Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx url) {
+            public Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx url, string htmlString) {
                 return null;
             }
         }

@@ -42,7 +42,7 @@ namespace DxxBrowser {
         /**
          * ダウンロードターゲットを含むコンテンツ(html)のURLリストを取得
          */
-        Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx url);
+        Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx url, string htmlString);
 
     }
 }

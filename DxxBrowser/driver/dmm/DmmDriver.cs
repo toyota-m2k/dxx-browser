@@ -14,6 +14,10 @@ using System.Windows;
 using Common;
 using System.Diagnostics;
 using System.Security.Policy;
+using static System.Net.WebRequestMethods;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Drawing.Printing;
+using System.Windows.Documents;
 
 namespace DxxBrowser.driver.dmm
 {
@@ -83,37 +87,39 @@ namespace DxxBrowser.driver.dmm
                 return html;
             }
 
-            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx, string htmlString) {
                 if(!IsContainerList(urx)) {
                     return null;
                 }
-                // <div>
-                //< p class="tmb"><a href = "https://www.dmm.co.jp/litevideo/-/detail/=/cid=bf00392/" >
-                // < span class="img"><img src = "https://pics.dmm.co.jp/digital/video/bf00392/bf00392pt.jpg" alt="美尻にぴったり密着タイトスカートSEX8時間"></span> 
-                //<span class="txt">美尻にぴったり密着タイト...</span> 
-                //<!--/tmb--></a></p>
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
-                        var web = new HtmlWeb();
-                        var html = await LoadHtmlWithAuth(urx.Url, cancellationToken);
+                        //var web = new HtmlWeb();
+                        //var html = await LoadHtmlWithAuth(urx.Url, cancellationToken);
 
+                        var html = LoadHtmlFromBrowser(htmlString, urx.Url);
                         cancellationToken.ThrowIfCancellationRequested();
-                        var para = html.DocumentNode.SelectNodes("//p[@class='tmb']");
-                        if (para == null || para.Count == 0) {
+
+                        // HTML のノード構成が、わりと頻繁に変わるので、
+                        // 見出しやファイル名がおかしくなったら、このあたりの xpathを見直す。
+                        var anchors = html.DocumentNode.SelectNodes("//div/ul/li//a[contains(@data-e2eid, 'title')]");
+                        if (anchors == null || anchors.Count==0) {
                             DxxLogger.Instance.Error(LOG_CAT, $"No Targets:{urx.Url}");
                             return null;
                         }
-                        var list = para.Select((p) => {
-                            var href = p.SelectSingleNode("a")?.GetAttributeValue("href", null);
+                        var nameRegex = new Regex("/cid=(?<name>\\w+)/*");
+                        var list = anchors.Select((p) => {
+                            var href = p.GetAttributeValue("href", null);
                             if (string.IsNullOrEmpty(href)) {
                                 return null;
                             }
-                            var desc = p.SelectSingleNode("a/span/img")?.GetAttributeValue("alt", null);
-                            if (desc == null) {
-                                desc = p.SelectSingleNode("a/span[@class='txt']")?.InnerText;
+                            var desc = p.SelectSingleNode("span[contains(@class, 'hover:underline')]")?.InnerText;
+                            var match = nameRegex.Match(href);
+                            var name = "noname";
+                            if(match.Success) {
+                                name = match.Groups["name"].Value;
                             }
-                            return new DxxTargetInfo(href, DxxUrl.GetFileName(href), desc);
+                            return new DxxTargetInfo(href, name, desc);
                         }).Where((v) => v != null);
                         cancellationToken.ThrowIfCancellationRequested();
                         var result = list.ToList();

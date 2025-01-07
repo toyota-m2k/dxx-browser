@@ -120,23 +120,9 @@ namespace DxxBrowser.driver.heizo {
             }
 
             /**
-             * href が同じ Anchorノードを同一視するための比較クラス
-             */
-            private class AnchorNodeComparator : IEqualityComparer<HtmlNode> {
-                public bool Equals(HtmlNode x, HtmlNode y) {
-                    return x.Attributes["href"].Value == y.Attributes["href"].Value;
-                }
-
-                public int GetHashCode(HtmlNode obj) {
-                    return obj.Attributes["href"].Value?.GetHashCode() ?? 0;
-                }
-            }
-            private AnchorNodeComparator mAnchorNodeComparator = new AnchorNodeComparator();
-
-            /**
              * コンテナのリストを抽出する
              */
-            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx, string htmlString) {
                 if (!IsContainerList(urx)) {
                     return null;
                 }
@@ -147,7 +133,7 @@ namespace DxxBrowser.driver.heizo {
                     //var xpath = "//a[contains(@href, '/moviepages/') or contains(@href,'/listpages')]";
                     var xpath = "//a[contains(@href, '/moviepages/')]";
                     return html.DocumentNode.SelectNodes(xpath)?
-                                    .Distinct(mAnchorNodeComparator)?
+                                    .Distinct(AnchorNodeComparator.Instance)?
                                     .Select((v) => CreateContainerInfo(urx.Uri, v.Attributes["href"].Value, v))?
                                     .Where((v) => v != null)?
                                     .ToList();
@@ -166,7 +152,7 @@ namespace DxxBrowser.driver.heizo {
                     var web = new HtmlWeb();
                     var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
                     var mp4s = html.DocumentNode.SelectNodes("//a[contains(@href, '.mp') or contains(@href, '.wmv') or contains(@href,'.mov') or contains(@href,'.qt')]")?
-                                    .Distinct(mAnchorNodeComparator)?
+                                    .Distinct(AnchorNodeComparator.Instance)?
                                     .Select((v) => CreateTargetInfo(urx.Uri, v.Attributes["href"].Value, v))?
                                     .Where((v) => v != null);
                     if(!Utils.IsNullOrEmpty(mp4s)) {

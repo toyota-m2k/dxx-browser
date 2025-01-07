@@ -67,7 +67,7 @@ namespace DxxBrowser.driver {
         }
 
         class Extractor : IDxxLinkExtractor {
-            public Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+            public Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx, string htmlString) {
                 return Task.FromResult<IList<DxxTargetInfo>>(null);
             }
 

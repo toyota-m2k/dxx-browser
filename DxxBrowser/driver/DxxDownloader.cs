@@ -462,6 +462,7 @@ namespace DxxBrowser.driver {
                                                 DxxLogger.Instance.Cancel(LOG_CAT, $"{result}: {dlTask.ItemInfo.Name}:{dlTask.ItemInfo.Description}");
                                             } else {
                                                 // キャンセル以外のエラー
+                                                Debug.WriteLine(e.StackTrace);
                                                 result = DxxDownloadingItem.DownloadStatus.Error;
                                                 UpdateStatus(dlTask, result, e.Message);
                                                 DxxLogger.Instance.Error(LOG_CAT, $"{result}: {e.Message} ({dlTask.ItemInfo.Name}:{dlTask.ItemInfo.Description})");
@@ -482,8 +483,12 @@ namespace DxxBrowser.driver {
                             }
                         }
                     } catch (Exception e) {
+                        DxxLogger.Instance.Error(LOG_CAT, $"{e.Message}: {dlTask.ItemInfo.Url}:{dlTask.ItemInfo.Description}");
                         Debug.WriteLine(e.StackTrace);
                     } finally {
+                        if (result != DxxDownloadingItem.DownloadStatus.Completed) {
+                            DxxLogger.Instance.Error(LOG_CAT, $"{result}: {dlTask.ItemInfo.Url}:{dlTask.ItemInfo.Description}");
+                        }
                         Completion(dlTask, result);
                         Trigger();
                     }
@@ -506,7 +511,7 @@ namespace DxxBrowser.driver {
             Dispatcher.Invoke(() => {
                 if (result == DxxDownloadingItem.DownloadStatus.Error) {
                     // キャンセル以外のエラーの場合はリトライ
-                    if (dlTask.Retry < dlTask.MaxRetry) {
+                    if (dlTask.Retry <= dlTask.MaxRetry) {
                         if (!Finalizing) {
                             dlTask.Retry++;
                             dlTask.ItemInfo.Percent = -1;

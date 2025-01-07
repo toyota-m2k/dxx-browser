@@ -96,6 +96,7 @@ namespace DxxBrowser {
         public ReactiveCommand GoForwardCommand { get; } = new ReactiveCommand();
         public ReactiveCommand ReloadCommand { get; } = new ReactiveCommand();
         public ReactiveCommand StopCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand RepeatActionCommand { get; } = new ReactiveCommand();
         public ReactiveCommand<string> BookmarkCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand<string> NavigateCommand { get; } = new ReactiveCommand<string>();
         public ReactiveCommand ClearURLCommand { get; } = new ReactiveCommand();
@@ -164,7 +165,7 @@ namespace DxxBrowser {
                 if (IsContainerList.Value) {
                     var uri = new Uri(Url.Value);
                     var dxxUrl = new DxxUrl(uri, Driver.Value, Driver.Value.GetNameFromUri(uri), "");
-                    var targets = await Driver.Value.LinkExtractor.ExtractContainerList(dxxUrl);
+                    var targets = await Driver.Value.LinkExtractor.ExtractContainerList(dxxUrl, await GetCurrentHtmlAsync());
                     if (targets != null && targets.Count > 0) {
                         TargetList.Value = new ObservableCollection<DxxTargetInfo>(targets);
                     } else {

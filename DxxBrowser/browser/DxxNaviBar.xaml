@@ -92,6 +92,14 @@
                 </ToolTipService.ToolTip>
             </Button>
 
+            <!-- Repeat Action Button -->
+            <Button
+                Command="{Binding RepeatActionCommand}"
+                Content="{StaticResource PathRepeatAction}" Style="{StaticResource PushButtonStyle}" Margin="2,0">
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="リピートアクション"/>
+                </ToolTipService.ToolTip>
+            </Button>            
             <!-- Download Button -->
             <Button Visibility="{Binding IsDownloadable.Value, Converter={StaticResource BoolVisibilityConverter}}"
                     Command="{Binding DownloadCommand}"

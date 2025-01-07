@@ -60,10 +60,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AnchorNodeComparator.cs" />
     <Compile Include="common\CompoundProperty.cs" />
     <Compile Include="common\MicWaitCursor.cs" />
     <Compile Include="common\WinPlacement.cs" />
     <Compile Include="driver\carribean\CarribeanDriver.cs" />
+    <Compile Include="driver\cospri\CospriDriver.cs" />
     <Compile Include="driver\DefaultDriver.cs" />
     <Compile Include="driver\DxxActivityWatcher.cs" />
     <Compile Include="driver\DxxDBStorage.cs" />

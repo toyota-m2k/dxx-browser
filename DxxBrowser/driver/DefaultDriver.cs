@@ -83,7 +83,7 @@ namespace DxxBrowser.driver {
             }
 
 
-            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx, string htmlString) {
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
                         var web = new HtmlWeb();

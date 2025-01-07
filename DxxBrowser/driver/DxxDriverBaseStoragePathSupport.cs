@@ -1,11 +1,15 @@
 ﻿using DxxBrowser.common;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Shapes;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -16,7 +20,7 @@ namespace DxxBrowser.driver {
         private const string KEY_STORAGE_PATH = "StoragePath";
         public bool LoadSettins(XmlElement settings) {
             StoragePath = settings.GetAttribute(KEY_STORAGE_PATH);
-            return true;
+            return Directory.Exists(StoragePath);
         }
 
         public bool SaveSettings(XmlElement settings) {
@@ -74,6 +78,18 @@ namespace DxxBrowser.driver {
                     var di = new DxxTargetInfo(url, name, refererTitle);
                     Download(di);
                 }
+            }
+        }
+
+        public static HtmlDocument LoadHtmlFromBrowser(string htmlString, string url) {
+            if (string.IsNullOrEmpty(htmlString)) {
+                HtmlWeb Web = new HtmlWeb();
+                return Web.LoadFromBrowser(url);
+            }
+            else {
+                var root = new HtmlDocument();
+                root.LoadHtml(htmlString);
+                return root;
             }
         }
     }

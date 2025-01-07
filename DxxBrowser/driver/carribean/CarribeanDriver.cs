@@ -100,15 +100,15 @@ namespace DxxBrowser.driver.caribbean {
                 return url;
             }
 
-            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx) {
+            public async Task<IList<DxxTargetInfo>> ExtractContainerList(DxxUriEx urx, string htmlString) {
                 if (!IsContainerList(urx)) {
                     return null;
                 }
 
                 return await DxxActivityWatcher.Instance.Execute(async (cancellationToken) => {
                     try {
-                        var web = new HtmlWeb();
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
+                        var web = new HtmlWeb();
                         var html = await web.LoadFromWebAsync(urx.Url, cancellationToken);
                         var nodes = html.DocumentNode.SelectNodes("//a[contains(@href,'moviepages')]");
                         if (null == html) {
