@@ -102,8 +102,17 @@ namespace DxxBrowser.driver.dmm
 
                         // HTML のノード構成が、わりと頻繁に変わるので、
                         // 見出しやファイル名がおかしくなったら、このあたりの xpathを見直す。
+
+                        // actors から入ると、このパターンでリンクが取れる
+                        var genre = false;
                         var anchors = html.DocumentNode.SelectNodes("//div/ul/li//a[contains(@data-e2eid, 'title')]");
-                        if (anchors == null || anchors.Count==0) {
+                        if (Utils.IsNullOrEmpty(anchors)) {
+                            // genre から入ると、このパターンでリンクが取れる
+                            genre = true;
+                            anchors = html.DocumentNode.SelectNodes("//ul/li/div/a");
+                        }
+                        if (Utils.IsNullOrEmpty(anchors)) {
+                            // どちらのパターンもダメならあきらめる
                             DxxLogger.Instance.Error(LOG_CAT, $"No Targets:{urx.Url}");
                             return null;
                         }
@@ -113,13 +122,21 @@ namespace DxxBrowser.driver.dmm
                             if (string.IsNullOrEmpty(href)) {
                                 return null;
                             }
-                            var desc = p.SelectSingleNode("span[contains(@class, 'hover:underline')]")?.InnerText;
+                            string desc;
+                            if (!genre) {
+                                desc = p.SelectSingleNode("span[contains(@class, 'hover:underline')]")?.InnerText;
+                            } else {
+                                desc = p.SelectSingleNode("div/span/img")?.GetAttributeValue("alt", null);
+                            }
                             var match = nameRegex.Match(href);
                             var name = "noname";
                             if(match.Success) {
                                 name = match.Groups["name"].Value;
+                                return new DxxTargetInfo(ensureUrl(urx.Uri,href), name, desc);
                             }
-                            return new DxxTargetInfo(href, name, desc);
+                            else {
+                                return null;
+                            }
                         }).Where((v) => v != null);
                         cancellationToken.ThrowIfCancellationRequested();
                         var result = list.ToList();
@@ -159,8 +176,15 @@ namespace DxxBrowser.driver.dmm
                 return await DxxActivityWatcher.Instance.Execute(async(cancellationToken) => {
                     try {
                         DxxLogger.Instance.Comment(LOG_CAT, $"Analyzing: {DxxUrl.GetFileName(urx.Uri)}");
-                        var web = new HtmlWeb();
+                        //var web = new HtmlWeb();
                         var outer = await LoadHtmlWithAuth(urx.Url, cancellationToken);
+                                                
+                        var sampleInfo = outer.DocumentNode.SelectNodes("//div[@class='box-sampleInfo']/p/a");
+                        if (!Utils.IsNullOrEmpty(sampleInfo)) {
+                            var sampleUrl = sampleInfo[0].GetAttributeValue("href", null);
+                            if (sampleUrl == null) return null;
+                            outer = await LoadHtmlWithAuth(ensureUrl(urx.Uri, sampleUrl), cancellationToken);
+                        }
 
                         IEnumerable<string> anchors = null;
                         var iframes = outer.DocumentNode.SelectNodes("//iframe");

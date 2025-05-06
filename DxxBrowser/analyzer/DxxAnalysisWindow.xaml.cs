@@ -179,9 +179,9 @@ namespace DxxBrowser {
 
         public static string LOG_CAT = "ANALYZER";
 
-        private async void Load(string htmlString) {
+        private Task Load(string htmlString) {
             if(string.IsNullOrWhiteSpace(BaseUrl.Value)) {
-                return;
+                return Task.CompletedTask;
             }
             DocumentAvailable.Value = false;
             try {
@@ -204,6 +204,7 @@ namespace DxxBrowser {
                 Debug.WriteLine(e.ToString());
                 DxxLogger.Instance.Error(LOG_CAT, e.Message);
             }
+            return Task.CompletedTask;
         }
 
         public void SetXPath(string xpath) {
